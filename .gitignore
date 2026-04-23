@@ -1,0 +1,10 @@
+node_modules
+dist
+*.local
+.DS_Store
+.env
+.claude
+# Cygwin/Git-bash 崩溃产物
+*.stackdump
+# 本地临时截图
+.tmp-*.png

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>方块噩梦</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👿</text></svg>">
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #050505;
+        font-family: "VT323", monospace;
+      }
+
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        background: transparent;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        transform: translate(-50%, -50%);
+        z-index: 10;
+      }
+      #crosshair::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 2px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.8);
+        transform: translate(-50%, -50%);
+      }
+
+      #menu,
+      #game-over {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 40px;
+        border: 4px solid #555;
+        text-align: center;
+        pointer-events: auto;
+        z-index: 20;
+      }
+
+      #menu-content {
+        max-width: 600px;
+      }
+
+      .setting-item {
+        margin: 20px 0;
+        text-align: left;
+        color: #ccc;
+        font-size: 20px;
+      }
+
+      .setting-item label {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .setting-item input[type="range"] {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: #444;
+        outline: none;
+        cursor: pointer;
+        -webkit-appearance: none;
+      }
+
+      .setting-item input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        border: 2px solid #555;
+      }
+
+      .setting-item input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        border: 2px solid #555;
+      }
+
+      .mouse-speed-value {
+        color: #ffaa00;
+        font-weight: bold;
+      }
+
+      #pause-menu {
+        background: rgba(0, 0, 0, 0.9);
+        padding: 40px;
+        border: 4px solid #888;
+        text-align: center;
+        pointer-events: auto;
+        z-index: 25;
+        max-width: 500px;
+      }
+
+      #pause-menu h2 {
+        color: #fff;
+        font-size: 48px;
+        margin: 0 0 30px 0;
+      }
+
+      #pause-menu-content {
+        text-align: left;
+        margin-bottom: 30px;
+      }
+
+      .pause-button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .pause-button-group button {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      .pause-hint {
+        color: #aaa;
+        font-size: 16px;
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 80px;
+        color: #a00;
+        margin: 0 0 20px 0;
+        text-shadow: 4px 4px 0 #000;
+        letter-spacing: 5px;
+      }
+      p {
+        color: #ccc;
+        font-size: 24px;
+        margin-bottom: 30px;
+      }
+
+      button {
+        background: #444;
+        border: 4px solid #fff;
+        color: #fff;
+        padding: 15px 40px;
+        font-size: 30px;
+        cursor: pointer;
+        font-family: "VT323", monospace;
+        transition: 0.1s;
+        image-rendering: pixelated;
+      }
+      button:hover {
+        background: #666;
+        transform: scale(1.05);
+      }
+      button:active {
+        transform: scale(0.95);
+      }
+      button[disabled] {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      button[disabled]:hover {
+        background: #444;
+        transform: none;
+      }
+
+      #loader-area {
+        margin: 20px 0;
+      }
+      #loader-text {
+        color: #ccc;
+        font-size: 20px;
+        text-align: center;
+      }
+      #loader-bar-track {
+        width: 320px;
+        height: 18px;
+        background: #222;
+        border: 2px solid #555;
+        margin: 10px auto 6px;
+        image-rendering: pixelated;
+      }
+      #loader-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: #a00;
+        transition: width 0.2s linear;
+      }
+      #loader-percent {
+        color: #ffaa00;
+        font-size: 18px;
+        text-align: center;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      #vignette {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, transparent 50%, black 150%);
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      #cabinet-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 15;
+        display: none;
+        pointer-events: none;
+      }
+      #cabinet-slit {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 40px;
+        transform: translate(-50%, -50%);
+        background: transparent;
+        box-shadow: 0 0 0 100vh black; /* The trick to make everything else black */
+      }
+      #interaction-msg {
+        position: absolute;
+        bottom: 100px;
+        width: 100%;
+        text-align: center;
+        color: white;
+        font-size: 24px;
+        text-shadow: 2px 2px 0 #000;
+        display: none;
+      }
+      #minimap {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 200px;
+        height: 200px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid #555;
+        z-index: 100;
+        display: block;
+      }
+      #minimap.large {
+        width: 600px;
+        height: 600px;
+        top: 50%;
+        right: 50%;
+        transform: translate(50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+      }
+
+      #heartbeat-ui {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 60px;
+        height: 60px;
+        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>')
+          no-repeat center;
+        background-size: contain;
+        opacity: 0;
+        transition: opacity 0.5s;
+      }
+      @keyframes beat {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.3);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="vignette"></div>
+    <div id="cabinet-overlay"><div id="cabinet-slit"></div></div>
+
+    <canvas id="minimap"></canvas>
+    <div id="ui-layer">
+      <div id="heartbeat-ui"></div>
+      <div id="crosshair"></div>
+      <div id="interaction-msg">按 E 键交互</div>
+
+      <div id="menu">
+        <div id="menu-content">
+          <h1 id="title-text">方块噩梦</h1>
+          <p id="instructions-text">
+            WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒
+          </p>
+          <p
+            id="hint-text"
+            style="color: #ff4444; font-size: 26px; margin-top: -10px"
+          >
+            快点找到逃生的门，避免被幽灵抓到
+          </p>
+          <p
+            id="esc-hint-text"
+            style="color: #ffaa00; font-size: 20px; margin-top: 15px"
+          >
+            按 ESC 键可在游戏中弹出菜单
+          </p>
+
+          <div class="setting-item">
+            <label for="mouse-speed-slider">
+              鼠标转动速度: <span class="mouse-speed-value" id="mouse-speed-display">1.0x</span>
+            </label>
+            <input
+              type="range"
+              id="mouse-speed-slider"
+              min="0.3"
+              max="3"
+              step="0.1"
+              value="1.0"
+            />
+          </div>
+
+          <div id="loader-area">
+            <div id="loader-text">正在加载资源…</div>
+            <div id="loader-bar-track">
+              <div id="loader-bar-fill"></div>
+            </div>
+            <div id="loader-percent">0%</div>
+          </div>
+
+          <button id="btn-start" disabled>开始游戏</button>
+        </div>
+      </div>
+
+      <div id="game-over" class="hidden">
+        <h1 id="died-text">你死了</h1>
+        <button id="respawn-btn">重生</button>
+      </div>
+
+      <div
+        id="game-win"
+        class="hidden"
+        style="
+          background: rgba(0, 0, 0, 0.8);
+          padding: 40px;
+          border: 4px solid #555;
+          text-align: center;
+          pointer-events: auto;
+          z-index: 20;
+        "
+      >
+        <h1 id="escaped-text" style="color: #0a0">逃脱成功</h1>
+        <button id="play-again-btn">再玩一次</button>
+      </div>
+
+      <div id="pause-menu" class="hidden">
+        <h2>暂停中</h2>
+        <div id="pause-menu-content">
+          <div class="setting-item">
+            <label for="pause-mouse-speed-slider">
+              鼠标转动速度: <span class="mouse-speed-value" id="pause-mouse-speed-display">1.0x</span>
+            </label>
+            <input
+              type="range"
+              id="pause-mouse-speed-slider"
+              min="0.3"
+              max="3"
+              step="0.1"
+              value="1.0"
+            />
+          </div>
+        </div>
+        <div class="pause-button-group">
+          <button id="btn-resume">继续游戏</button>
+          <button id="btn-restart">重新开始</button>
+        </div>
+        <div class="pause-hint">点击“继续游戏”按钮返回</div>
+      </div>
+
+      <div
+        id="game-info"
+        style="
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          color: white;
+          font-size: 24px;
+          text-shadow: 2px 2px 0 #000;
+          display: none;
+        "
+      >
+        <div id="game-hint-text" style="color: #ff4444; margin-bottom: 10px">
+          快点找到逃生的门，避免被幽灵抓到
+        </div>
+        <div id="info-switch"></div>
+        <div id="info-items"></div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/game.ts"></script>
+  </body>
+</html>
