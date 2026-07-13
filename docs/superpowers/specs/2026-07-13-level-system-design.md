@@ -34,9 +34,8 @@
 demon 仓库（level 分支，单个 Cloudflare Pages 项目）
 ├── index.html             游戏页（现有）
 ├── public/
-│   ├── _redirects         ★Pages 200 重写：/level → /level.html（无后缀路径直达编辑器）
 │   └── level.html         ★关卡编辑器页（自小程序编辑器复制改造，自包含单文件，
-│                            放 public/ 由 Vite 原样拷贝，线上路径 /level）
+│                            放 public/ 由 Vite 原样拷贝，线上路径 /level——Pages 原生无后缀路由）
 ├── functions/             ★Cloudflare Pages Functions（部署时自动生效）
 │   └── api/
 │       └── levels.ts        GET 公开读关卡 ／ PUT 口令写入 KV
@@ -60,8 +59,8 @@ demon 仓库（level 分支，单个 Cloudflare Pages 项目）
 
 一个 Cloudflare Pages 项目绑定游戏域名 `demon.dengjiabei.cn`：
 
-- `/` 即游戏；`/level`（无 .html 后缀）即关卡编辑器——由 `public/_redirects` 的
-  200 重写规则（`/level /level.html 200`，含 `/level/` 变体）呈现，地址栏保持 `/level`。
+- `/` 即游戏；`/level`（无 .html 后缀）即关卡编辑器——Cloudflare Pages 原生支持
+  无后缀 HTML 路由（`/level.html` 自动 308 → `/level`），无需任何重写配置。
 - 同域同源：编辑器与游戏共享同一套 Functions 与 KV，保存即生效，无 CORS。
 - 本地 dev/preview 由 vite.config.ts 内置中间件做同样的 `/level` 重写，行为与生产一致。
 
@@ -193,7 +192,7 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 - KV：binding 名 `LEVELS_KV`，key `levels`，value 为完整 JSON 字符串。
 - 服务端校验复用 `src/levels.ts` 的 `parseLevelsData`。
 
-编辑器入口路由不走 Functions：`public/_redirects` 的 `/level /level.html 200` 重写由 Pages 静态层处理（含 `/level/` 变体）；本地 dev/preview 由 vite.config.ts 的同名中间件保证一致行为。
+编辑器入口路由不走 Functions：Cloudflare Pages 原生对 HTML 资产做无后缀路由（`/level` 直接服务 `level.html`，`/level.html` 308 到 `/level`）；本地 dev/preview 由 vite.config.ts 的中间件保证一致行为。注意不要在 `_redirects` 里叠加 `/level → /level.html` 的 200 重写——会与原生机制形成 308 循环（实测踩坑）。
 
 ## 9. 本地开发与部署
 
@@ -241,4 +240,5 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 
 ## 13. 变更记录
 
-- 2026-07-13（初版获批实施完成后调整）：编辑器入口由独立域名 `demon-level.dengjiabei.cn` 改为主站路径 `https://demon.dengjiabei.cn/level`（无 .html 后缀）。实现由 `functions/_middleware.ts` Host 分流改为 `public/_redirects` 200 重写 + Vite dev/preview 中间件；只需绑定一个域名。本文档相关小节已同步更新。
+- 2026-07-13（初版获批实施完成后调整）：编辑器入口由独立域名 `demon-level.dengjiabei.cn` 改为主站路径 `https://demon.dengjiabei.cn/level`（无 .html 后缀）。实现由 `functions/_middleware.ts` Host 分流改为 Vite dev/preview 中间件 + Pages 原生无后缀路由；只需绑定一个域名。本文档相关小节已同步更新。
+- 2026-07-13（首次部署实测修正）：曾用 `public/_redirects` 做 `/level → /level.html` 200 重写，实测与 Pages 原生 pretty URL 机制冲突产生 308 自我重定向循环，已删除；线上完全依赖原生路由。另确认既有 `demon` Pages 项目生产分支为 `main`，`pnpm deploy` 已固化 `--branch=main`。

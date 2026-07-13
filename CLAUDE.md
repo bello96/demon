@@ -56,8 +56,8 @@ horror-maze-adventure/
 ├── docs/
 │   └── DEPLOY.md                # 部署指引：一次性配置 / 日常发布 / 本地联调 / 部署后验证清单
 ├── public/
-│   ├── _redirects                # Pages 200 重写：/level → /level.html（无后缀路径直达编辑器）
-│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；线上路径 /level）
+│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；线上路径 /level，
+│                                   Pages 原生无后缀路由，本地 dev 由 vite 中间件等效重写）
 ├── functions/                   # Cloudflare Pages Functions（部署时自动生效）
 │   └── api/
 │       └── levels.ts               # GET 公开读关卡 ／ PUT 口令写入 KV（服务端复用 src/levels.ts 的校验）

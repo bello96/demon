@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p functions",
     "test": "vitest run",
     "dev:cf": "vite build && wrangler pages dev dist",
-    "deploy": "vite build && wrangler pages deploy dist"
+    "deploy": "vite build && wrangler pages deploy dist --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "three": "^0.168.0"
