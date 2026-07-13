@@ -14,6 +14,12 @@ interface TranslationStrings {
   doorLocked: string
   gotKey: string
   gotRadar: string
+  selectLevel: string
+  levelLabel: string
+  lockedTip: string
+  nextLevel: string
+  backToSelect: string
+  allCleared: string
 }
 
 const translations: Record<string, TranslationStrings> = {
@@ -31,7 +37,13 @@ const translations: Record<string, TranslationStrings> = {
     switchNotFound: '未找到开关',
     doorLocked: '门锁住了 (需要钥匙)',
     gotKey: '[已获得钥匙，赶快找到逃生的门吧] ',
-    gotRadar: '[已获得雷达，可在小地图查看幽灵位置] '
+    gotRadar: '[已获得雷达，可在小地图查看幽灵位置] ',
+    selectLevel: '选择关卡',
+    levelLabel: '第 {n} 关',
+    lockedTip: '未解锁',
+    nextLevel: '进入下一关',
+    backToSelect: '返回选关',
+    allCleared: '全部通关！'
   },
   en: {
     title: 'Blocky Horror',
@@ -47,7 +59,13 @@ const translations: Record<string, TranslationStrings> = {
     switchNotFound: 'Switch not found',
     doorLocked: 'Door locked (Key required)',
     gotKey: '[Key obtained, find the exit!] ',
-    gotRadar: '[Radar obtained, ghost visible on minimap] '
+    gotRadar: '[Radar obtained, ghost visible on minimap] ',
+    selectLevel: 'Select Level',
+    levelLabel: 'Level {n}',
+    lockedTip: 'Locked',
+    nextLevel: 'Next Level',
+    backToSelect: 'Back to Levels',
+    allCleared: 'All Levels Cleared!'
   }
 }
 
@@ -76,9 +94,13 @@ function updateDOM(): void {
     'died-text': 'died',
     'respawn-btn': 'respawn',
     'escaped-text': 'escaped',
-    'play-again-btn': 'playAgain',
     'interaction-msg': 'interact',
-    'game-hint-text': 'hint'
+    'game-hint-text': 'hint',
+    'level-select-title': 'selectLevel',
+    'next-level-btn': 'nextLevel',
+    'win-menu-btn': 'backToSelect',
+    'dead-menu-btn': 'backToSelect',
+    'btn-menu': 'backToSelect'
   }
 
   for (const [id, key] of Object.entries(map)) {

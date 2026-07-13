@@ -6,20 +6,10 @@ import { drawMinimap } from './minimap'
 import { SoundGenerator } from './sound_generator'
 import { initLocalization, t } from './localization'
 import { loadingManager, texturesLoaded } from './utils'
-import type { RoomLayout } from './types'
-
-const roomLayout: RoomLayout[] = [
-  { x: 5, z: 5, w: 15, d: 15 },
-  { x: 25, z: 5, w: 12, d: 20 },
-  { x: 42, z: 10, w: 20, d: 15 },
-  { x: 5, z: 25, w: 15, d: 15 },
-  { x: 25, z: 30, w: 25, d: 25 },
-  { x: 55, z: 30, w: 15, d: 15 },
-  { x: 10, z: 45, w: 12, d: 25 },
-  { x: 30, z: 60, w: 20, d: 10 },
-  { x: 60, z: 5, w: 10, d: 10 },
-  { x: 60, z: 55, w: 15, d: 15 }
-]
+import { BUILTIN_LEVELS, getLevelConfig, type LevelConfig } from './levels'
+import { loadLevels } from './level_service'
+import { isLevelUnlocked, migrateProgress } from './progress'
+import { LIT_AMBIENT, LIT_FOG_FAR } from './constants'
 
 class Game {
   private isPlaying = false
@@ -40,6 +30,10 @@ class Game {
   private world: World
   private player: Player
   private ghost: Ghost
+
+  private levels: LevelConfig[] = BUILTIN_LEVELS
+  private level = 1
+  private levelCleared = 0
 
   constructor() {
     initLocalization()
@@ -69,18 +63,168 @@ class Game {
     this.heartbeat.setVolume(0)
 
     this.world = new World(this.scene)
-    this.world.generateMansion(roomLayout)
 
     this.player = new Player(this.camera, this.scene, this.world, this.listener, this.soundGen, this.ambientLight)
-    this.player.spawn()
 
     this.ghost = new Ghost(this.scene, this.world, this.player, this.listener, this.soundGen)
-    this.ghost.spawn()
 
     this.clock = new THREE.Clock()
 
     this.setupInput()
+    void this.bootstrap()
     requestAnimationFrame(this.animate)
+  }
+
+  /** 启动引导：纹理与云端关卡都就绪后才建世界、开放开始按钮 */
+  private async bootstrap(): Promise<void> {
+    const [, loaded] = await Promise.all([texturesLoaded, loadLevels()])
+    this.levels = loaded.levels
+    if (loaded.source === 'builtin') {
+      console.warn('[game] 使用内置关卡（云端不可用或暂无数据）')
+    }
+
+    const reachedRaw = Number(localStorage.getItem('levelReached') ?? NaN)
+    const clearedRaw = Number(localStorage.getItem('levelCleared') ?? NaN)
+    const p = migrateProgress(reachedRaw, clearedRaw, this.levels.length)
+    this.level = p.level
+    this.levelCleared = p.cleared
+
+    this.buildLevel(this.level)
+    this.renderLevelGrid()
+
+    const startBtn = document.getElementById('btn-start') as HTMLButtonElement | null
+    if (startBtn) {
+      startBtn.disabled = false
+    }
+  }
+
+  /** 按关卡配置重建世界并应用环境/幽灵参数（进关、重玩、切关共用） */
+  private buildLevel(n: number): void {
+    const cfg = getLevelConfig(this.levels, n)
+    this.world.regenerate(cfg.rooms, { doorCount: cfg.doorCount, corridorRects: cfg.corridorRects })
+    this.updateSwitchInfo()
+    this.player.reset()
+    this.ghost.reset()
+    this.player.spawn()
+    this.ghost.spawn()
+    this.applyLevelConfig(cfg)
+  }
+
+  private applyLevelConfig(cfg: LevelConfig): void {
+    this.ghost.setSpeed(cfg.ghostSpeed)
+    this.ghost.setEnabled(cfg.ghostEnabled)
+    this.player.setEnvDark(cfg.darkAmbient, cfg.darkFogFar)
+
+    const fog = this.scene.fog as THREE.Fog
+    if (cfg.lightsOn && this.world.lightSwitch) {
+      // 开局灯已亮：开关拨到 ON，环境用统一亮值
+      this.world.lightSwitch.isOn = true
+      this.world.lightSwitch.handle.rotation.x = Math.PI / 4
+      this.ambientLight.intensity = LIT_AMBIENT
+      fog.far = LIT_FOG_FAR
+    } else {
+      this.ambientLight.intensity = cfg.darkAmbient
+      fog.far = cfg.darkFogFar
+    }
+
+    const infoLevel = document.getElementById('info-level')
+    if (infoLevel) {
+      infoLevel.innerText = t('levelLabel', { n: this.level })
+    }
+  }
+
+  /** 渲染选关网格：已解锁可点、未解锁灰显、当前关高亮 */
+  private renderLevelGrid(): void {
+    const grid = document.getElementById('level-grid')
+    if (!grid) {
+      return
+    }
+    grid.innerHTML = ''
+    for (let n = 1; n <= this.levels.length; n++) {
+      const btn = document.createElement('button')
+      btn.className = 'level-tile'
+      btn.textContent = String(n)
+      const unlocked = isLevelUnlocked(n, this.levelCleared)
+      if (!unlocked) {
+        btn.classList.add('locked')
+        btn.disabled = true
+        btn.title = t('lockedTip')
+      }
+      if (n === this.level) {
+        btn.classList.add('current')
+      }
+      btn.addEventListener('click', () => this.startGame(n))
+      grid.appendChild(btn)
+    }
+  }
+
+  /** 从菜单进入第 n 关（点关卡格子或「开始游戏」按钮） */
+  private startGame(n: number): void {
+    if (!isLevelUnlocked(n, this.levelCleared)) {
+      return
+    }
+    if (this.listener.context.state === 'suspended') {
+      void this.listener.context.resume()
+    }
+    this.level = n
+    localStorage.setItem('levelReached', String(n))
+    this.buildLevel(n)
+    document.getElementById('menu')!.classList.add('hidden')
+    this.enterPlay()
+  }
+
+  /** 通用"进入游玩态"：隐藏结算层、锁指针、复位时钟 */
+  private enterPlay(): void {
+    document.getElementById('game-over')!.classList.add('hidden')
+    document.getElementById('game-win')!.classList.add('hidden')
+    document.getElementById('pause-menu')!.classList.add('hidden')
+    document.getElementById('game-info')!.style.display = 'block'
+
+    const cabinetOverlay = document.getElementById('cabinet-overlay')
+    if (cabinetOverlay) {
+      cabinetOverlay.style.display = 'none'
+    }
+    const interactionMsg = document.getElementById('interaction-msg')
+    if (interactionMsg) {
+      interactionMsg.style.display = 'none'
+    }
+    this.stopHeartbeatUI()
+
+    this.isGameOver = false
+    this.isPaused = false
+    this.isPlaying = true
+    this.shouldLockPointer = true
+    this.clock.getDelta()
+    document.body.requestPointerLock()
+    this.syncMouseSensitivityToSliders()
+  }
+
+  /** 回主菜单（选关）：胜利/死亡/暂停三处「返回选关」共用 */
+  private showMenu(): void {
+    this.isPlaying = false
+    this.isPaused = false
+    this.isGameOver = false
+    this.shouldLockPointer = false
+    document.exitPointerLock()
+    this.stopHeartbeatUI()
+    document.getElementById('game-over')!.classList.add('hidden')
+    document.getElementById('game-win')!.classList.add('hidden')
+    document.getElementById('pause-menu')!.classList.add('hidden')
+    document.getElementById('game-info')!.style.display = 'none'
+    this.renderLevelGrid()
+    document.getElementById('menu')!.classList.remove('hidden')
+  }
+
+  /** 停心跳音效与 UI（多处复用） */
+  private stopHeartbeatUI(): void {
+    if (this.heartbeat.isPlaying) {
+      this.heartbeat.stop()
+    }
+    const heartbeatUi = document.getElementById('heartbeat-ui')
+    if (heartbeatUi) {
+      heartbeatUi.style.opacity = '0'
+      heartbeatUi.style.animation = 'none'
+    }
   }
 
   /**
@@ -105,7 +249,6 @@ class Game {
       // 100% 短暂停留后淡出，避免瞬间跳变
       setTimeout(() => {
         if (loaderArea) { loaderArea.style.display = 'none' }
-        if (startBtn) { startBtn.disabled = false }
       }, 150)
     })
   }
@@ -145,25 +288,20 @@ class Game {
       if (this.isPlaying && !this.isPaused) { this.player.handleMouseMove(e) }
     })
 
-    document.getElementById('btn-start')?.addEventListener('click', () => {
-      if (this.listener.context.state === 'suspended') {
-        this.listener.context.resume()
-      }
-      document.body.requestPointerLock()
-      document.getElementById('menu')!.classList.add('hidden')
-      document.getElementById('game-info')!.style.display = 'block'
-
-      this.updateSwitchInfo()
-
-      this.isPlaying = true
-      this.shouldLockPointer = true
-      this.syncMouseSensitivityToSliders()
-    })
+    document.getElementById('btn-start')?.addEventListener('click', () => this.startGame(this.level))
 
     document.getElementById('btn-resume')?.addEventListener('click', () => this.togglePauseMenu())
     document.getElementById('btn-restart')?.addEventListener('click', () => this.restart())
     document.getElementById('respawn-btn')?.addEventListener('click', () => this.restart())
-    document.getElementById('play-again-btn')?.addEventListener('click', () => this.restart())
+    document.getElementById('next-level-btn')?.addEventListener('click', () => {
+      this.level = Math.min(this.level + 1, this.levels.length)
+      localStorage.setItem('levelReached', String(this.level))
+      this.buildLevel(this.level)
+      this.enterPlay()
+    })
+    document.getElementById('win-menu-btn')?.addEventListener('click', () => this.showMenu())
+    document.getElementById('dead-menu-btn')?.addEventListener('click', () => this.showMenu())
+    document.getElementById('btn-menu')?.addEventListener('click', () => this.showMenu())
 
     const bindSpeedSlider = (sliderId: string, displayId: string): void => {
       const slider = document.getElementById(sliderId) as HTMLInputElement | null
@@ -203,40 +341,8 @@ class Game {
   }
 
   private restart(): void {
-    if (this.heartbeat.isPlaying) { this.heartbeat.stop() }
-    const heartbeatUi = document.getElementById('heartbeat-ui')
-    if (heartbeatUi) {
-      heartbeatUi.style.opacity = '0'
-      heartbeatUi.style.animation = 'none'
-    }
-
-    document.getElementById('game-over')!.classList.add('hidden')
-    document.getElementById('game-win')!.classList.add('hidden')
-    document.getElementById('pause-menu')!.classList.add('hidden')
-
-    const cabinetOverlay = document.getElementById('cabinet-overlay')
-    if (cabinetOverlay) { cabinetOverlay.style.display = 'none' }
-
-    const interactionMsg = document.getElementById('interaction-msg')
-    if (interactionMsg) { interactionMsg.style.display = 'none' }
-
-    this.ambientLight.intensity = 0.05
-    ;(this.scene.fog as THREE.Fog).far = 12
-
-    this.world.regenerate(roomLayout)
-    this.updateSwitchInfo()
-
-    this.player.reset()
-    this.ghost.reset()
-    this.player.spawn()
-    this.ghost.spawn()
-
-    this.isGameOver = false
-    this.isPaused = false
-    this.isPlaying = true
-    this.shouldLockPointer = true
-    this.clock.getDelta()
-    document.body.requestPointerLock()
+    this.buildLevel(this.level)
+    this.enterPlay()
   }
 
   private updateSwitchInfo(): void {
@@ -279,6 +385,20 @@ class Game {
       this.isPlaying = false
       this.shouldLockPointer = false
       document.exitPointerLock()
+
+      this.levelCleared = Math.max(this.levelCleared, this.level)
+      localStorage.setItem('levelCleared', String(this.levelCleared))
+      const wonAll = this.level >= this.levels.length
+      localStorage.setItem('levelReached', String(wonAll ? 1 : this.level + 1))
+
+      const escapedText = document.getElementById('escaped-text')
+      if (escapedText) {
+        escapedText.innerText = wonAll ? t('allCleared') : t('escaped')
+      }
+      const nextBtn = document.getElementById('next-level-btn') as HTMLButtonElement | null
+      if (nextBtn) {
+        nextBtn.style.display = wonAll ? 'none' : 'inline-block'
+      }
       document.getElementById('game-win')!.classList.remove('hidden')
     }
 
@@ -289,7 +409,7 @@ class Game {
     const threshold = 15
     const ui = document.getElementById('heartbeat-ui')
 
-    if (dist < threshold && !this.player.hasWon && !this.isGameOver) {
+    if (this.ghost.isEnabled && dist < threshold && !this.player.hasWon && !this.isGameOver) {
       const intensity = 1 - dist / threshold
 
       if (!this.heartbeat.isPlaying) { this.heartbeat.play() }

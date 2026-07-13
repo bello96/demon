@@ -191,6 +191,37 @@
         transform: none;
       }
 
+      #level-select {
+        margin: 20px 0;
+        text-align: left;
+      }
+      #level-select-title {
+        color: #ccc;
+        font-size: 22px;
+        margin-bottom: 10px;
+      }
+      #level-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+      }
+      .level-tile {
+        padding: 10px 0;
+        font-size: 26px;
+        min-width: 0;
+      }
+      .level-tile.locked {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .level-tile.locked:hover {
+        background: #444;
+        transform: none;
+      }
+      .level-tile.current {
+        border-color: #ffaa00;
+        color: #ffaa00;
+      }
       #loader-area {
         margin: 20px 0;
       }
@@ -326,6 +357,10 @@
           <p id="instructions-text">
             WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒
           </p>
+          <div id="level-select">
+            <div id="level-select-title">选择关卡</div>
+            <div id="level-grid"></div>
+          </div>
           <p
             id="hint-text"
             style="color: #ff4444; font-size: 26px; margin-top: -10px"
@@ -368,6 +403,7 @@
       <div id="game-over" class="hidden">
         <h1 id="died-text">你死了</h1>
         <button id="respawn-btn">重生</button>
+        <button id="dead-menu-btn">返回选关</button>
       </div>
 
       <div
@@ -383,7 +419,8 @@
         "
       >
         <h1 id="escaped-text" style="color: #0a0">逃脱成功</h1>
-        <button id="play-again-btn">再玩一次</button>
+        <button id="next-level-btn">进入下一关</button>
+        <button id="win-menu-btn">返回选关</button>
       </div>
 
       <div id="pause-menu" class="hidden">
@@ -406,6 +443,7 @@
         <div class="pause-button-group">
           <button id="btn-resume">继续游戏</button>
           <button id="btn-restart">重新开始</button>
+          <button id="btn-menu">返回选关</button>
         </div>
         <div class="pause-hint">点击“继续游戏”按钮返回</div>
       </div>
@@ -425,6 +463,7 @@
         <div id="game-hint-text" style="color: #ff4444; margin-bottom: 10px">
           快点找到逃生的门，避免被幽灵抓到
         </div>
+        <div id="info-level"></div>
         <div id="info-switch"></div>
         <div id="info-items"></div>
       </div>
