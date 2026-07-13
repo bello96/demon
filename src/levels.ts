@@ -46,6 +46,10 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
   }
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
   const rectOk = (r: unknown): boolean => {
+    // 元素可能是 null / 原始值：先确认是对象再读属性，避免抛 TypeError
+    if (typeof r !== 'object' || r === null) {
+      return false
+    }
     const q = r as { x?: unknown; z?: unknown; w?: unknown; d?: unknown }
     return (
       num(q.x) &&
@@ -62,6 +66,10 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
   }
   const out: LevelConfig[] = []
   for (const lv of arr) {
+    // 关卡元素可能是 null / 原始值：先确认是对象再读属性，整包拒绝而不是抛异常
+    if (typeof lv !== 'object' || lv === null) {
+      return null
+    }
     const l = lv as {
       rooms?: unknown[]
       corridorRects?: unknown[]

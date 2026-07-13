@@ -62,6 +62,12 @@ describe('parseLevelsData', () => {
     expect(parseLevelsData({})).toBeNull()
     expect(parseLevelsData({ levels: [] })).toBeNull()
   })
+
+  it('数组元素为 null → 返回 null 而不是抛异常', () => {
+    expect(parseLevelsData({ levels: [null] })).toBeNull()
+    expect(parseLevelsData({ levels: [{ ...validLevel, rooms: [null] }] })).toBeNull()
+    expect(parseLevelsData({ levels: [{ ...validLevel, corridorRects: [null] }] })).toBeNull()
+  })
 })
 
 describe('BUILTIN_LEVELS / getLevelConfig', () => {
