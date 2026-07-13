@@ -16,8 +16,8 @@
 ## 日常发布
 
 代码更新：`pnpm typecheck && pnpm test && pnpm deploy`
-关卡更新：无需发版——打开 `https://demon-level.dengjiabei.cn/` 画好点
-「☁ 保存到云端」即可（KV 全球同步最长约 1 分钟）。
+关卡更新：无需发版——打开 `https://demon-level.dengjiabei.cn/`
+画好后点击「☁ 保存到云端」即可（KV 全球同步最长约 1 分钟）。
 
 ## 本地联调
 
