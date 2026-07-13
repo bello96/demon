@@ -1,12 +1,12 @@
 import * as THREE from 'three'
 import { materials } from './utils'
-import type { Room, RoomLayout, Interactable, LightSwitch } from './types'
+import type { Room, RoomLayout, Interactable, LightSwitch, MansionOptions } from './types'
 
 export class World {
   readonly BLOCK_SIZE = 1
   readonly WALL_HEIGHT = 4
-  readonly MAP_WIDTH = 80
-  readonly MAP_DEPTH = 80
+  readonly MAP_WIDTH = 100
+  readonly MAP_DEPTH = 100
 
   grid: number[][] = []
   furnitureBlocks = new Set<string>()
@@ -66,7 +66,53 @@ export class World {
     this.worldGroup.add(mesh)
   }
 
-  generateMansion(roomLayout: RoomLayout[]): void {
+  /** L 形挖廊：先沿 x 在 z1 行走到 x2，再沿 z 在 x2 列走到 z2 */
+  private carveL(x1: number, z1: number, x2: number, z2: number): void {
+    for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
+      this.grid[x][z1] = 0
+    }
+    for (let z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
+      this.grid[x2][z] = 0
+    }
+  }
+
+  /** 从 (sx,sz) 出发四邻可达的空地集合（key = x*MAP_DEPTH+z）；起点无效/非空地返回 null */
+  private floodFrom(sx: number, sz: number): Set<number> | null {
+    if (sx < 0 || sz < 0 || sx >= this.MAP_WIDTH || sz >= this.MAP_DEPTH) {
+      return null
+    }
+    if (this.grid[sx][sz] !== 0) {
+      return null
+    }
+    const visited = new Set<number>([sx * this.MAP_DEPTH + sz])
+    const stack: number[] = [sx * this.MAP_DEPTH + sz]
+    while (stack.length > 0) {
+      const key = stack.pop()!
+      const x = Math.floor(key / this.MAP_DEPTH)
+      const z = key % this.MAP_DEPTH
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx
+        const nz = z + dz
+        if (nx < 0 || nx >= this.MAP_WIDTH || nz < 0 || nz >= this.MAP_DEPTH) {
+          continue
+        }
+        const nk = nx * this.MAP_DEPTH + nz
+        if (this.grid[nx][nz] === 0 && !visited.has(nk)) {
+          visited.add(nk)
+          stack.push(nk)
+        }
+      }
+    }
+    return visited
+  }
+
+  /** 两格之间是否存在四邻路径（防死局兜底用） */
+  private gridPathExists(x1: number, z1: number, x2: number, z2: number): boolean {
+    const region = this.floodFrom(x1, z1)
+    return region !== null && region.has(x2 * this.MAP_DEPTH + z2)
+  }
+
+  generateMansion(roomLayout: RoomLayout[], opts: MansionOptions = {}): void {
     // 1. Initialize grid (all walls)
     for (let x = 0; x < this.MAP_WIDTH; x++) {
       this.grid[x] = new Array<number>(this.MAP_DEPTH).fill(1)
@@ -87,31 +133,59 @@ export class World {
       }
     })
 
-    // 3. Connect rooms via corridors
-    for (let i = 0; i < rooms.length - 1; i++) {
-      const r1 = rooms[i]
-      const r2 = rooms[i + 1]
-      const c1x = Math.floor(r1.x + r1.w / 2)
-      const c1z = Math.floor(r1.z + r1.d / 2)
-      const c2x = Math.floor(r2.x + r2.w / 2)
-      const c2z = Math.floor(r2.z + r2.d / 2)
-
-      for (let x = Math.min(c1x, c2x); x <= Math.max(c1x, c2x); x++) {
-        this.grid[x][c1z] = 0
-      }
-      for (let z = Math.min(c1z, c2z); z <= Math.max(c1z, c2z); z++) {
-        this.grid[c2x][z] = 0
+    // 2.5 手画走廊矩形（关卡编辑器产物）：按矩形原样挖空，宽度即矩形短边；
+    // 与房间/彼此重叠或贴边自然打通。出界部分裁剪（四周至少留 1 格外墙）
+    const corridorRects = opts.corridorRects ?? []
+    for (const c of corridorRects) {
+      const x1 = Math.min(this.MAP_WIDTH - 2, c.x + c.w - 1)
+      const z1 = Math.min(this.MAP_DEPTH - 2, c.z + c.d - 1)
+      for (let x = Math.max(1, c.x); x <= x1; x++) {
+        for (let z = Math.max(1, c.z); z <= z1; z++) {
+          this.grid[x][z] = 0
+        }
       }
     }
 
-    // 4. Collect walkable nodes
+    // 3. 独木不成林：连通性只看格级事实（房间贴边/重叠、走廊搭接都算通），
+    // 绝不凭空生成走廊。唯一的例外是防死局兜底——绕过编辑器校验的孤岛房间
+    // 沿前一房间补一条直廊，否则钥匙/门落在孤岛里就是死局
+    for (let i = 1; i < rooms.length; i++) {
+      const head = rooms[0]
+      const cur = rooms[i]
+      if (
+        !this.gridPathExists(
+          Math.floor(head.x + head.w / 2),
+          Math.floor(head.z + head.d / 2),
+          Math.floor(cur.x + cur.w / 2),
+          Math.floor(cur.z + cur.d / 2),
+        )
+      ) {
+        const prev = rooms[i - 1]
+        this.carveL(
+          Math.floor(prev.x + prev.w / 2),
+          Math.floor(prev.z + prev.d / 2),
+          Math.floor(cur.x + cur.w / 2),
+          Math.floor(cur.z + cur.d / 2),
+        )
+      }
+    }
+
+    // 4. Collect walkable nodes —— 只收与 1 号房连通的主区域：
+    // 悬空的手画走廊（没接到任何房间）不能成为幽灵的出生/巡逻点
     const offsetX = -this.MAP_WIDTH / 2
     const offsetZ = -this.MAP_DEPTH / 2
     const totalCells = this.MAP_WIDTH * this.MAP_DEPTH
+    const mainRegion = this.floodFrom(
+      rooms.length > 0 ? Math.floor(rooms[0].x + rooms[0].w / 2) : -1,
+      rooms.length > 0 ? Math.floor(rooms[0].z + rooms[0].d / 2) : -1,
+    )
 
     for (let x = 0; x < this.MAP_WIDTH; x++) {
       for (let z = 0; z < this.MAP_DEPTH; z++) {
-        if (this.grid[x][z] === 0) {
+        if (
+          this.grid[x][z] === 0 &&
+          (mainRegion === null || mainRegion.has(x * this.MAP_DEPTH + z))
+        ) {
           this.walkableNodes.push(new THREE.Vector3(x + offsetX, 1, z + offsetZ))
         }
       }
@@ -476,7 +550,7 @@ export class World {
     this.rooms = rooms
   }
 
-  regenerate(roomLayout: RoomLayout[]): void {
+  regenerate(roomLayout: RoomLayout[], opts: MansionOptions = {}): void {
     this.disposeWorldResources()
     this.worldGroup.clear()
     this.grid = []
@@ -489,7 +563,7 @@ export class World {
     this.switchRoomId = -1
     this.spawnRoomId = -1
     this.wallMapCanvas = null
-    this.generateMansion(roomLayout)
+    this.generateMansion(roomLayout, opts)
   }
 
   /**
