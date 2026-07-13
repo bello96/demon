@@ -198,7 +198,8 @@
         text-align: center;
         pointer-events: auto;
         z-index: 20;
-        width: min(90vw, 560px);
+        /* 6 张 100px 卡片 + 间距 + 内边距 */
+        width: min(94vw, 780px);
       }
       #level-select-title {
         color: #fff;
@@ -209,30 +210,81 @@
       }
       #level-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(6, 100px);
+        gap: 12px;
+        justify-content: center;
+        /* 关卡多时容器内滚动 */
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 6px 4px;
+      }
+      #level-grid::-webkit-scrollbar {
+        width: 10px;
+      }
+      #level-grid::-webkit-scrollbar-track {
+        background: #1a1a1a;
+        border: 1px solid #333;
+      }
+      #level-grid::-webkit-scrollbar-thumb {
+        background: #555;
+        border: 1px solid #777;
       }
       #level-back-btn {
         margin-top: 30px;
         font-size: 24px;
         padding: 12px 36px;
       }
-      .level-tile {
-        padding: 10px 0;
-        font-size: 26px;
-        min-width: 0;
+      /* 关卡卡片：100×100 地图缩略图 + 左上角序号 */
+      .level-card {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        padding: 0;
+        background: #0c0a08;
+        border: 3px solid #555;
+        font-size: 22px;
+        overflow: hidden;
       }
-      .level-tile.locked {
+      .level-card canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+      }
+      .level-card:hover {
+        background: #0c0a08;
+        border-color: #aaa;
+      }
+      .level-card-no {
+        position: absolute;
+        top: 2px;
+        left: 6px;
+        color: #fff;
+        text-shadow: 2px 2px 0 #000;
+        pointer-events: none;
+      }
+      .level-card.locked {
         opacity: 0.35;
         cursor: not-allowed;
       }
-      .level-tile.locked:hover {
-        background: #444;
+      .level-card.locked:hover {
+        border-color: #555;
         transform: none;
       }
-      .level-tile.current {
+      .level-card.current {
         border-color: #ffaa00;
+      }
+      .level-card.current .level-card-no {
         color: #ffaa00;
+      }
+      .level-card-lock {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        pointer-events: none;
       }
       #loader-area {
         margin: 20px 0;

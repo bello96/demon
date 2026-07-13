@@ -1,6 +1,28 @@
 import type { World } from './world'
 import type { Player } from './player'
 import type { Ghost } from './ghost'
+import type { LevelConfig } from './levels'
+
+/**
+ * 把关卡布局画成缩略图（选关卡片用）：黑底 + 走廊暗块 + 房间亮块。
+ * 关卡坐标系恰为 100×100，画布 100×100 时 1 格 = 1 像素。
+ */
+export function drawLevelThumbnail(canvas: HTMLCanvasElement, cfg: LevelConfig): void {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return
+  }
+  ctx.fillStyle = '#0c0a08'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#3a352d'
+  for (const c of cfg.corridorRects ?? []) {
+    ctx.fillRect(c.x, c.z, c.w, c.d)
+  }
+  ctx.fillStyle = '#6b6156'
+  for (const r of cfg.rooms) {
+    ctx.fillRect(r.x, r.z, r.w, r.d)
+  }
+}
 
 export function drawMinimap(canvasId: string, world: World, player: Player, ghost: Ghost): void {
   const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null

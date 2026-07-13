@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { World } from './world'
 import { Player } from './player'
 import { Ghost } from './ghost'
-import { drawMinimap } from './minimap'
+import { drawLevelThumbnail, drawMinimap } from './minimap'
 import { SoundGenerator } from './sound_generator'
 import { initLocalization, t } from './localization'
 import { loadingManager, texturesLoaded } from './utils'
@@ -140,7 +140,7 @@ class Game {
     }
   }
 
-  /** 渲染选关网格：已解锁可点、未解锁灰显、当前关高亮 */
+  /** 渲染选关卡片：每关一张地图缩略图卡片，已解锁可点、未解锁灰显加锁、当前关橙框 */
   private renderLevelGrid(): void {
     const grid = document.getElementById('level-grid')
     if (!grid) {
@@ -149,13 +149,28 @@ class Game {
     grid.innerHTML = ''
     for (let n = 1; n <= this.levels.length; n++) {
       const btn = document.createElement('button')
-      btn.className = 'level-tile'
-      btn.textContent = String(n)
+      btn.className = 'level-card'
+
+      const thumb = document.createElement('canvas')
+      thumb.width = 100
+      thumb.height = 100
+      drawLevelThumbnail(thumb, this.levels[n - 1])
+      btn.appendChild(thumb)
+
+      const no = document.createElement('span')
+      no.className = 'level-card-no'
+      no.textContent = String(n)
+      btn.appendChild(no)
+
       const unlocked = isLevelUnlocked(n, this.levelCleared)
       if (!unlocked) {
         btn.classList.add('locked')
         btn.disabled = true
         btn.title = t('lockedTip')
+        const lock = document.createElement('span')
+        lock.className = 'level-card-lock'
+        lock.textContent = '🔒'
+        btn.appendChild(lock)
       }
       if (n === this.level) {
         btn.classList.add('current')
