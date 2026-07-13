@@ -191,19 +191,31 @@
         transform: none;
       }
 
-      #level-select {
-        margin: 20px 0;
-        text-align: left;
+      #level-panel {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 40px;
+        border: 4px solid #555;
+        text-align: center;
+        pointer-events: auto;
+        z-index: 20;
+        width: min(90vw, 560px);
       }
       #level-select-title {
-        color: #ccc;
-        font-size: 22px;
-        margin-bottom: 10px;
+        color: #fff;
+        font-size: 44px;
+        margin-bottom: 26px;
+        text-shadow: 3px 3px 0 #000;
+        letter-spacing: 4px;
       }
       #level-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
         gap: 10px;
+      }
+      #level-back-btn {
+        margin-top: 30px;
+        font-size: 24px;
+        padding: 12px 36px;
       }
       .level-tile {
         padding: 10px 0;
@@ -357,10 +369,6 @@
           <p id="instructions-text">
             WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒
           </p>
-          <div id="level-select">
-            <div id="level-select-title">选择关卡</div>
-            <div id="level-grid"></div>
-          </div>
           <p
             id="hint-text"
             style="color: #ff4444; font-size: 26px; margin-top: -10px"
@@ -398,6 +406,12 @@
 
           <button id="btn-start" disabled>开始游戏</button>
         </div>
+      </div>
+
+      <div id="level-panel" class="hidden">
+        <div id="level-select-title">选择关卡</div>
+        <div id="level-grid"></div>
+        <button id="level-back-btn">返回主菜单</button>
       </div>
 
       <div id="game-over" class="hidden">

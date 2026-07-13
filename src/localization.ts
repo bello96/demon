@@ -19,6 +19,7 @@ interface TranslationStrings {
   lockedTip: string
   nextLevel: string
   backToSelect: string
+  backToMain: string
   allCleared: string
 }
 
@@ -43,6 +44,7 @@ const translations: Record<string, TranslationStrings> = {
     lockedTip: '未解锁',
     nextLevel: '进入下一关',
     backToSelect: '返回选关',
+    backToMain: '返回主菜单',
     allCleared: '全部通关！'
   },
   en: {
@@ -65,6 +67,7 @@ const translations: Record<string, TranslationStrings> = {
     lockedTip: 'Locked',
     nextLevel: 'Next Level',
     backToSelect: 'Back to Levels',
+    backToMain: 'Back to Menu',
     allCleared: 'All Levels Cleared!'
   }
 }
@@ -97,6 +100,7 @@ function updateDOM(): void {
     'interaction-msg': 'interact',
     'game-hint-text': 'hint',
     'level-select-title': 'selectLevel',
+    'level-back-btn': 'backToMain',
     'next-level-btn': 'nextLevel',
     'win-menu-btn': 'backToSelect',
     'dead-menu-btn': 'backToSelect',

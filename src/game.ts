@@ -98,7 +98,6 @@ class Game {
       this.levelCleared = Math.min(this.levelCleared, this.levels.length)
       this.buildLevel(1)
     } finally {
-      this.renderLevelGrid()
       const startBtn = document.getElementById('btn-start') as HTMLButtonElement | null
       if (startBtn) {
         startBtn.disabled = false
@@ -166,7 +165,20 @@ class Game {
     }
   }
 
-  /** 从菜单进入第 n 关（点关卡格子或「开始游戏」按钮） */
+  /** 打开选关面板：主菜单「开始游戏」与游戏内「返回选关」的共同入口 */
+  private showLevelSelect(): void {
+    this.renderLevelGrid()
+    document.getElementById('menu')!.classList.add('hidden')
+    document.getElementById('level-panel')!.classList.remove('hidden')
+  }
+
+  /** 选关面板「返回主菜单」：回到首屏（标题 / 说明 / 鼠标速度设置） */
+  private backToMainMenu(): void {
+    document.getElementById('level-panel')!.classList.add('hidden')
+    document.getElementById('menu')!.classList.remove('hidden')
+  }
+
+  /** 从选关面板进入第 n 关 */
   private startGame(n: number): void {
     if (!isLevelUnlocked(n, this.levelCleared)) {
       return
@@ -178,6 +190,7 @@ class Game {
     localStorage.setItem('levelReached', String(n))
     this.buildLevel(n)
     document.getElementById('menu')!.classList.add('hidden')
+    document.getElementById('level-panel')!.classList.add('hidden')
     this.enterPlay()
   }
 
@@ -207,7 +220,7 @@ class Game {
     this.syncMouseSensitivityToSliders()
   }
 
-  /** 回主菜单（选关）：胜利/死亡/暂停三处「返回选关」共用 */
+  /** 游戏内退出回选关面板：胜利/死亡/暂停三处「返回选关」共用 */
   private showMenu(): void {
     this.isPlaying = false
     this.isPaused = false
@@ -219,8 +232,7 @@ class Game {
     document.getElementById('game-win')!.classList.add('hidden')
     document.getElementById('pause-menu')!.classList.add('hidden')
     document.getElementById('game-info')!.style.display = 'none'
-    this.renderLevelGrid()
-    document.getElementById('menu')!.classList.remove('hidden')
+    this.showLevelSelect()
   }
 
   /** 停心跳音效与 UI（多处复用） */
@@ -271,6 +283,7 @@ class Game {
       if (e && e.target) {
         const target = e.target as HTMLElement
         if (target.closest('#menu') ||
+            target.closest('#level-panel') ||
             target.closest('#pause-menu') ||
             target.closest('#game-over') ||
             target.closest('#game-win')) {
@@ -295,7 +308,8 @@ class Game {
       if (this.isPlaying && !this.isPaused) { this.player.handleMouseMove(e) }
     })
 
-    document.getElementById('btn-start')?.addEventListener('click', () => this.startGame(this.level))
+    document.getElementById('btn-start')?.addEventListener('click', () => this.showLevelSelect())
+    document.getElementById('level-back-btn')?.addEventListener('click', () => this.backToMainMenu())
 
     document.getElementById('btn-resume')?.addEventListener('click', () => this.togglePauseMenu())
     document.getElementById('btn-restart')?.addEventListener('click', () => this.restart())
