@@ -129,6 +129,10 @@ export const BUILTIN_LEVELS: LevelConfig[] = (() => {
 
 /** 从给定关卡数组取第 level 关；越界钳制到 [1, levels.length]（存档损坏兜底） */
 export function getLevelConfig(levels: LevelConfig[], level: number): LevelConfig {
+  if (levels.length === 0) {
+    // 防御：空数组时退回应急关卡，避免返回 undefined 违背签名
+    return FALLBACK_LEVELS[0]
+  }
   const idx = Math.min(Math.max(Math.round(level), 1), levels.length) - 1
   return levels[idx]
 }

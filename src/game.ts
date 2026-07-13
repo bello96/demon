@@ -237,7 +237,7 @@ class Game {
 
   /**
    * 绑定资源加载进度 UI：进度条根据 loadingManager 事件更新，
-   * texturesLoaded resolve 后启用「开始游戏」按钮并隐藏进度条。
+   * texturesLoaded resolve 后隐藏进度条（「开始游戏」按钮的启用由 bootstrap 统一负责）。
    */
   private setupLoader(): void {
     const barFill = document.getElementById('loader-bar-fill')

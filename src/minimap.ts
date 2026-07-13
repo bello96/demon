@@ -52,7 +52,7 @@ export function drawMinimap(canvasId: string, world: World, player: Player, ghos
   }
 
   // Ghost (requires radar)
-  if (player.hasRadar) {
+  if (player.hasRadar && ghost.isEnabled) {
     const gx = ghost.mesh.position.x - offsetX
     const gz = ghost.mesh.position.z - offsetZ
     ctx.fillStyle = '#f00'

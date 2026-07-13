@@ -412,7 +412,7 @@
         <div class="header">
           <div class="btns">
             <button id="btnCloudSave">☁ 保存到云端</button>
-            <button id="btnCopy">复制jSON</button>
+            <button id="btnCopy">复制 JSON</button>
             <button id="btnClear" class="gray">清空</button>
             <div class="more-wrap">
               <button id="btnMore" class="gray">更多 ▾</button>
@@ -1511,6 +1511,8 @@
           }
           if (res.ok) {
             alert('已保存，全网生效（边缘节点最长约 1 分钟同步）')
+            // 保存成功后画布内容即云端内容：清掉草稿，之后的草稿都代表"未上云的新改动"
+            localStorage.removeItem('nc-editor-draft')
           } else {
             const err = await res.json().catch(() => ({}))
             alert('保存失败（HTTP ' + res.status + '）：' + (err.detail || err.error || '未知错误'))
@@ -1536,39 +1538,45 @@
       }
       ;(async function init() {
         setModeUI()
-        // 优先加载云端正式数据；失败/为空再回退本地草稿
-        let cloudLoaded = false
+        // 先读本地草稿（存在即代表有未上云的改动——云端保存成功时会清草稿）
+        let draft = null
+        try {
+          const d = JSON.parse(localStorage.getItem('nc-editor-draft'))
+          if (d && Array.isArray(d.levels) && d.levels.length) draft = d
+        } catch {}
+        const restoreDraft = () => {
+          levels = draft.levels.map((lv) => ({
+            rooms: lv.rooms || [],
+            corrRects: lv.corrRects || [],
+            darkAmbient: lv.darkAmbient || 0.2,
+            darkFogFar: lv.darkFogFar || 20,
+            ghostSpeed: lv.ghostSpeed || 2.8,
+            lightsOn: lv.lightsOn === true,
+            ghostEnabled: lv.ghostEnabled !== false,
+          }))
+          cur = Math.min(draft.cur || 0, levels.length - 1)
+        }
+        // 优先加载云端正式数据；与本地草稿冲突时让用户二选一，绝不静默覆盖草稿
+        let loaded = false
         try {
           const res = await fetch('/api/levels', { cache: 'no-store' })
           if (res.ok) {
             const data = await res.json()
             if (data && Array.isArray(data.levels) && data.levels.length) {
-              loadLevelsData(data.levels)
-              cloudLoaded = true
+              if (
+                !draft ||
+                confirm('云端已有正式关卡数据，本地还有一份未上云的草稿。\n「确定」= 加载云端数据（草稿将被覆盖）；「取消」= 恢复本地草稿。')
+              ) {
+                loadLevelsData(data.levels)
+              } else {
+                restoreDraft()
+              }
+              loaded = true
             }
           }
         } catch {}
-        if (!cloudLoaded) {
-          try {
-            const d = JSON.parse(localStorage.getItem('nc-editor-draft'))
-            if (
-              d &&
-              Array.isArray(d.levels) &&
-              d.levels.length &&
-              confirm('云端暂无数据。检测到本地草稿，是否恢复？（取消 = 空白画布）')
-            ) {
-              levels = d.levels.map((lv) => ({
-                rooms: lv.rooms || [],
-                corrRects: lv.corrRects || [],
-                darkAmbient: lv.darkAmbient || 0.2,
-                darkFogFar: lv.darkFogFar || 20,
-                ghostSpeed: lv.ghostSpeed || 2.8,
-                lightsOn: lv.lightsOn === true,
-                ghostEnabled: lv.ghostEnabled !== false,
-              }))
-              cur = Math.min(d.cur || 0, levels.length - 1)
-            }
-          } catch {}
+        if (!loaded && draft && confirm('云端暂无数据。检测到本地草稿，是否恢复？（取消 = 空白画布）')) {
+          restoreDraft()
         }
         render()
       })()
