@@ -390,14 +390,30 @@ export class World {
       this.createRoomNumber(r.x + offsetX + r.w / 2, 0.02, r.z + offsetZ + r.d / 2, r.id)
     })
 
-    // 12. Distribute items — each in a different room, none in spawn room
-    const availableRooms = rooms.filter(r => r.id !== this.spawnRoomId)
-    for (let i = availableRooms.length - 1; i > 0; i--) {
+    // 12. Distribute items — 尽量分散：洗牌后的非出生房排前、出生房垫底，
+    // 按序轮转分配；房间不够时绕回列表头复用，允许多件道具同房共处
+    const others = rooms.filter(r => r.id !== this.spawnRoomId)
+    for (let i = others.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [availableRooms[i], availableRooms[j]] = [availableRooms[j], availableRooms[i]]
+      [others[i], others[j]] = [others[j], others[i]]
     }
+    if (spawnRoom) {
+      others.push(spawnRoom)
+    }
+    if (others.length === 0) {
+      // 布局为空（全部越界被丢弃）：无处安置任何东西，直接收尾
+      this.rooms = rooms
+      return
+    }
+    let roomCursor = 0
+    const nextRoom = (): Room => others[roomCursor++ % others.length]
 
-    const [doorRoom, switchRoom, keyRoom, radarRoom, ...cabinetRooms] = availableRooms
+    const doorRoom = nextRoom()
+    const switchRoom = nextRoom()
+    const keyRoom = nextRoom()
+    const radarRoom = nextRoom()
+    // 柜子占满剩余未用房间；一间不剩时也放 1 个，保证总有处可躲
+    const cabinetRooms = roomCursor < others.length ? others.slice(roomCursor) : [nextRoom()]
 
     const randomInRoom = (r: Room): { x: number; z: number } => ({
       x: r.x + offsetX + 1 + Math.random() * (r.w - 2),
