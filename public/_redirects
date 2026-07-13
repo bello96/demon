@@ -1,0 +1,3 @@
+# 关卡编辑器无后缀路径：200 重写（地址栏保持 /level，由 Pages 静态层处理）
+/level /level.html 200
+/level/ /level.html 200

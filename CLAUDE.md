@@ -56,9 +56,9 @@ horror-maze-adventure/
 ├── docs/
 │   └── DEPLOY.md                # 部署指引：一次性配置 / 日常发布 / 本地联调 / 部署后验证清单
 ├── public/
-│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；域名分流后即编辑器首页）
+│   ├── _redirects                # Pages 200 重写：/level → /level.html（无后缀路径直达编辑器）
+│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；线上路径 /level）
 ├── functions/                   # Cloudflare Pages Functions（部署时自动生效）
-│   ├── _middleware.ts            # 编辑器域名（demon-level.dengjiabei.cn）根路径重写到 /level.html
 │   └── api/
 │       └── levels.ts               # GET 公开读关卡 ／ PUT 口令写入 KV（服务端复用 src/levels.ts 的校验）
 ├── tests/                        # vitest 单测：levels / progress / level_service

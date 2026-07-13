@@ -14,7 +14,7 @@
 
 1. 地图从硬编码改为**关卡配置驱动**，与小程序共用同一套关卡 JSON 格式。
 2. 游戏增加**选关菜单 + 顺序解锁**（通过第 N 关解锁第 N+1 关，进度存浏览器）。
-3. 增加网页版**关卡编辑器**，访问 `https://demon-level.dengjiabei.cn/` 直达；点击「保存到云端」后**全网所有玩家生效**。
+3. 增加网页版**关卡编辑器**，访问 `https://demon.dengjiabei.cn/level` 直达（无 .html 后缀）；点击「保存到云端」后**全网所有玩家生效**。
 4. 写操作用**管理口令**保护；读操作公开。
 
 ## 2. 已确认的关键决策
@@ -34,10 +34,10 @@
 demon 仓库（level 分支，单个 Cloudflare Pages 项目）
 ├── index.html             游戏页（现有）
 ├── public/
+│   ├── _redirects         ★Pages 200 重写：/level → /level.html（无后缀路径直达编辑器）
 │   └── level.html         ★关卡编辑器页（自小程序编辑器复制改造，自包含单文件，
-│                            放 public/ 由 Vite 原样拷贝，dev/build 均可直达 /level.html）
+│                            放 public/ 由 Vite 原样拷贝，线上路径 /level）
 ├── functions/             ★Cloudflare Pages Functions（部署时自动生效）
-│   ├── _middleware.ts       Host 分流：demon-level.dengjiabei.cn 的 `/` 重写到 /level.html
 │   └── api/
 │       └── levels.ts        GET 公开读关卡 ／ PUT 口令写入 KV
 ├── src/
@@ -58,16 +58,16 @@ demon 仓库（level 分支，单个 Cloudflare Pages 项目）
 
 ### 部署拓扑
 
-一个 Cloudflare Pages 项目绑定两个自定义域名：
+一个 Cloudflare Pages 项目绑定游戏域名 `demon.dengjiabei.cn`：
 
-- 游戏主域名（现有/待定，任意）→ `/` 即游戏
-- `demon-level.dengjiabei.cn` → `_middleware.ts` 检测到该 Host 时把 `/` 重写为 `/level.html`（编辑器）
-
-两个域名共享同一套 Functions 与 KV，"编辑器域名保存 → 游戏域名生效"天然成立，无 CORS。
+- `/` 即游戏；`/level`（无 .html 后缀）即关卡编辑器——由 `public/_redirects` 的
+  200 重写规则（`/level /level.html 200`，含 `/level/` 变体）呈现，地址栏保持 `/level`。
+- 同域同源：编辑器与游戏共享同一套 Functions 与 KV，保存即生效，无 CORS。
+- 本地 dev/preview 由 vite.config.ts 内置中间件做同样的 `/level` 重写，行为与生产一致。
 
 CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 
-1. 创建 Pages 项目并绑定上述两个域名。
+1. 创建 Pages 项目并绑定游戏域名。
 2. `wrangler kv namespace create LEVELS_KV`，把生成的 id 填入 `wrangler.toml`（或控制台绑定，binding 名 `LEVELS_KV`）。
 3. Pages 环境变量设置 `LEVEL_ADMIN_TOKEN=<管理口令>`。
 
@@ -193,7 +193,7 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 - KV：binding 名 `LEVELS_KV`，key `levels`，value 为完整 JSON 字符串。
 - 服务端校验复用 `src/levels.ts` 的 `parseLevelsData`。
 
-`functions/_middleware.ts`：`request.headers.get('host') === 'demon-level.dengjiabei.cn'` 且路径为 `/` 时，用 `env.ASSETS.fetch` 改写到 `/level.html`；其余请求放行。编辑器域名可提取为常量便于修改。
+编辑器入口路由不走 Functions：`public/_redirects` 的 `/level /level.html 200` 重写由 Pages 静态层处理（含 `/level/` 变体）；本地 dev/preview 由 vite.config.ts 的同名中间件保证一致行为。
 
 ## 9. 本地开发与部署
 
@@ -238,3 +238,7 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 - 关卡分享链接、关卡名称/作者等元数据字段。
 - 账号系统、多人编辑、编辑历史/回滚（KV 只存最新一版）。
 - 小程序仓库的任何改动。
+
+## 13. 变更记录
+
+- 2026-07-13（初版获批实施完成后调整）：编辑器入口由独立域名 `demon-level.dengjiabei.cn` 改为主站路径 `https://demon.dengjiabei.cn/level`（无 .html 后缀）。实现由 `functions/_middleware.ts` Host 分流改为 `public/_redirects` 200 重写 + Vite dev/preview 中间件；只需绑定一个域名。本文档相关小节已同步更新。
