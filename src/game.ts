@@ -390,6 +390,10 @@ class Game {
       localStorage.setItem('levelCleared', String(this.levelCleared))
       const wonAll = this.level >= this.levels.length
       localStorage.setItem('levelReached', String(wonAll ? 1 : this.level + 1))
+      if (wonAll) {
+        // 全通关：内存关卡同步回 1，与 levelReached 一致（返回选关后从头开新轮）
+        this.level = 1
+      }
 
       const escapedText = document.getElementById('escaped-text')
       if (escapedText) {
