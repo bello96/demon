@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { t } from './localization'
+import { LIT_AMBIENT, LIT_FOG_FAR } from './constants'
 import type { World } from './world'
 import type { SoundGenerator } from './sound_generator'
 
@@ -27,6 +28,10 @@ export class Player {
   hidingType: string | null = null
   flashlightOn = true
   flashlightIntensity = 2
+
+  // 关灯态的环境值，由关卡配置注入（默认沿用原硬编码值）
+  private darkAmbient = 0.05
+  private darkFogFar = 12
 
   hasKey = false
   hasRadar = false
@@ -96,6 +101,12 @@ export class Player {
     localStorage.setItem('mouseSensitivity', String(value))
   }
 
+  /** 注入本关关灯态的环境光/雾距（进关时由 Game 调用） */
+  setEnvDark(ambient: number, fogFar: number): void {
+    this.darkAmbient = ambient
+    this.darkFogFar = fogFar
+  }
+
   handleInput(e: KeyboardEvent, isDown: boolean): void {
     this.keys[e.code] = isDown
     if (isDown) {
@@ -160,13 +171,13 @@ export class Player {
         if (switchObj) {
           // 状态源用 switchObj.isOn，避免多开关场景下 ambientLight 被其它因素影响导致状态漂移
           if (!switchObj.isOn) {
-            this.ambientLight.intensity = 0.8
-            ;(this.scene.fog as THREE.Fog).far = 100
+            this.ambientLight.intensity = LIT_AMBIENT
+            ;(this.scene.fog as THREE.Fog).far = LIT_FOG_FAR
             switchObj.handle.rotation.x = Math.PI / 4
             switchObj.isOn = true
           } else {
-            this.ambientLight.intensity = 0.05
-            ;(this.scene.fog as THREE.Fog).far = 12
+            this.ambientLight.intensity = this.darkAmbient
+            ;(this.scene.fog as THREE.Fog).far = this.darkFogFar
             switchObj.handle.rotation.x = -Math.PI / 4
             switchObj.isOn = false
           }

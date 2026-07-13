@@ -80,6 +80,8 @@ export class Ghost {
   private target = new THREE.Vector3()
   private state: 'patrol' | 'chase' = 'patrol'
   private speed = 2.8
+  private enabled = true
+  private posSound: THREE.PositionalAudio | null = null
 
   private path: THREE.Vector3[] = []
   private pathIndex = 0
@@ -135,6 +137,7 @@ export class Ghost {
         sound.setLoop(true)
         sound.setVolume(1.5)
         sound.play()
+        this.posSound = sound
       }
       this.mesh.add(sound)
     }
@@ -166,6 +169,29 @@ export class Ghost {
     this.lastPathTime = 0
     this.chaseStuckSince = 0
     this.chaseBlockedUntil = 0
+  }
+
+  /** 幽灵巡逻速度（追击自动 ×1.5），由关卡配置注入 */
+  setSpeed(speed: number): void {
+    this.speed = speed
+  }
+
+  get isEnabled(): boolean {
+    return this.enabled
+  }
+
+  /** 无幽灵关：隐藏本体、停位置音效、update 短路（不追不杀） */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled
+    this.mesh.visible = enabled
+    if (this.posSound) {
+      if (enabled && !this.posSound.isPlaying) {
+        this.posSound.play()
+      }
+      if (!enabled && this.posSound.isPlaying) {
+        this.posSound.stop()
+      }
+    }
   }
 
   /** Bresenham line-of-sight on the grid — O(distance), zero allocations */
@@ -289,6 +315,10 @@ export class Ghost {
   }
 
   update(dt: number): boolean {
+    if (!this.enabled) {
+      return false
+    }
+
     const dist = this.mesh.position.distanceTo(this.player.pos)
     const now = Date.now()
 
