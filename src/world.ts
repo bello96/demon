@@ -544,14 +544,27 @@ export class World {
       })
     }
 
+    // 出生格坐标：柜子绝不允许压在这里，否则玩家开局卡死在家具内
+    const spawnCellX = Math.round(spawnNode.x)
+    const spawnCellZ = Math.round(spawnNode.z)
+
     // Cabinets — one per remaining room, random 1 or 2 layers.
     // 第一个保证是 2 层，避免极端情况下玩家完全无处可躲；
     // 2 层可躲进去并加入 interactables，1 层只是障碍物不参与交互。
     for (let i = 0; i < cabinetRooms.length; i++) {
       const r = cabinetRooms[i]
-      const cp = randomInRoom(r)
-      const cx = Math.round(cp.x)
-      const cz = Math.round(cp.z)
+      let cp = randomInRoom(r)
+      let cx = Math.round(cp.x)
+      let cz = Math.round(cp.z)
+      // 与出生格重合则重掷；极端不中则放弃本柜（宁缺毋卡死）
+      for (let attempt = 0; attempt < 8 && cx === spawnCellX && cz === spawnCellZ; attempt++) {
+        cp = randomInRoom(r)
+        cx = Math.round(cp.x)
+        cz = Math.round(cp.z)
+      }
+      if (cx === spawnCellX && cz === spawnCellZ) {
+        continue
+      }
       const isTall = i === 0 || Math.random() < 0.5
       this.addFurniture(cx, 1, cz, materials.cabinet)
       if (isTall) {
