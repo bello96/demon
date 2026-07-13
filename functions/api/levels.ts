@@ -23,11 +23,23 @@ async function handleGet(ctx: EventContext<Env, string, unknown>): Promise<Respo
   return new Response(raw, { status: 200, headers: JSON_HEADERS })
 }
 
-async function handlePut(ctx: EventContext<Env, string, unknown>): Promise<Response> {
+/** 校验请求头里的管理口令；未配置环境变量时一律拒绝，避免"忘配 = 裸奔" */
+function isAuthorized(ctx: EventContext<Env, string, unknown>): boolean {
   const token = ctx.env.LEVEL_ADMIN_TOKEN
   const auth = ctx.request.headers.get('Authorization') ?? ''
-  // 未配置口令时拒绝一切写入，避免"忘配环境变量 = 裸奔"
-  if (!token || auth !== `Bearer ${token}`) {
+  return Boolean(token) && auth === `Bearer ${token}`
+}
+
+/** POST = 口令预校验（编辑器进门用）：只验 Authorization，不读不写任何数据 */
+function handleVerify(ctx: EventContext<Env, string, unknown>): Response {
+  if (!isAuthorized(ctx)) {
+    return json({ error: 'unauthorized' }, 401)
+  }
+  return json({ ok: true }, 200)
+}
+
+async function handlePut(ctx: EventContext<Env, string, unknown>): Promise<Response> {
+  if (!isAuthorized(ctx)) {
     return json({ error: 'unauthorized' }, 401)
   }
   let body: unknown
@@ -48,6 +60,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   switch (ctx.request.method) {
     case 'GET':
       return handleGet(ctx)
+    case 'POST':
+      return handleVerify(ctx)
     case 'PUT':
       return handlePut(ctx)
     default:
