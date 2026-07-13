@@ -242,3 +242,4 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 
 - 2026-07-13（初版获批实施完成后调整）：编辑器入口由独立域名 `demon-level.dengjiabei.cn` 改为主站路径 `https://demon.dengjiabei.cn/level`（无 .html 后缀）。实现由 `functions/_middleware.ts` Host 分流改为 Vite dev/preview 中间件 + Pages 原生无后缀路由；只需绑定一个域名。本文档相关小节已同步更新。
 - 2026-07-13（首次部署实测修正）：曾用 `public/_redirects` 做 `/level → /level.html` 200 重写，实测与 Pages 原生 pretty URL 机制冲突产生 308 自我重定向循环，已删除；线上完全依赖原生路由。另确认既有 `demon` Pages 项目生产分支为 `main`，`pnpm run deploy` 已固化 `--branch=main`。
+- 2026-07-13（上线后迭代）：① 游戏首页流程改为「开始游戏 → 选关面板（独立面板，含返回主菜单）→ 进关」，游戏内三处「返回选关」统一落到该面板；② `/level` 编辑器加进门口令门禁：玻璃遮罩 + 游戏风格弹框，口令经新增的 `POST /api/levels`（只验 Authorization 不读写数据）服务端预校验通过才放行，localStorage 记住后刷新静默校验免输入，接口不可达可「离线进入」；③ 关卡 Schema 新增可选布尔 `frozen`（缺省 false）：冻结关随数据上云保留但游戏端（`loadLevels` / `BUILTIN_LEVELS`）过滤跳过、后续关卡顺位前移；`parseLevelsData` 新增整体规则「至少一个未冻结关卡」（全部冻结整包拒绝），编辑器关卡行提供 ❄ 冻结 / ▶ 解冻，冻结与删除均有「至少保留一个启用关」守卫。
