@@ -1,0 +1,224 @@
+{
+  "levels": [
+    {
+      "rooms": [
+        {
+          "x": 10,
+          "z": 10,
+          "w": 80,
+          "d": 80
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true
+    },
+    {
+      "rooms": [
+        {
+          "x": 10,
+          "z": 10,
+          "w": 30,
+          "d": 30
+        },
+        {
+          "x": 50,
+          "z": 41,
+          "w": 40,
+          "d": 49
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true,
+      "corridorRects": [
+        {
+          "x": 40,
+          "z": 23,
+          "w": 30,
+          "d": 1
+        },
+        {
+          "x": 69,
+          "z": 24,
+          "w": 1,
+          "d": 17
+        }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "x": 10,
+          "z": 10,
+          "w": 30,
+          "d": 20
+        },
+        {
+          "x": 59,
+          "z": 10,
+          "w": 21,
+          "d": 20
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true,
+      "corridorRects": [
+        {
+          "x": 40,
+          "z": 20,
+          "w": 19,
+          "d": 1
+        }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "x": 19,
+          "z": 10,
+          "w": 52,
+          "d": 21
+        },
+        {
+          "x": 19,
+          "z": 50,
+          "w": 53,
+          "d": 25
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true,
+      "corridorRects": [
+        {
+          "x": 42,
+          "z": 31,
+          "w": 1,
+          "d": 19
+        }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "x": 20,
+          "z": 16,
+          "w": 50,
+          "d": 43
+        },
+        {
+          "x": 9,
+          "z": 70,
+          "w": 22,
+          "d": 21
+        },
+        {
+          "x": 80,
+          "z": 59,
+          "w": 16,
+          "d": 33
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true,
+      "corridorRects": [
+        {
+          "x": 30,
+          "z": 59,
+          "w": 1,
+          "d": 11
+        },
+        {
+          "x": 31,
+          "z": 79,
+          "w": 49,
+          "d": 1
+        }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "x": 15,
+          "z": 9,
+          "w": 69,
+          "d": 13
+        },
+        {
+          "x": 11,
+          "z": 34,
+          "w": 30,
+          "d": 11
+        },
+        {
+          "x": 58,
+          "z": 34,
+          "w": 33,
+          "d": 17
+        },
+        {
+          "x": 15,
+          "z": 64,
+          "w": 33,
+          "d": 19
+        },
+        {
+          "x": 67,
+          "z": 66,
+          "w": 30,
+          "d": 25
+        }
+      ],
+      "doorCount": 1,
+      "darkAmbient": 0.2,
+      "darkFogFar": 20,
+      "ghostSpeed": 2.6,
+      "lightsOn": false,
+      "ghostEnabled": true,
+      "corridorRects": [
+        {
+          "x": 28,
+          "z": 22,
+          "w": 1,
+          "d": 12
+        },
+        {
+          "x": 41,
+          "z": 41,
+          "w": 17,
+          "d": 1
+        },
+        {
+          "x": 76,
+          "z": 51,
+          "w": 1,
+          "d": 15
+        },
+        {
+          "x": 27,
+          "z": 45,
+          "w": 1,
+          "d": 19
+        }
+      ]
+    }
+  ]
+}

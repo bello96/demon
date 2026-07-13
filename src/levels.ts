@@ -1,0 +1,126 @@
+import type { RoomLayout } from './types'
+import rawLevelsData from './levels_data.json'
+
+/** 单个关卡的完整难度配置：地图布局 + 环境氛围 + 幽灵参数（与小程序版格式一致） */
+export interface LevelConfig {
+  /** 房间布局（100×100 网格内；重叠/贴边 = 拼接成不规则大房间） */
+  rooms: RoomLayout[]
+  /** 手画走廊矩形（关卡编辑器产物）：原样挖空、宽度任意；房间贴边/重叠即连通，无需走廊 */
+  corridorRects?: RoomLayout[]
+  /** 逃生门数量：当前产品设计恒为 1——唯一的门，每局随机分到某个房间的随机墙面 */
+  doorCount: number
+  /** 关灯时环境光强度：可逐关变暗（开灯后各关一样亮） */
+  darkAmbient: number
+  /** 关灯时可视距离（米）：雾可逐关变浓 */
+  darkFogFar: number
+  /** 幽灵巡逻速度：追击时 ×1.5；玩家步行 6 / 疾跑 9，上限须留出逃生余地 */
+  ghostSpeed: number
+  /** 开局房间灯是否已打开（默认 false=摸黑找开关；开着时玩家仍可去把它关掉） */
+  lightsOn: boolean
+  /** 本关是否出现幽灵（默认 true；false=无追逐的纯逃脱关） */
+  ghostEnabled: boolean
+}
+
+// 内置 JSON 被改坏（数值非法）时的应急单关：保证游戏能开、不黑屏，控制台有报错提示
+const FALLBACK_LEVELS: LevelConfig[] = [
+  {
+    rooms: [{ x: 30, z: 30, w: 20, d: 20 }],
+    doorCount: 1,
+    darkAmbient: 0.2,
+    darkFogFar: 20,
+    ghostSpeed: 2.6,
+    lightsOn: false,
+    ghostEnabled: true,
+  },
+]
+
+/**
+ * 解析并校验关卡 JSON（关卡编辑器导出的格式，顶层 { levels: [...] }）；
+ * 任何一处非法都整体拒绝返回 null——宁可回退，也不能拿半坏的数据生成世界。
+ * 游戏端与 Cloudflare Functions 端共用本函数，保持校验单一来源。
+ */
+export function parseLevelsData(data: unknown): LevelConfig[] | null {
+  const arr = (data as { levels?: unknown })?.levels
+  if (!Array.isArray(arr) || arr.length === 0) {
+    return null
+  }
+  const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+  const rectOk = (r: unknown): boolean => {
+    const q = r as { x?: unknown; z?: unknown; w?: unknown; d?: unknown }
+    return (
+      num(q.x) &&
+      num(q.z) &&
+      num(q.w) &&
+      num(q.d) &&
+      q.x >= 1 &&
+      q.z >= 1 &&
+      q.w >= 1 &&
+      q.d >= 1 &&
+      q.x + q.w < 100 &&
+      q.z + q.d < 100
+    )
+  }
+  const out: LevelConfig[] = []
+  for (const lv of arr) {
+    const l = lv as {
+      rooms?: unknown[]
+      corridorRects?: unknown[]
+      darkAmbient?: unknown
+      darkFogFar?: unknown
+      ghostSpeed?: unknown
+      lightsOn?: unknown
+      ghostEnabled?: unknown
+    }
+    if (!Array.isArray(l.rooms) || l.rooms.length === 0 || !l.rooms.every(rectOk)) {
+      return null
+    }
+    if (
+      l.corridorRects !== undefined &&
+      (!Array.isArray(l.corridorRects) || !l.corridorRects.every(rectOk))
+    ) {
+      return null
+    }
+    if (!num(l.darkAmbient) || !num(l.darkFogFar) || !num(l.ghostSpeed)) {
+      return null
+    }
+    if (l.darkAmbient <= 0 || l.darkFogFar < 5 || l.ghostSpeed <= 0 || l.ghostSpeed > 5.9) {
+      return null
+    }
+    // 两个开关都是可选布尔：缺省用默认值，写了就必须是 true/false
+    if (l.lightsOn !== undefined && typeof l.lightsOn !== 'boolean') {
+      return null
+    }
+    if (l.ghostEnabled !== undefined && typeof l.ghostEnabled !== 'boolean') {
+      return null
+    }
+    out.push({
+      rooms: (l.rooms as RoomLayout[]).map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d })),
+      corridorRects: l.corridorRects
+        ? (l.corridorRects as RoomLayout[]).map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d }))
+        : undefined,
+      doorCount: 1,
+      darkAmbient: l.darkAmbient,
+      darkFogFar: l.darkFogFar,
+      ghostSpeed: l.ghostSpeed,
+      lightsOn: l.lightsOn === true,
+      ghostEnabled: l.ghostEnabled !== false,
+    })
+  }
+  return out
+}
+
+/** 内置兜底关卡（src/levels_data.json）；构建期数据非法时回退应急单关 */
+export const BUILTIN_LEVELS: LevelConfig[] = (() => {
+  const parsed = parseLevelsData(rawLevelsData)
+  if (!parsed) {
+    console.error('[levels] src/levels_data.json 数据非法，已启用应急关卡（请检查 JSON）')
+    return FALLBACK_LEVELS
+  }
+  return parsed
+})()
+
+/** 从给定关卡数组取第 level 关；越界钳制到 [1, levels.length]（存档损坏兜底） */
+export function getLevelConfig(levels: LevelConfig[], level: number): LevelConfig {
+  const idx = Math.min(Math.max(Math.round(level), 1), levels.length) - 1
+  return levels[idx]
+}
