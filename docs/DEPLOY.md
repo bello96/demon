@@ -5,7 +5,7 @@
 1. **创建 KV 命名空间**：
    `npx wrangler kv namespace create LEVELS_KV`
    把输出的 id 填入 `wrangler.toml` 的 `kv_namespaces[0].id`。
-2. **首次部署**：`pnpm deploy`（= vite build + wrangler pages deploy dist，
+2. **首次部署**：`pnpm run deploy`（= vite build + wrangler pages deploy dist，
    项目名取 wrangler.toml 的 `name = "demon"`）。
 3. **控制台配置**（Cloudflare Dashboard → Pages → demon）：
    - Custom domains 绑定游戏域名 `demon.dengjiabei.cn`
@@ -13,13 +13,13 @@
      原生支持无后缀 HTML 路由，`/level.html` 会自动 308 到 `/level`，
      无需任何重写配置，也无需绑定额外域名）。
    - ⚠️ 生产分支是 `main`：手动部署必须带 `--branch=main` 才会发布到正式域名
-     （`pnpm deploy` 已内置该参数），否则会成为预览版。
+     （`pnpm run deploy` 已内置该参数），否则会成为预览版。
    - Settings → Environment variables 添加 `LEVEL_ADMIN_TOKEN=<管理口令>`
      （Production 环境；改完需重新部署一次生效）。
 
 ## 日常发布
 
-代码更新：`pnpm typecheck && pnpm test && pnpm deploy`
+代码更新：`pnpm typecheck && pnpm test && pnpm run deploy`
 关卡更新：无需发版——打开 `https://demon.dengjiabei.cn/level`
 画好后点击「☁ 保存到云端」即可（KV 全球同步最长约 1 分钟）。
 

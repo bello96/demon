@@ -9,7 +9,7 @@
 **方块噩梦 (Blocky Horror / Horror Maze Adventure)** —— 一款基于 Three.js 的第一人称恐怖迷宫逃脱游戏。玩家需要在程序生成的豪宅中寻找钥匙并通过出口逃脱，同时躲避一个会沿 A\* 路径追击的幽灵 AI。
 
 - **形态**：前端 SPA（游戏 + 关卡编辑器）+ Cloudflare Pages Functions 轻后端（关卡数据 REST API，KV 存储）
-- **部署**：Cloudflare Pages（`pnpm deploy` 一键发布；详见第 9 节与 `docs/DEPLOY.md`）
+- **部署**：Cloudflare Pages（`pnpm run deploy` 一键发布；详见第 9 节与 `docs/DEPLOY.md`）
 
 ---
 
@@ -35,7 +35,7 @@ pnpm preview        # 预览生产构建
 pnpm typecheck      # tsc --noEmit（含 functions/ 子项目），只做类型检查
 pnpm test           # vitest run，跑 levels / progress / level_service 单测
 pnpm dev:cf         # vite build + wrangler pages dev dist，本地模拟 Functions + KV（默认 http://localhost:8788）
-pnpm deploy         # vite build + wrangler pages deploy dist，发布到 Cloudflare Pages
+pnpm run deploy         # vite build + wrangler pages deploy dist，发布到 Cloudflare Pages
 ```
 
 > ⚠️ 本项目**没有配置 ESLint / Prettier**，目前仅靠 `tsc --noEmit` 做静态检查。修改前请至少运行 `pnpm typecheck` 再交付。
@@ -190,7 +190,7 @@ Game (game.ts)
 
 ## 9. 部署（Cloudflare Pages）
 
-`package.json` 已配置 `pnpm deploy`（= `vite build` + `wrangler pages deploy dist`，项目名取
+`package.json` 已配置 `pnpm run deploy`（= `vite build` + `wrangler pages deploy dist`，项目名取
 `wrangler.toml` 的 `name = "demon"`）。关卡系统还依赖 KV 命名空间绑定、`LEVEL_ADMIN_TOKEN`
 环境变量、编辑器域名分流等一次性配置；完整步骤、日常发布流程、本地联调注意事项与部署后验证
 清单见 [`docs/DEPLOY.md`](./docs/DEPLOY.md)。

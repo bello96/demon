@@ -87,7 +87,7 @@ pnpm typecheck
 pnpm test
 
 # 构建并部署到 Cloudflare Pages
-pnpm deploy
+pnpm run deploy
 ```
 
 > 使用 `npm` / `yarn` 亦可，把 `pnpm` 替换即可。
@@ -172,11 +172,11 @@ patrol ─── 看到玩家 ──→ chase
 
 ## ☁️ 部署（Cloudflare Pages）
 
-项目已内置 `pnpm deploy` 脚本（= `vite build` + `wrangler pages deploy dist`，
+项目已内置 `pnpm run deploy` 脚本（= `vite build` + `wrangler pages deploy dist`，
 `wrangler` 已是 devDependency，无需额外安装）：
 
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
 
 关卡系统还依赖 KV 命名空间绑定、`LEVEL_ADMIN_TOKEN` 环境变量、编辑器域名的 Pages

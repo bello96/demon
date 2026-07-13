@@ -202,7 +202,7 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 | `pnpm dev:cf` | 全链路联调：`vite build` 后 `wrangler pages dev dist`（本地模拟 Functions + KV + 口令，口令经 `.dev.vars` 提供） |
 | `pnpm typecheck` | tsc --noEmit（含 functions/ 目录） |
 | `pnpm test` | vitest 运行纯函数单测 |
-| `pnpm deploy` | `vite build` + `wrangler pages deploy dist` |
+| `pnpm run deploy` | `vite build` + `wrangler pages deploy dist` |
 
 新增 devDependencies：`wrangler`、`vitest`、`@cloudflare/workers-types`（供 functions/ 通过 typecheck）。`.dev.vars`（含本地口令）加入 `.gitignore`。
 
@@ -241,4 +241,4 @@ CF 控制台一次性配置清单（写入 `docs/DEPLOY.md`）：
 ## 13. 变更记录
 
 - 2026-07-13（初版获批实施完成后调整）：编辑器入口由独立域名 `demon-level.dengjiabei.cn` 改为主站路径 `https://demon.dengjiabei.cn/level`（无 .html 后缀）。实现由 `functions/_middleware.ts` Host 分流改为 Vite dev/preview 中间件 + Pages 原生无后缀路由；只需绑定一个域名。本文档相关小节已同步更新。
-- 2026-07-13（首次部署实测修正）：曾用 `public/_redirects` 做 `/level → /level.html` 200 重写，实测与 Pages 原生 pretty URL 机制冲突产生 308 自我重定向循环，已删除；线上完全依赖原生路由。另确认既有 `demon` Pages 项目生产分支为 `main`，`pnpm deploy` 已固化 `--branch=main`。
+- 2026-07-13（首次部署实测修正）：曾用 `public/_redirects` 做 `/level → /level.html` 200 重写，实测与 Pages 原生 pretty URL 机制冲突产生 308 自我重定向循环，已删除；线上完全依赖原生路由。另确认既有 `demon` Pages 项目生产分支为 `main`，`pnpm run deploy` 已固化 `--branch=main`。
