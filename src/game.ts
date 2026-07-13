@@ -77,24 +77,32 @@ class Game {
 
   /** 启动引导：纹理与云端关卡都就绪后才建世界、开放开始按钮 */
   private async bootstrap(): Promise<void> {
-    const [, loaded] = await Promise.all([texturesLoaded, loadLevels()])
-    this.levels = loaded.levels
-    if (loaded.source === 'builtin') {
-      console.warn('[game] 使用内置关卡（云端不可用或暂无数据）')
-    }
-
-    const reachedRaw = Number(localStorage.getItem('levelReached') ?? NaN)
-    const clearedRaw = Number(localStorage.getItem('levelCleared') ?? NaN)
-    const p = migrateProgress(reachedRaw, clearedRaw, this.levels.length)
-    this.level = p.level
-    this.levelCleared = p.cleared
-
-    this.buildLevel(this.level)
-    this.renderLevelGrid()
-
-    const startBtn = document.getElementById('btn-start') as HTMLButtonElement | null
-    if (startBtn) {
-      startBtn.disabled = false
+    try {
+      const [, loaded] = await Promise.all([texturesLoaded, loadLevels()])
+      this.levels = loaded.levels
+      if (loaded.source === 'builtin') {
+        console.warn('[game] 使用内置关卡（云端不可用或暂无数据）')
+      }
+      const reachedRaw = Number(localStorage.getItem('levelReached') ?? NaN)
+      const clearedRaw = Number(localStorage.getItem('levelCleared') ?? NaN)
+      const p = migrateProgress(reachedRaw, clearedRaw, this.levels.length)
+      this.level = p.level
+      this.levelCleared = p.cleared
+      this.buildLevel(this.level)
+    } catch (e) {
+      // 极端兜底：云端数据结构合法但几何异常等导致建关失败——回退内置第 1 关，
+      // 与 level_service 的"关卡加载失败绝不阻塞游戏启动"原则保持一致
+      console.error('[game] 启动建关失败，回退内置第 1 关：', e)
+      this.levels = BUILTIN_LEVELS
+      this.level = 1
+      this.levelCleared = Math.min(this.levelCleared, this.levels.length)
+      this.buildLevel(1)
+    } finally {
+      this.renderLevelGrid()
+      const startBtn = document.getElementById('btn-start') as HTMLButtonElement | null
+      if (startBtn) {
+        startBtn.disabled = false
+      }
     }
   }
 
@@ -235,7 +243,6 @@ class Game {
     const barFill = document.getElementById('loader-bar-fill')
     const pctText = document.getElementById('loader-percent')
     const loaderArea = document.getElementById('loader-area')
-    const startBtn = document.getElementById('btn-start') as HTMLButtonElement | null
 
     loadingManager.onProgress = (_url: string, loaded: number, total: number): void => {
       const pct = total > 0 ? Math.round((loaded / total) * 100) : 0
