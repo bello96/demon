@@ -25,8 +25,26 @@ function levelRouteRewrite(): Plugin {
   }
 }
 
+/**
+ * 本地 dev/preview 没有 Cloudflare Functions，/api 直接代理到线上——
+ * 编辑器进门口令校验、云端关卡加载/保存在本地与线上行为完全一致。
+ * 注意：本地「保存到云端」写的就是线上生产数据（与打开线上编辑器等效）。
+ */
+const apiProxy = {
+  '/api': {
+    target: 'https://demon.dengjiabei.cn',
+    changeOrigin: true
+  }
+}
+
 export default defineConfig({
   plugins: [levelRouteRewrite()],
+  server: {
+    proxy: apiProxy
+  },
+  preview: {
+    proxy: apiProxy
+  },
   build: {
     target: 'esnext'
   }
