@@ -8,8 +8,8 @@
 
 **方块噩梦 (Blocky Horror / Horror Maze Adventure)** —— 一款基于 Three.js 的第一人称恐怖迷宫逃脱游戏。玩家需要在程序生成的豪宅中寻找钥匙并通过出口逃脱，同时躲避一个会沿 A\* 路径追击的幽灵 AI。
 
-- **形态**：纯前端单页面应用（SPA），无后端
-- **部署**：Cloudflare Pages（`wrangler` 已装，但尚未配置部署脚本）
+- **形态**：前端 SPA（游戏 + 关卡编辑器）+ Cloudflare Pages Functions 轻后端（关卡数据 REST API，KV 存储）
+- **部署**：Cloudflare Pages（`pnpm deploy` 一键发布；详见第 9 节与 `docs/DEPLOY.md`）
 
 ---
 
@@ -29,10 +29,13 @@
 
 ```bash
 pnpm install        # 安装依赖
-pnpm dev            # 启动本地开发服务器（Vite）
+pnpm dev            # 启动本地开发服务器（Vite，默认 http://localhost:5173）
 pnpm build          # 构建到 dist/
 pnpm preview        # 预览生产构建
-pnpm typecheck      # tsc --noEmit，只做类型检查
+pnpm typecheck      # tsc --noEmit（含 functions/ 子项目），只做类型检查
+pnpm test           # vitest run，跑 levels / progress / level_service 单测
+pnpm dev:cf         # vite build + wrangler pages dev dist，本地模拟 Functions + KV（默认 http://localhost:8788）
+pnpm deploy         # vite build + wrangler pages deploy dist，发布到 Cloudflare Pages
 ```
 
 > ⚠️ 本项目**没有配置 ESLint / Prettier**，目前仅靠 `tsc --noEmit` 做静态检查。修改前请至少运行 `pnpm typecheck` 再交付。
@@ -43,14 +46,24 @@ pnpm typecheck      # tsc --noEmit，只做类型检查
 
 ```
 horror-maze-adventure/
-├── index.html                 # 入口 HTML，包含所有 UI 层 DOM + 内联样式
+├── index.html                 # 游戏页入口 HTML，包含所有 UI 层 DOM + 内联样式
 ├── vite.config.ts             # Vite 构建配置（仅 target: esnext）
 ├── tsconfig.json              # TS 配置（strict + ESNext + bundler）
+├── wrangler.toml               # Cloudflare Pages 配置 + KV 绑定（LEVELS_KV，binding 名固定）
 ├── package.json
 ├── README.md
 ├── CLAUDE.md                  # ← 本文件
+├── docs/
+│   └── DEPLOY.md                # 部署指引：一次性配置 / 日常发布 / 本地联调 / 部署后验证清单
+├── public/
+│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；域名分流后即编辑器首页）
+├── functions/                   # Cloudflare Pages Functions（部署时自动生效）
+│   ├── _middleware.ts            # 编辑器域名（demon-level.dengjiabei.cn）根路径重写到 /level.html
+│   └── api/
+│       └── levels.ts               # GET 公开读关卡 ／ PUT 口令写入 KV（服务端复用 src/levels.ts 的校验）
+├── tests/                        # vitest 单测：levels / progress / level_service
 └── src/
-    ├── game.ts                # 主循环 / 场景组装 / UI 事件绑定
+    ├── game.ts                # 主循环 / 场景组装 / UI 事件绑定 / 关卡生命周期与选关面板
     ├── player.ts              # 玩家控制、相机、碰撞、交互、手电筒
     ├── ghost.ts               # 幽灵 AI（巡逻 / 追击状态机 + A* 寻路 + Bresenham 视线）
     ├── world.ts               # 程序化豪宅生成、网格碰撞、交互物分布
@@ -60,6 +73,11 @@ horror-maze-adventure/
     ├── materials（utils.ts） # 共享材质、像素化 Canvas 纹理、图片纹理加载
     ├── types.ts               # Room / RoomLayout / Interactable / LightSwitch 接口
     ├── utils.ts               # 见上方 materials
+    ├── levels.ts                # LevelConfig 接口 + parseLevelsData 校验 + getLevelConfig（游戏端与 Functions 端共用同一份）
+    ├── levels_data.json         # 内置兜底 6 关关卡数据（自小程序移植）
+    ├── progress.ts               # 关卡进度纯函数：migrateProgress（迁移钳制）/ isLevelUnlocked（解锁判定）
+    ├── level_service.ts          # 云端关卡拉取：3 秒超时 + 校验失败 / 网络错误一律回退内置关卡
+    ├── constants.ts               # 共享数值常量（如 LIT_AMBIENT / LIT_FOG_FAR）
     └── static/                # 墙 / 地面贴图
 ```
 
@@ -136,6 +154,15 @@ Game (game.ts)
 
 2. **`box.exe.stackdump` 偶尔残留在工作区根目录**（Cygwin bash 崩溃产物）。
 
+3. **本节以上「5. 架构核心」仍是关卡系统改造前的描述**（固定 10 房间、80×80 网格、`roomLayout[]` 硬编码等）。
+   关卡系统实际设计（100×100 网格、`corridorRects` 手画走廊、云端 Schema 与选关/进度/编辑器数据流）
+   以 `docs/superpowers/specs/2026-07-13-level-system-design.md` 为准；关卡系统入口见「4. 目录结构」新增的
+   `public/level.html`（编辑器）/ `functions/api/levels.ts`（API）/ `src/level_service.ts`（游戏侧云端加载）。
+
+4. **本机 workerd 需 VC++ 14.40+**：Windows 本地跑 `pnpm dev:cf` 依赖的 workerd 原生二进制要求
+   Microsoft Visual C++ 2015-2022 Redistributable (x64) ≥ 14.40，版本过旧会在启动时崩溃（`0xc0000005`）。
+   不影响 Cloudflare 云端部署与线上运行，详见 `docs/DEPLOY.md`。
+
 ### 🧹 代码质量建议
 
 - `World.generateMansion` 超过 400 行，可拆分：`buildGrid` / `classifyWalls` / `buildMeshes` / `placeInteractables`
@@ -163,12 +190,10 @@ Game (game.ts)
 
 ## 9. 部署（Cloudflare Pages）
 
-当前 `package.json` **没有配置 deploy 脚本**。若要部署：
-
-```bash
-pnpm build
-npx wrangler pages deploy dist --project-name <your-project>
-```
+`package.json` 已配置 `pnpm deploy`（= `vite build` + `wrangler pages deploy dist`，项目名取
+`wrangler.toml` 的 `name = "demon"`）。关卡系统还依赖 KV 命名空间绑定、`LEVEL_ADMIN_TOKEN`
+环境变量、编辑器域名分流等一次性配置；完整步骤、日常发布流程、本地联调注意事项与部署后验证
+清单见 [`docs/DEPLOY.md`](./docs/DEPLOY.md)。
 
 ## 10. 调试技巧
 

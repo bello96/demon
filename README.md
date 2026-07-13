@@ -18,6 +18,7 @@
 - 🎵 **程序化音效** —— 全部用 Web Audio API 合成，零音频资源
 - 🌐 **中/英自动切换** —— 根据 `navigator.language` 自动选择
 - ⚡ **零重载重开** —— 死亡/胜利后内存级重建地图，不刷新页面
+- 🗺️ **云端可配置关卡** —— 选关菜单 + 顺序解锁，编辑器保存即全网生效
 
 ---
 
@@ -70,14 +71,23 @@ pnpm install
 # 启动开发服务器（默认 http://localhost:5173）
 pnpm dev
 
+# 本地联调 Cloudflare Functions + KV（关卡云端 API + 编辑器，默认 http://localhost:8788）
+pnpm dev:cf
+
 # 构建生产版本到 dist/
 pnpm build
 
 # 预览生产构建
 pnpm preview
 
-# 类型检查（无产物输出）
+# 类型检查（无产物输出，含 functions/ 子项目）
 pnpm typecheck
+
+# 运行单元测试（关卡 Schema / 进度 / 云端加载）
+pnpm test
+
+# 构建并部署到 Cloudflare Pages
+pnpm deploy
 ```
 
 > 使用 `npm` / `yarn` 亦可，把 `pnpm` 替换即可。
@@ -93,8 +103,13 @@ horror-maze-adventure/
 ├── tsconfig.json
 ├── package.json
 ├── CLAUDE.md                 # AI / 新人协作指引
+├── public/
+│   └── level.html            # 关卡编辑器页（自包含单文件，云端加载/保存）
+├── functions/                 # Cloudflare Pages Functions（部署时自动生效）
+│   ├── _middleware.ts         # 编辑器域名根路径分流到 /level.html
+│   └── api/levels.ts          # GET 公开读关卡 / PUT 口令写入 KV
 └── src/
-    ├── game.ts               # 主循环、场景组装、UI 事件
+    ├── game.ts               # 主循环、场景组装、UI 事件、关卡生命周期
     ├── player.ts             # 玩家控制、相机、碰撞、手电筒
     ├── ghost.ts              # 幽灵 AI、A* 寻路、视线判定
     ├── world.ts              # 程序化地图生成 + 栅格碰撞
@@ -103,7 +118,11 @@ horror-maze-adventure/
     ├── localization.ts       # 中/英词典
     ├── utils.ts              # 共享材质（像素化 Canvas 纹理 + 图片纹理）
     ├── types.ts              # 共享接口
-    └── static/               # 墙/地面贴图
+    ├── levels.ts              # 关卡 Schema + 校验（游戏端与 Functions 端共用）
+    ├── levels_data.json       # 内置兜底 6 关数据
+    ├── progress.ts            # 关卡进度纯函数（迁移钳制 + 解锁判定）
+    ├── level_service.ts       # 云端关卡拉取（超时/失败回退内置）
+    └── static/                # 墙/地面贴图
 ```
 
 ---
@@ -153,12 +172,16 @@ patrol ─── 看到玩家 ──→ chase
 
 ## ☁️ 部署（Cloudflare Pages）
 
-项目已安装 `wrangler`，但**尚未提供 deploy 脚本**。手动部署示例：
+项目已内置 `pnpm deploy` 脚本（= `vite build` + `wrangler pages deploy dist`，
+`wrangler` 已是 devDependency，无需额外安装）：
 
 ```bash
-pnpm build
-npx wrangler pages deploy dist --project-name horror-maze-adventure
+pnpm deploy
 ```
+
+关卡系统还依赖 KV 命名空间绑定、`LEVEL_ADMIN_TOKEN` 环境变量、编辑器域名的 Pages
+Functions 分流等一次性配置，完整步骤、日常发布流程与部署后验证清单见
+[docs/DEPLOY.md](./docs/DEPLOY.md)。
 
 ## 🤖 协作指引
 
