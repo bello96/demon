@@ -8,3 +8,7 @@ dist
 *.stackdump
 # 本地临时截图
 .tmp-*.png
+# Cloudflare Functions 本地联调密钥（勿提交，示例见 .dev.vars.example）
+.dev.vars
+# wrangler 本地运行状态（KV 模拟数据 / 临时构建产物）
+.wrangler

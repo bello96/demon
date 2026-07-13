@@ -1,0 +1,2 @@
+# 复制本文件为 .dev.vars（已 gitignore），供 pnpm dev:cf 本地联调使用
+LEVEL_ADMIN_TOKEN=dev-token
