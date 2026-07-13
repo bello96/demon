@@ -21,6 +21,9 @@ interface TranslationStrings {
   backToSelect: string
   backToMain: string
   allCleared: string
+  pauseResume: string
+  pauseRestart: string
+  pauseBack: string
 }
 
 const translations: Record<string, TranslationStrings> = {
@@ -45,7 +48,10 @@ const translations: Record<string, TranslationStrings> = {
     nextLevel: '进入下一关',
     backToSelect: '返回选关',
     backToMain: '返回主菜单',
-    allCleared: '全部通关！'
+    allCleared: '全部通关！',
+    pauseResume: '继续',
+    pauseRestart: '重来',
+    pauseBack: '返回'
   },
   en: {
     title: 'Blocky Horror',
@@ -68,7 +74,10 @@ const translations: Record<string, TranslationStrings> = {
     nextLevel: 'Next Level',
     backToSelect: 'Back to Levels',
     backToMain: 'Back to Menu',
-    allCleared: 'All Levels Cleared!'
+    allCleared: 'All Levels Cleared!',
+    pauseResume: 'Resume',
+    pauseRestart: 'Restart',
+    pauseBack: 'Back'
   }
 }
 
@@ -104,7 +113,9 @@ function updateDOM(): void {
     'next-level-btn': 'nextLevel',
     'win-menu-btn': 'backToSelect',
     'dead-menu-btn': 'backToSelect',
-    'btn-menu': 'backToSelect'
+    'btn-resume': 'pauseResume',
+    'btn-restart': 'pauseRestart',
+    'btn-menu': 'pauseBack'
   }
 
   for (const [id, key] of Object.entries(map)) {

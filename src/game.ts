@@ -152,8 +152,8 @@ class Game {
       btn.className = 'level-card'
 
       const thumb = document.createElement('canvas')
-      thumb.width = 100
-      thumb.height = 100
+      thumb.width = 120
+      thumb.height = 120
       drawLevelThumbnail(thumb, this.levels[n - 1])
       btn.appendChild(thumb)
 

@@ -198,8 +198,8 @@
         text-align: center;
         pointer-events: auto;
         z-index: 20;
-        /* 6 张 100px 卡片 + 间距 + 内边距 */
-        width: min(94vw, 780px);
+        /* 6 张 120px 卡片 + 间距 + 内边距 */
+        width: min(94vw, 900px);
       }
       #level-select-title {
         color: #fff;
@@ -210,7 +210,7 @@
       }
       #level-grid {
         display: grid;
-        grid-template-columns: repeat(6, 100px);
+        grid-template-columns: repeat(6, 120px);
         gap: 12px;
         justify-content: center;
         /* 关卡多时容器内滚动 */
@@ -234,15 +234,15 @@
         font-size: 24px;
         padding: 12px 36px;
       }
-      /* 关卡卡片：100×100 地图缩略图 + 左上角序号 */
+      /* 关卡卡片：120×120 地图缩略图 + 左上角序号 */
       .level-card {
         position: relative;
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         padding: 0;
         background: #0c0a08;
         border: 3px solid #555;
-        font-size: 22px;
+        font-size: 24px;
         overflow: hidden;
       }
       .level-card canvas {
@@ -508,9 +508,9 @@
           </div>
         </div>
         <div class="pause-button-group">
-          <button id="btn-resume">继续游戏</button>
-          <button id="btn-restart">重新开始</button>
-          <button id="btn-menu">返回选关</button>
+          <button id="btn-resume">继续</button>
+          <button id="btn-restart">重来</button>
+          <button id="btn-menu">返回</button>
         </div>
         <div class="pause-hint">点击“继续游戏”按钮返回</div>
       </div>

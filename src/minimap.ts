@@ -5,15 +5,17 @@ import type { LevelConfig } from './levels'
 
 /**
  * 把关卡布局画成缩略图（选关卡片用）：黑底 + 走廊暗块 + 房间亮块。
- * 关卡坐标系恰为 100×100，画布 100×100 时 1 格 = 1 像素。
+ * 关卡坐标系为 100×100，按画布尺寸等比缩放（120×120 画布即 1 格 = 1.2 像素）。
  */
 export function drawLevelThumbnail(canvas: HTMLCanvasElement, cfg: LevelConfig): void {
   const ctx = canvas.getContext('2d')
   if (!ctx) {
     return
   }
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.fillStyle = '#0c0a08'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.scale(canvas.width / 100, canvas.height / 100)
   ctx.fillStyle = '#3a352d'
   for (const c of cfg.corridorRects ?? []) {
     ctx.fillRect(c.x, c.z, c.w, c.d)
