@@ -6,4 +6,4 @@ pages_build_output_dir = "dist"
 # 然后把生成的 id 填到下面（本地 pnpm dev:cf 用的是本地模拟 KV，占位 id 不影响）
 [[kv_namespaces]]
 binding = "LEVELS_KV"
-id = "REPLACE_WITH_REAL_KV_NAMESPACE_ID"
+id = "64a9ca73fefe4bd48b8efbb48dc22490"
