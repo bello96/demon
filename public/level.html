@@ -315,6 +315,26 @@
       .list .row .x:hover {
         color: #ff8080;
       }
+      /* 关卡行右侧操作组：冻结/解冻 + 删除 */
+      .list .row .acts {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .list .row .x.frz {
+        color: #5080a0;
+      }
+      .list .row .x.frz:hover {
+        color: #7ec8ff;
+      }
+      /* 冻结的关卡：整行灰显（数据保留，游戏跳过） */
+      #tabs .row.frozen {
+        opacity: 0.45;
+      }
+      #tabs .row.frozen.sel {
+        opacity: 0.8;
+      }
       .header .btns button,
       .modal button {
         background: #2d4a5a;
@@ -610,6 +630,8 @@
           · 房间模式：空白处拖拽=新建房间；点房间=选中可拖动；拖右下角手柄=调大小；Del=删除<br />
           · 走廊模式：拖拽=画 1
           米宽走廊（斜拖自动锁横/纵直线）；点走廊=选中可拖动；Del=删除，画错就删掉重画<br />
+          · 冻结关卡：点关卡行的 ❄ 暂时停用该关（数据保留、游戏跳过、后面的关卡顺位前移），点 ▶
+          解冻恢复；至少要保留一个启用中的关卡<br />
           · 出生房与门/钥匙/雷达/开关的位置由游戏每局随机分配，编辑器只定房间与走廊<br />
           · 房间可以重叠/贴边：重叠处自动打通合并，可拼出 L 形、凹形等不规则大房间
           （每块矩形仍保留自己的房号，找东西的提示会更精确）<br />
@@ -670,6 +692,7 @@
         ghostSpeed: 2.6,
         lightsOn: false,
         ghostEnabled: true,
+        frozen: false,
       })
       // 打开即空白从头配；要接着改现有关卡，把 levels_data.json 内容粘贴到底部文本框「导入」
       let levels = [blankLevel()]
@@ -1056,13 +1079,20 @@
       function renderPanels() {
         const lv = L()
         // 关卡列表（左侧竖排；新增按钮固定在列表下方，不随列表重建）
+        // 未冻结关显示生效序号（= 游戏里的第几关，冻结关不占号），冻结关只显示停用标记
+        let liveNo = 0
         $('tabs').innerHTML = levels
-          .map(
-            (_, i) =>
-              `<div class="row ${i === cur ? 'sel' : ''}" data-tab="${i}">
-       <span>第 ${i + 1} 关</span>${levels.length > 1 ? `<span class="x" data-del="${i}">✕</span>` : ''}
-     </div>`,
-          )
+          .map((tl, i) => {
+            const label = tl.frozen ? '❄ 已冻结（停用中）' : `第 ${++liveNo} 关`
+            const frzBtn = `<span class="x frz" data-frz="${i}" title="${
+              tl.frozen ? '解冻：恢复此关参与游戏' : '冻结：暂时停用此关（数据保留，游戏跳过）'
+            }">${tl.frozen ? '▶' : '❄'}</span>`
+            const delBtn =
+              levels.length > 1 ? `<span class="x" data-del="${i}" title="删除此关">✕</span>` : ''
+            return `<div class="row ${i === cur ? 'sel' : ''}${tl.frozen ? ' frozen' : ''}" data-tab="${i}">
+       <span>${label}</span><span class="acts">${frzBtn}${delBtn}</span>
+     </div>`
+          })
           .join('')
         // 参数
         $('ckLights').checked = lv.lightsOn === true
@@ -1324,11 +1354,42 @@
       }
 
       // 页签/列表（事件委托）
+      /** 除下标 skip 外未冻结关卡数（删除/冻结守卫共用：动手前算"剩几个能用的"） */
+      function liveCountExcept(skip) {
+        return levels.filter((l, i) => i !== skip && !l.frozen).length
+      }
+      /** 关卡在游戏里的生效序号（冻结关不占号）；冻结关返回 0 */
+      function liveNoOf(i) {
+        return levels[i].frozen ? 0 : levels.slice(0, i + 1).filter((l) => !l.frozen).length
+      }
       $('tabs').addEventListener('click', (e) => {
+        const frz = e.target.closest('[data-frz]')
+        if (frz) {
+          const i = +frz.dataset.frz
+          // 冻结守卫：至少保留一个启用中的关卡，不允许全部冻结
+          if (!levels[i].frozen && liveCountExcept(i) === 0) {
+            toast('至少保留一个启用中的关卡，不能全部冻结')
+            return
+          }
+          levels[i].frozen = !levels[i].frozen
+          toast(
+            levels[i].frozen
+              ? '已冻结：此关暂不参与游戏，保存到云端后生效'
+              : '已解冻：此关恢复参与游戏，保存到云端后生效',
+          )
+          render()
+          return
+        }
         const del = e.target.closest('[data-del]')
         if (del) {
           const i = +del.dataset.del
-          if (confirm(`确定删除第 ${i + 1} 关？`)) {
+          // 删除守卫：删掉最后一个启用中的关卡会只剩冻结关，游戏没得玩
+          if (!levels[i].frozen && liveCountExcept(i) === 0) {
+            toast('不能删除最后一个启用中的关卡（可先解冻其他关卡）')
+            return
+          }
+          const name = levels[i].frozen ? '这个已冻结的关卡' : `第 ${liveNoOf(i)} 关`
+          if (confirm(`确定删除${name}？`)) {
             levels.splice(i, 1)
             cur = Math.min(cur > i ? cur - 1 : cur, levels.length - 1)
             sel = -1
@@ -1438,6 +1499,8 @@
               lightsOn: lv.lightsOn === true,
               ghostEnabled: lv.ghostEnabled !== false,
             }
+            // 冻结状态随数据上云（游戏端跳过该关）；未冻结不写字段，保持与小程序格式兼容
+            if (lv.frozen === true) o.frozen = true
             if (lv.corrRects.length > 0)
               o.corridorRects = lv.corrRects.map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d }))
             return o
@@ -1447,12 +1510,19 @@
       }
       /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
       function guardedJSON() {
+        // 全部冻结 = 游戏无关可玩：交互层已拦截，这里兜「导入 JSON」等旁路（与服务端校验同规则）
+        if (!levels.some((lv) => !lv.frozen)) {
+          $('errBody').innerHTML =
+            '<div class="err">全部关卡都已冻结：请至少解冻一个关卡（游戏必须有关可玩）</div>'
+          $('errMask').classList.add('open')
+          return null
+        }
         const bad = levelsWithErrors()
         if (bad.length) {
           $('errBody').innerHTML = bad
             .map(
               ([i, issues]) =>
-                `<h3>第 ${i + 1} 关</h3>` +
+                `<h3>${levels[i].frozen ? `❄ 已冻结的关卡（列表第 ${i + 1} 行）` : `第 ${liveNoOf(i)} 关`}</h3>` +
                 issues
                   .filter(([k]) => k !== 'ok')
                   .map(([k, m]) => `<div class="${k}">${m}</div>`)
@@ -1594,6 +1664,7 @@
             ghostSpeed: +lv.ghostSpeed || 2.8,
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
+            frozen: lv.frozen === true,
           }
         })
         cur = 0
@@ -1801,6 +1872,7 @@
             ghostSpeed: lv.ghostSpeed || 2.8,
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
+            frozen: lv.frozen === true,
           }))
           cur = Math.min(draft.cur || 0, levels.length - 1)
         }

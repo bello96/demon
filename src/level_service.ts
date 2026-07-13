@@ -22,7 +22,8 @@ export async function loadLevels(timeoutMs: number = 3000): Promise<LoadedLevels
     if (res.ok) {
       const parsed = parseLevelsData(await res.json())
       if (parsed) {
-        return { levels: parsed, source: 'remote' }
+        // 冻结关不参与游戏：过滤后后续关卡顺位前移（parse 已保证至少剩 1 关）
+        return { levels: parsed.filter((l) => !l.frozen), source: 'remote' }
       }
       console.warn('[levels] 云端数据校验失败，使用内置关卡')
     } else {

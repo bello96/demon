@@ -30,6 +30,20 @@ describe('loadLevels', () => {
     expect(out.levels[0].ghostEnabled).toBe(false)
   })
 
+  it('云端数据含冻结关 → 过滤后只剩启用关（后续关卡顺位前移）', async () => {
+    const data = {
+      levels: [
+        { ...remoteData.levels[0], frozen: true },
+        { ...remoteData.levels[0], ghostSpeed: 2.2 },
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(data))))
+    const out = await loadLevels()
+    expect(out.source).toBe('remote')
+    expect(out.levels).toHaveLength(1)
+    expect(out.levels[0].ghostSpeed).toBe(2.2)
+  })
+
   it('云端 404 → 回退内置', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"not_found"}', { status: 404 })))
     const out = await loadLevels()

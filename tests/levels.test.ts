@@ -53,6 +53,7 @@ describe('parseLevelsData', () => {
     ['ghostSpeed<=0', { ...validLevel, ghostSpeed: 0 }],
     ['lightsOn 非布尔', { ...validLevel, lightsOn: 1 }],
     ['ghostEnabled 非布尔', { ...validLevel, ghostEnabled: 'yes' }],
+    ['frozen 非布尔', { ...validLevel, frozen: 1 }],
   ])('%s → 整包拒绝返回 null', (_name, lv) => {
     expect(parseLevelsData({ levels: [lv] })).toBeNull()
   })
@@ -61,6 +62,24 @@ describe('parseLevelsData', () => {
     expect(parseLevelsData(null)).toBeNull()
     expect(parseLevelsData({})).toBeNull()
     expect(parseLevelsData({ levels: [] })).toBeNull()
+  })
+
+  it('frozen 缺省 false、写 true 保留', () => {
+    const out = parseLevelsData({ levels: [validLevel, { ...validLevel, frozen: true }] })
+    expect(out![0].frozen).toBe(false)
+    expect(out![1].frozen).toBe(true)
+  })
+
+  it('全部关卡都冻结 → 整包拒绝返回 null', () => {
+    expect(parseLevelsData({ levels: [{ ...validLevel, frozen: true }] })).toBeNull()
+    expect(
+      parseLevelsData({
+        levels: [
+          { ...validLevel, frozen: true },
+          { ...validLevel, frozen: true },
+        ],
+      }),
+    ).toBeNull()
   })
 
   it('数组元素为 null → 返回 null 而不是抛异常', () => {

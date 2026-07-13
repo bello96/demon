@@ -50,7 +50,7 @@ async function handlePut(ctx: EventContext<Env, string, unknown>): Promise<Respo
   }
   const parsed = parseLevelsData(body)
   if (parsed === null) {
-    return json({ error: 'invalid', detail: '关卡数据校验失败（结构 / 坐标范围 / 数值区间）' }, 400)
+    return json({ error: 'invalid', detail: '关卡数据校验失败（结构 / 坐标范围 / 数值区间 / 至少一个未冻结关卡）' }, 400)
   }
   await ctx.env.LEVELS_KV.put('levels', JSON.stringify({ levels: parsed }))
   return json({ ok: true, count: parsed.length }, 200)

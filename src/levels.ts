@@ -19,6 +19,8 @@ export interface LevelConfig {
   lightsOn: boolean
   /** 本关是否出现幽灵（默认 true；false=无追逐的纯逃脱关） */
   ghostEnabled: boolean
+  /** 是否冻结（默认 false）：true=暂时停用，游戏端跳过此关、后续关卡顺位前移；数据保留可随时解冻 */
+  frozen: boolean
 }
 
 // 内置 JSON 被改坏（数值非法）时的应急单关：保证游戏能开、不黑屏，控制台有报错提示
@@ -31,6 +33,7 @@ const FALLBACK_LEVELS: LevelConfig[] = [
     ghostSpeed: 2.6,
     lightsOn: false,
     ghostEnabled: true,
+    frozen: false,
   },
 ]
 
@@ -78,6 +81,7 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostSpeed?: unknown
       lightsOn?: unknown
       ghostEnabled?: unknown
+      frozen?: unknown
     }
     if (!Array.isArray(l.rooms) || l.rooms.length === 0 || !l.rooms.every(rectOk)) {
       return null
@@ -94,11 +98,14 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
     if (l.darkAmbient <= 0 || l.darkFogFar < 5 || l.ghostSpeed <= 0 || l.ghostSpeed > 5.9) {
       return null
     }
-    // 两个开关都是可选布尔：缺省用默认值，写了就必须是 true/false
+    // 三个开关都是可选布尔：缺省用默认值，写了就必须是 true/false
     if (l.lightsOn !== undefined && typeof l.lightsOn !== 'boolean') {
       return null
     }
     if (l.ghostEnabled !== undefined && typeof l.ghostEnabled !== 'boolean') {
+      return null
+    }
+    if (l.frozen !== undefined && typeof l.frozen !== 'boolean') {
       return null
     }
     out.push({
@@ -112,7 +119,12 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostSpeed: l.ghostSpeed,
       lightsOn: l.lightsOn === true,
       ghostEnabled: l.ghostEnabled !== false,
+      frozen: l.frozen === true,
     })
+  }
+  // 全部冻结 = 游戏无关可玩：与空数组同罪，整体拒绝（保证过滤冻结关后必有存货）
+  if (!out.some((l) => !l.frozen)) {
+    return null
   }
   return out
 }
@@ -124,7 +136,8 @@ export const BUILTIN_LEVELS: LevelConfig[] = (() => {
     console.error('[levels] src/levels_data.json 数据非法，已启用应急关卡（请检查 JSON）')
     return FALLBACK_LEVELS
   }
-  return parsed
+  // 与云端加载同规则：冻结关不参与游戏（parse 已保证过滤后至少剩 1 关）
+  return parsed.filter((l) => !l.frozen)
 })()
 
 /** 从给定关卡数组取第 level 关；越界钳制到 [1, levels.length]（存档损坏兜底） */
