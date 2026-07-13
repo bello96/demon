@@ -200,6 +200,10 @@ class Game {
     document.getElementById('game-win')!.classList.add('hidden')
     document.getElementById('pause-menu')!.classList.add('hidden')
     document.getElementById('game-info')!.style.display = 'block'
+    const minimap = document.getElementById('minimap')
+    if (minimap) {
+      minimap.style.display = 'block'
+    }
 
     const cabinetOverlay = document.getElementById('cabinet-overlay')
     if (cabinetOverlay) {
@@ -232,6 +236,10 @@ class Game {
     document.getElementById('game-win')!.classList.add('hidden')
     document.getElementById('pause-menu')!.classList.add('hidden')
     document.getElementById('game-info')!.style.display = 'none'
+    const minimap = document.getElementById('minimap')
+    if (minimap) {
+      minimap.style.display = 'none'
+    }
     this.showLevelSelect()
   }
 

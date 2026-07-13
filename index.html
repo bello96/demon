@@ -317,7 +317,8 @@
         background: rgba(0, 0, 0, 0.5);
         border: 2px solid #555;
         z-index: 100;
-        display: block;
+        /* 默认隐藏：只在游玩中显示（enterPlay 显示 / showMenu 隐藏） */
+        display: none;
       }
       #minimap.large {
         width: 600px;
