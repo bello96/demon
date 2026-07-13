@@ -1,0 +1,1577 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>方块噩梦 · 关卡编辑器</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font:
+          13px/1.5 -apple-system,
+          'Segoe UI',
+          'Microsoft YaHei',
+          sans-serif;
+        background: #17141d;
+        color: #cfc9d6;
+        padding: 10px 14px;
+        user-select: none;
+      }
+      /* 操作按钮在右栏顶部独占一行（左对齐），下方卡片顺次下移 */
+      .header .btns {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .more-wrap {
+        position: relative;
+      }
+      .menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px;
+        min-width: 176px;
+        z-index: 7;
+        background: #201b29;
+        border: 1px solid #3a3348;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+      }
+      .menu.open {
+        display: flex;
+      }
+      .menu button {
+        width: 100%;
+        text-align: left;
+      }
+      .menu button:hover {
+        background: #2d4a5a;
+        color: #fff;
+        border-color: #5090a0;
+      }
+      /* 关卡行比房间/走廊行更高更醒目 */
+      #tabs.list .row {
+        padding: 9px 8px;
+        font-size: 13px;
+      }
+      #btnAddLevel {
+        width: 100%;
+        margin-top: 8px;
+        background: #1f2a22;
+        color: #b6aec6;
+        border: 1px solid #35513c;
+        padding: 7px 0;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      #btnAddLevel:hover {
+        background: #253527;
+      }
+      /* 布局高度与画布对齐（画布 = max(800, 100vh-22) + 边框 2）：两侧栏卡片可到底 */
+      .layout {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        height: max(calc(100vh - 20px), 802px);
+      }
+      /* 两侧栏：独立卡片纵向排列，撑满布局高度 */
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex-shrink: 0;
+        height: 100%;
+      }
+      .panel {
+        background: #201b29;
+        border: 1px solid #322b40;
+        border-radius: 8px;
+        padding: 12px;
+        width: 272px;
+      }
+      /* 左右栏定宽；卡片宽度随栏拉伸 */
+      .side.left {
+        width: 216px;
+      }
+      .side.right {
+        width: 526px;
+      }
+      .side .panel {
+        width: auto;
+      }
+      /* 纵向撑满的卡片：列表吃掉剩余高度内部滚动，尾部按钮自然吸底 */
+      .panel.grow {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel.grow .list {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+      }
+      /* 房间/走廊两个独立卡片左右并排：等宽、双双到底，列表超出各自滚动 */
+      .cols {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        gap: 10px;
+      }
+      .cols .panel {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .cols .list {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+        font-size: 11px;
+      }
+      .cols .row > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .panel h2 {
+        font-size: 13px;
+        color: #a99ac9;
+        margin: 10px 0 6px;
+      }
+      .panel h2:first-child {
+        margin-top: 0;
+      }
+      .modes {
+        display: flex;
+        gap: 6px;
+      }
+      .modes button {
+        flex: 1;
+        padding: 8px 4px;
+        background: #262130;
+        color: #b6aec6;
+        border: 1px solid #3a3348;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .modes button.active {
+        background: #2d4a5a;
+        color: #fff;
+        border-color: #5090a0;
+      }
+      .hint {
+        color: #776f85;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      #errBody {
+        max-height: 60vh;
+        overflow-y: auto;
+        font-size: 12px;
+      }
+      #errBody h3 {
+        font-size: 13px;
+        color: #a99ac9;
+        margin: 8px 0 5px;
+      }
+      #errBody h3:first-child {
+        margin-top: 0;
+      }
+      #errBody div {
+        padding: 4px 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      #errBody .err {
+        background: #3d2026;
+        color: #ff9c9c;
+      }
+      #errBody .warn {
+        background: #3d3520;
+        color: #ffd98c;
+      }
+      canvas {
+        background: #000;
+        border: 1px solid #3a3348;
+        border-radius: 6px;
+        cursor: crosshair;
+        display: block;
+        /* 显示尺寸由 syncCanvasSize() 接管：跟随视口高度自适应、最小 800px，
+       内部分辨率同步 ×dpr 重设，放大按矢量重画不糊 */
+      }
+      .ctl {
+        margin-bottom: 10px;
+        position: relative;
+      }
+      .ctl:last-child {
+        margin-bottom: 0;
+      }
+      .tip-icon {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+        text-align: center;
+        border-radius: 50%;
+        background: #3a3348;
+        color: #ffd98c;
+        font-size: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-left: 4px;
+        user-select: none;
+      }
+      .tip-icon:hover {
+        background: #4a4158;
+      }
+      .tip-pop {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 22px;
+        z-index: 5;
+        display: none;
+        background: #2a2436;
+        border: 1px solid #4a4158;
+        border-radius: 8px;
+        padding: 8px 10px;
+        color: #cfc9d6;
+        font-size: 12px;
+        line-height: 1.5;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+      }
+      .tip-pop.open {
+        display: block;
+      }
+      .ctl label {
+        display: flex;
+        justify-content: space-between;
+        color: #b6aec6;
+        margin-bottom: 3px;
+      }
+      .ctl label b {
+        color: #e8dfa0;
+        font-weight: 600;
+      }
+      .ctl label.ck {
+        justify-content: flex-start;
+        gap: 6px;
+        cursor: pointer;
+        align-items: center;
+      }
+      .ctl input[type='range'] {
+        width: 100%;
+      }
+      .ctl.off {
+        opacity: 0.35;
+      }
+      .list {
+        max-height: 340px;
+        overflow-y: auto;
+        font-size: 12px;
+      }
+      .list .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .list .row > span:first-child {
+        white-space: nowrap;
+      }
+      .list .row:hover {
+        background: #2a2436;
+      }
+      .list .row.sel {
+        background: #2d4a5a;
+        color: #fff;
+      }
+      .list .row .x {
+        color: #a05050;
+        padding: 0 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .list .row .x:hover {
+        color: #ff8080;
+      }
+      .header .btns button,
+      .modal button {
+        background: #2d4a5a;
+        color: #fff;
+        border: 1px solid #5090a0;
+        padding: 7px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .header .btns button.gray,
+      .modal button.gray {
+        background: #262130;
+        color: #b6aec6;
+        border-color: #3a3348;
+      }
+      .modal-mask {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 8;
+      }
+      .modal-mask.open {
+        display: flex;
+      }
+      .modal {
+        width: 760px;
+        max-width: 92vw;
+        background: #1b1724;
+        border: 1px solid #3a3348;
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        color: #e8e2f2;
+      }
+      .modal-acts {
+        display: flex;
+        gap: 8px;
+      }
+      .modal textarea {
+        width: 100%;
+        height: 340px;
+        background: #14111a;
+        color: #9cc59c;
+        border: 1px solid #322b40;
+        border-radius: 6px;
+        padding: 8px;
+        font:
+          11px/1.4 Consolas,
+          monospace;
+        user-select: text;
+        box-sizing: border-box;
+      }
+      #toast {
+        position: fixed;
+        left: 50%;
+        top: 18px;
+        transform: translateX(-50%);
+        background: #2d4a5a;
+        color: #fff;
+        padding: 8px 22px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: opacity 0.25s;
+        pointer-events: none;
+        z-index: 9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="side left">
+        <div class="panel">
+          <div class="modes">
+            <button id="modeRoom" class="active">🧱 房间</button>
+            <button id="modeCorr">🚪 走廊</button>
+          </div>
+        </div>
+        <div class="panel grow">
+          <h2>关卡（点击切换）</h2>
+          <div class="list" id="tabs"></div>
+          <button id="btnAddLevel">＋ 新增关卡</button>
+        </div>
+      </div>
+
+      <canvas id="cv" width="848" height="848"></canvas>
+
+      <div class="side right">
+        <div class="header">
+          <div class="btns">
+            <button id="btnCloudSave">☁ 保存到云端</button>
+            <button id="btnCopy">复制jSON</button>
+            <button id="btnClear" class="gray">清空</button>
+            <div class="more-wrap">
+              <button id="btnMore" class="gray">更多 ▾</button>
+              <div class="menu" id="moreMenu">
+                <button id="btnView" class="gray">查看当前 JSON</button>
+                <button id="btnDownload" class="gray">下载当前 JSON</button>
+                <button id="btnImport" class="gray">导入已有 JSON</button>
+                <button id="btnHelp" class="gray">使用说明</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>关卡参数</h2>
+          <div class="ctl">
+            <label class="ck"><input type="checkbox" id="ckLights" /> 房间灯光</label>
+          </div>
+          <div class="ctl">
+            <label>
+              <span>关灯时房间亮度 <span class="tip-icon" id="ambTip">!</span></span>
+              <b id="vAmb"></b>
+            </label>
+            <div class="tip-pop" id="ambPop">
+              灯没打开时环境有多亮：越小越黑（0.05 几乎全黑、0.30
+              朦胧可辨）；打开灯后各关一样亮，本值不生效
+            </div>
+            <input type="range" id="ambient" min="0.05" max="0.30" step="0.01" />
+          </div>
+          <div class="ctl">
+            <label>可视距离（米）<b id="vFog"></b></label>
+            <input type="range" id="fog" min="8" max="30" step="1" />
+          </div>
+          <div class="ctl">
+            <label class="ck"><input type="checkbox" id="ckGhost" checked /> 出现幽灵</label>
+          </div>
+          <div class="ctl">
+            <label>幽灵移动速度 <b id="vGhost"></b></label>
+            <input type="range" id="ghost" min="2.0" max="4.5" step="0.05" />
+          </div>
+        </div>
+        <div class="cols">
+          <div class="panel">
+            <h2>房间（点击选中）</h2>
+            <div class="list" id="roomList"></div>
+          </div>
+          <div class="panel">
+            <h2>走廊（点击选中）</h2>
+            <div class="list" id="corrList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-mask" id="errMask">
+      <div class="modal">
+        <div class="modal-head">
+          <b>配置有错误，请修正后再操作</b>
+          <div class="modal-acts"><button id="errClose" class="gray">关闭</button></div>
+        </div>
+        <div id="errBody"></div>
+      </div>
+    </div>
+
+    <div class="modal-mask" id="helpMask">
+      <div class="modal">
+        <div class="modal-head">
+          <b>使用说明</b>
+          <div class="modal-acts"><button id="helpClose" class="gray">关闭</button></div>
+        </div>
+        <div class="hint">
+          · 地图 100×100，1 格 = 1 米<br />
+          · 出图流程：画好后点右上角「☁ 保存到云端」→ 所有玩家刷新游戏即玩到新关卡（边缘节点最长约 1 分钟同步）<br />
+          · 房间模式：空白处拖拽=新建房间；点房间=选中可拖动；拖右下角手柄=调大小；Del=删除<br />
+          · 走廊模式：拖拽=画 1
+          米宽走廊（斜拖自动锁横/纵直线）；点走廊=选中可拖动；Del=删除，画错就删掉重画<br />
+          · 出生房与门/钥匙/雷达/开关的位置由游戏每局随机分配，编辑器只定房间与走廊<br />
+          · 房间可以重叠/贴边：重叠处自动打通合并，可拼出 L 形、凹形等不规则大房间
+          （每块矩形仍保留自己的房号，找东西的提示会更精确）<br />
+          · 走廊固定 1 米宽；想要更宽的通道，就并排画几条贴边（贴边即打通）<br />
+          · 走廊只存在于房间之间：拖进房间的部分自动截断到房间边，横穿房间会分成两段<br />
+          · 走廊与走廊贴边/相接也打通，可拼出 L 形、T 形任意路网；两房之间开几条都行<br />
+          · 独木不成林：所有房间与走廊必须连成一片才能导出——房间贴边/重叠即打通，无需走廊；
+          孤立的房间或走廊（红框 ⚠）都是错误<br />
+          · 虚线圆 = 关灯时的可视距离示意<br />
+          · Ctrl+滚轮：以鼠标为中心矢量放大（最小回到全图）；按住空格再拖拽画布可平移
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-mask" id="modalMask">
+      <div class="modal">
+        <div class="modal-head">
+          <b id="modalTitle"></b>
+          <div class="modal-acts">
+            <button id="modalCopy">复制</button>
+            <button id="modalOk">确定导入</button>
+            <button id="modalClose" class="gray">关闭</button>
+          </div>
+        </div>
+        <textarea id="ioText"></textarea>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+      'use strict'
+      // ================= 数据 =================
+      const GRID = 100,
+        CELL = 8,
+        MIN_ROOM = 6
+
+      /** 空白关卡（默认参数取第 1 关难度档：开局关灯、有幽灵） */
+      const blankLevel = () => ({
+        rooms: [],
+        corrRects: [],
+        darkAmbient: 0.2,
+        darkFogFar: 20,
+        ghostSpeed: 2.6,
+        lightsOn: false,
+        ghostEnabled: true,
+      })
+      // 打开即空白从头配；要接着改现有关卡，把 levels_data.json 内容粘贴到底部文本框「导入」
+      let levels = [blankLevel()]
+      let cur = 0 // 当前关卡下标
+      let mode = 'room' // 'room' | 'corr'
+      let sel = -1 // 选中的房间下标（room 模式）
+      let selCorr = -1 // 选中的走廊下标（corr 模式）
+      // 拖拽状态：null | {kind:'new'|'move'|'resize', ...}
+      let drag = null
+
+      // ================= 工具 =================
+      const $ = (id) => document.getElementById(id)
+      const cv = $('cv'),
+        ctx = cv.getContext('2d')
+      const L = () => levels[cur]
+
+      function toast(msg) {
+        const el = $('toast')
+        el.textContent = msg
+        el.style.opacity = 1
+        clearTimeout(el._t)
+        el._t = setTimeout(() => (el.style.opacity = 0), 1800)
+      }
+      // ================= 视口（矢量缩放/平移 + 外侧标尺）=================
+      // Ctrl+滚轮以鼠标为锚点放大（最小 1 = 全图，最大 6 倍）；按住空格拖拽平移。
+      // 缩放通过 setTransform 每帧重绘实现——任意倍率下格线/图形都按矢量重画，不会糊。
+      // 画布四周留 RULER 边距：上/左画坐标标尺（随缩放平移动态标注），右上角标单位
+      let zoom = 1,
+        panX = 0,
+        panY = 0
+      const MAX_ZOOM = 6
+      const RULER = 24 // 标尺区宽度（地图外侧）
+      const VIEW = GRID * CELL // 世界视口边长（1:1 时恰好装下整图）
+      const LOGIC = RULER + VIEW + RULER // 逻辑画布边长 848：绘制与交互坐标的统一基准系
+      let dispK = 1 // 内部像素 / 逻辑边长（高清系数 = 显示尺寸/848 × dpr）
+      let spaceDown = false
+      let panDrag = null // {mx,my,px,py} 空格平移拖拽起点
+
+      /** 画布尺寸自适应：显示宽高跟随视口高度、最小 800px（小屏宁可滚动不再缩小）；
+       *  内部分辨率同步为显示尺寸 × dpr——大屏放大时按矢量重画，格线文字不糊 */
+      function syncCanvasSize() {
+        const css = Math.max(800, window.innerHeight - 22)
+        cv.style.width = css + 'px'
+        cv.style.height = css + 'px'
+        const px = Math.round(css * (window.devicePixelRatio || 1))
+        if (cv.width !== px) {
+          cv.width = px
+          cv.height = px
+        }
+        dispK = cv.width / LOGIC
+      }
+      syncCanvasSize()
+      window.addEventListener('resize', () => {
+        syncCanvasSize()
+        render()
+      })
+
+      function clampPan() {
+        const span = GRID * CELL * zoom
+        panX = Math.min(0, Math.max(VIEW - span, panX))
+        panY = Math.min(0, Math.max(VIEW - span, panY))
+      }
+
+      /** 画布 CSS 显示尺寸 → 逻辑 848 坐标系的换算系数（交互输入统一换算到逻辑系） */
+      function cvScale() {
+        return LOGIC / cv.getBoundingClientRect().width
+      }
+
+      function cellOf(e) {
+        const r = cv.getBoundingClientRect()
+        const k = LOGIC / r.width
+        const wx = ((e.clientX - r.left) * k - RULER - panX) / zoom
+        const wy = ((e.clientY - r.top) * k - RULER - panY) / zoom
+        return {
+          gx: Math.max(0, Math.min(GRID - 1, Math.floor(wx / CELL))),
+          gz: Math.max(0, Math.min(GRID - 1, Math.floor(wy / CELL))),
+        }
+      }
+      function rectAt(list, gx, gz) {
+        for (let i = list.length - 1; i >= 0; i--) {
+          const r = list[i]
+          if (gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d) return i
+        }
+        return -1
+      }
+      function inAnyRoom(rooms, gx, gz) {
+        return rooms.some((r) => gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d)
+      }
+
+      /** 任意矩形走廊 → 若干 1 格宽线段（导入旧数据/宽矩形时拆分） */
+      function normalizeCorr(c) {
+        const out = []
+        if (c.w >= c.d) {
+          for (let i = 0; i < c.d; i++) out.push({ x: c.x, z: c.z + i, w: c.w, d: 1 })
+        } else {
+          for (let i = 0; i < c.w; i++) out.push({ x: c.x + i, z: c.z, w: 1, d: c.d })
+        }
+        return out
+      }
+
+      /**
+       * 把一条 1 格宽走廊按房间裁剪：落在房间内的格子被切掉，
+       * 走廊只保留房间与房间之间的部分（横穿房间会分裂成多段）。
+       */
+      function clipCorridor(c, rooms) {
+        const segs = []
+        const horizontal = c.d === 1
+        const len = horizontal ? c.w : c.d
+        let runStart = -1
+        for (let i = 0; i < len; i++) {
+          const x = horizontal ? c.x + i : c.x
+          const z = horizontal ? c.z : c.z + i
+          const inside = inAnyRoom(rooms, x, z)
+          if (!inside && runStart === -1) runStart = i
+          if (runStart !== -1 && (inside || i === len - 1)) {
+            const end = inside ? i - 1 : i
+            const segLen = end - runStart + 1
+            if (segLen >= 1) {
+              segs.push(
+                horizontal
+                  ? { x: c.x + runStart, z: c.z, w: segLen, d: 1 }
+                  : { x: c.x, z: c.z + runStart, w: 1, d: segLen },
+              )
+            }
+            runStart = -1
+          }
+        }
+        return segs
+      }
+
+      /**
+       * 编辑器内连通性模拟（与游戏生成器同款规则：房间+走廊挖空、四邻连通）。
+       * 返回 { unreachableRooms: 下标[], orphanCorrs: 下标[] }。
+       */
+      function simulate(lv) {
+        const g = new Uint8Array(GRID * GRID) // 0=墙 1=空地
+        const carve = (r) => {
+          const x1 = Math.min(GRID - 2, r.x + r.w - 1),
+            z1 = Math.min(GRID - 2, r.z + r.d - 1)
+          for (let x = Math.max(1, r.x); x <= x1; x++)
+            for (let z = Math.max(1, r.z); z <= z1; z++) g[x * GRID + z] = 1
+        }
+        lv.rooms.forEach(carve)
+        lv.corrRects.forEach(carve)
+        if (lv.rooms.length === 0)
+          return { unreachableRooms: [], orphanCorrs: lv.corrRects.map((_, i) => i) }
+        // BFS from 房间 1 中心
+        const r0 = lv.rooms[0]
+        const start = Math.floor(r0.x + r0.w / 2) * GRID + Math.floor(r0.z + r0.d / 2)
+        const seen = new Uint8Array(GRID * GRID)
+        if (g[start]) {
+          seen[start] = 1
+          const stack = [start]
+          while (stack.length) {
+            const k = stack.pop()
+            const x = Math.floor(k / GRID),
+              z = k % GRID
+            if (x > 0 && g[k - GRID] && !seen[k - GRID]) {
+              seen[k - GRID] = 1
+              stack.push(k - GRID)
+            }
+            if (x < GRID - 1 && g[k + GRID] && !seen[k + GRID]) {
+              seen[k + GRID] = 1
+              stack.push(k + GRID)
+            }
+            if (z > 0 && g[k - 1] && !seen[k - 1]) {
+              seen[k - 1] = 1
+              stack.push(k - 1)
+            }
+            if (z < GRID - 1 && g[k + 1] && !seen[k + 1]) {
+              seen[k + 1] = 1
+              stack.push(k + 1)
+            }
+          }
+        }
+        const unreachableRooms = []
+        lv.rooms.forEach((r, i) => {
+          if (i === 0) return
+          const c = Math.floor(r.x + r.w / 2) * GRID + Math.floor(r.z + r.d / 2)
+          if (!seen[c]) unreachableRooms.push(i)
+        })
+        const orphanCorrs = []
+        lv.corrRects.forEach((r, i) => {
+          let touched = false
+          const x1 = Math.min(GRID - 2, r.x + r.w - 1),
+            z1 = Math.min(GRID - 2, r.z + r.d - 1)
+          for (let x = Math.max(1, r.x); x <= x1 && !touched; x++)
+            for (let z = Math.max(1, r.z); z <= z1 && !touched; z++)
+              if (seen[x * GRID + z]) touched = true
+          if (!touched) orphanCorrs.push(i)
+        })
+        return { unreachableRooms, orphanCorrs }
+      }
+
+      function validate(lv) {
+        const issues = []
+        const rs = lv.rooms
+        if (rs.length === 0) issues.push(['err', '至少画 1 个房间（玩家总得有地方出生）'])
+        else if (rs.length < 6)
+          issues.push([
+            'warn',
+            `房间只有 ${rs.length} 个：门/钥匙/雷达/开关/柜子会在同一房间里共处（够 6 间才能完全分散）`,
+          ])
+        rs.forEach((r, i) => {
+          if (r.w < MIN_ROOM || r.d < MIN_ROOM)
+            issues.push([
+              'err',
+              `房间 ${i + 1} 太小（${r.w}×${r.d}），至少 ${MIN_ROOM}×${MIN_ROOM}`,
+            ])
+          if (r.x < 1 || r.z < 1 || r.x + r.w >= GRID || r.z + r.d >= GRID)
+            issues.push(['err', `房间 ${i + 1} 越界（四周至少留 1 格墙）`])
+        })
+        // 房间重叠/贴边都是合法拼接（合并成不规则大房间），不做任何检查
+        // 独木不成林：连通性始终按格级事实检查——贴边/重叠即打通，不依赖走廊
+        const sim = simulate(lv)
+        if (sim.unreachableRooms.length)
+          issues.push([
+            'err',
+            `房间 ${sim.unreachableRooms.map((i) => i + 1).join('、')} 是孤岛：请贴到其他房间上或用走廊接入`,
+          ])
+        if (sim.orphanCorrs.length)
+          issues.push([
+            'err',
+            `走廊 ${sim.orphanCorrs.map((i) => i + 1).join('、')} 是孤木：请接到房间或已接通的走廊上`,
+          ])
+        if (issues.length === 0) issues.push(['ok', '✓ 配置合法，可以导出'])
+        return issues
+      }
+
+      // ================= 渲染 =================
+      function render() {
+        const lv = L()
+        // 独木不成林：孤岛房间/孤立走廊实时红色示警
+        const sim = simulate(lv)
+        // 背景明暗随「关灯亮度」示意；开局开灯的关卡直接亮档（背景在屏幕坐标系铺满视口）
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        const shade = lv.lightsOn ? 64 : Math.round(10 + (lv.darkAmbient / 0.3) * 45)
+        ctx.fillStyle = `rgb(${shade},${shade},${shade + 4})`
+        ctx.fillRect(0, 0, cv.width, cv.height)
+        // 世界内容裁剪到标尺内侧的视口里，经视口变换绘制：缩放=矢量重画，放大不糊
+        // （dispK：逻辑 848 系 → 实际内部像素的高清系数，所有层级统一乘上）
+        ctx.save()
+        ctx.setTransform(dispK, 0, 0, dispK, 0, 0)
+        ctx.beginPath()
+        ctx.rect(RULER, RULER, VIEW, VIEW)
+        ctx.clip()
+        ctx.setTransform(
+          zoom * dispK,
+          0,
+          0,
+          zoom * dispK,
+          (RULER + panX) * dispK,
+          (RULER + panY) * dispK,
+        )
+
+        // 网格：1 米细格（极淡）+ 每 10 米主线 + 边缘坐标刻度
+        ctx.lineWidth = 1
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)'
+        ctx.beginPath()
+        for (let i = 0; i <= GRID; i++) {
+          if (i % 10 === 0) continue
+          ctx.moveTo(i * CELL + 0.5, 0)
+          ctx.lineTo(i * CELL + 0.5, GRID * CELL)
+          ctx.moveTo(0, i * CELL + 0.5)
+          ctx.lineTo(GRID * CELL, i * CELL + 0.5)
+        }
+        ctx.stroke()
+        ctx.strokeStyle = 'rgba(255,255,255,0.10)'
+        ctx.beginPath()
+        for (let i = 0; i <= GRID; i += 10) {
+          ctx.moveTo(i * CELL + 0.5, 0)
+          ctx.lineTo(i * CELL + 0.5, GRID * CELL)
+          ctx.moveTo(0, i * CELL + 0.5)
+          ctx.lineTo(GRID * CELL, i * CELL + 0.5)
+        }
+        ctx.stroke()
+
+        // 走廊（画在房间下层；孤立走廊橙红提示）
+        lv.corrRects.forEach((r, i) => {
+          const orphan = sim.orphanCorrs.includes(i)
+          ctx.fillStyle = orphan ? 'rgba(215,70,55,0.6)' : 'rgba(150,125,80,0.55)'
+          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL)
+          if (i === selCorr && mode === 'corr') {
+            ctx.lineWidth = 2.5
+            ctx.strokeStyle = '#ffd257'
+            ctx.strokeRect(r.x * CELL + 0.5, r.z * CELL + 0.5, r.w * CELL - 1, r.d * CELL - 1)
+            ctx.fillStyle = 'rgba(255,255,255,0.85)'
+            ctx.font = 'bold 10px sans-serif'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(`${r.w}×${r.d}`, (r.x + r.w / 2) * CELL, (r.z + r.d / 2) * CELL)
+          }
+        })
+
+        // 房间
+        lv.rooms.forEach((r, i) => {
+          const bad = r.w < MIN_ROOM || r.d < MIN_ROOM
+          const unreachable = sim.unreachableRooms.includes(i)
+          // 孤岛房间与非法尺寸同级：红色示警（无法导出）
+          ctx.fillStyle = bad || unreachable ? 'rgba(160,50,50,0.45)' : 'rgba(70,110,80,0.5)'
+          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL)
+          ctx.lineWidth = i === sel && mode === 'room' ? 2.5 : unreachable ? 2 : 1
+          ctx.strokeStyle =
+            bad || unreachable
+              ? '#ff6a6a'
+              : i === sel && mode === 'room'
+                ? '#7ad0ff'
+                : 'rgba(255,255,255,0.4)'
+          ctx.strokeRect(r.x * CELL + 0.5, r.z * CELL + 0.5, r.w * CELL - 1, r.d * CELL - 1)
+          ctx.fillStyle = 'rgba(255,255,255,0.85)'
+          ctx.font = 'bold 11px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(
+            `${i + 1}${unreachable ? ' ⚠' : ''}`,
+            (r.x + r.w / 2) * CELL,
+            (r.z + r.d / 2) * CELL - 6,
+          )
+          ctx.fillStyle = 'rgba(255,255,255,0.45)'
+          ctx.font = '9px sans-serif'
+          ctx.fillText(`${r.w}×${r.d}`, (r.x + r.w / 2) * CELL, (r.z + r.d / 2) * CELL + 7)
+          // 选中房间的右下角缩放手柄
+          if (i === sel && mode === 'room') {
+            ctx.fillStyle = '#7ad0ff'
+            ctx.fillRect((r.x + r.w) * CELL - 7, (r.z + r.d) * CELL - 7, 7, 7)
+          }
+        })
+
+        // 可视距离示意（地图中心，低透明度不抢主体）：虚线圆 + 半径虚线，文字标在半径中点；
+        // 开局开灯=基本无雾，不画
+        if (!lv.lightsOn) {
+          const fogCx = (GRID / 2) * CELL
+          const fogCz = (GRID / 2) * CELL
+          const fogR = lv.darkFogFar * CELL
+          ctx.setLineDash([6, 6])
+          ctx.strokeStyle = 'rgba(120,170,255,0.2)'
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.arc(fogCx, fogCz, fogR, 0, Math.PI * 2)
+          ctx.stroke()
+          // 半径虚线（圆心 → 右侧圆周）
+          ctx.strokeStyle = 'rgba(120,170,255,0.25)'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(fogCx, fogCz)
+          ctx.lineTo(fogCx + fogR, fogCz)
+          ctx.stroke()
+          ctx.setLineDash([])
+          ctx.fillStyle = 'rgba(120,170,255,0.25)'
+          ctx.font = '9px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText(`可视≈${lv.darkFogFar}m`, fogCx + fogR / 2, fogCz - 5)
+        }
+        ctx.restore() // 解除世界视口裁剪
+        ctx.setTransform(dispK, 0, 0, dispK, 0, 0)
+
+        // 坐标数字（地图外侧，屏幕坐标系，无背景条）：0~100；放大时按可见范围动态标注并加密步进
+        ctx.font = '10px sans-serif'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillStyle = 'rgba(255,255,255,0.6)'
+        const step = zoom >= 5 ? 2 : zoom >= 2.5 ? 5 : 10
+        for (let g = 0; g <= GRID; g += step) {
+          const sx = RULER + g * CELL * zoom + panX
+          if (sx >= RULER - 0.5 && sx <= RULER + VIEW + 0.5) {
+            ctx.textAlign = 'center'
+            ctx.fillText(String(g), sx, RULER - 8)
+          }
+          // 纵轴跳过 0：左上角与横轴共用同一个 0
+          const sy = RULER + g * CELL * zoom + panY
+          if (g > 0 && sy >= RULER - 0.5 && sy <= RULER + VIEW + 0.5) {
+            ctx.textAlign = 'right'
+            ctx.fillText(String(g), RULER - 7, sy + 3)
+          }
+        }
+        // 右上角单位
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'
+        ctx.textAlign = 'left'
+        ctx.font = 'bold 11px sans-serif'
+        ctx.fillText('m', RULER + VIEW + 8, RULER - 8)
+
+        renderPanels()
+      }
+
+      function renderPanels() {
+        const lv = L()
+        // 关卡列表（左侧竖排；新增按钮固定在列表下方，不随列表重建）
+        $('tabs').innerHTML = levels
+          .map(
+            (_, i) =>
+              `<div class="row ${i === cur ? 'sel' : ''}" data-tab="${i}">
+       <span>第 ${i + 1} 关</span>${levels.length > 1 ? `<span class="x" data-del="${i}">✕</span>` : ''}
+     </div>`,
+          )
+          .join('')
+        // 参数
+        $('ckLights').checked = lv.lightsOn === true
+        $('ckGhost').checked = lv.ghostEnabled !== false
+        $('ambient').value = lv.darkAmbient
+        $('vAmb').textContent = lv.darkAmbient.toFixed(2)
+        $('fog').value = lv.darkFogFar
+        $('vFog').textContent = lv.darkFogFar
+        $('ghost').value = lv.ghostSpeed
+        $('vGhost').textContent = lv.ghostSpeed.toFixed(2)
+        $('ghost').disabled = lv.ghostEnabled === false
+        // 房间列表
+        $('roomList').innerHTML =
+          lv.rooms
+            .map(
+              (r, i) =>
+                `<div class="row ${i === sel && mode === 'room' ? 'sel' : ''}" data-room="${i}">
+       <span>房间${i + 1} • 位置[${r.x},${r.z}] • 大小(${r.w}×${r.d})</span><span class="x" data-delroom="${i}">✕</span>
+     </div>`,
+            )
+            .join('') || '<div class="hint">「画/选房间」模式下拖拽画布空白处</div>'
+        // 走廊列表
+        $('corrList').innerHTML =
+          lv.corrRects
+            .map(
+              (r, i) =>
+                `<div class="row ${i === selCorr && mode === 'corr' ? 'sel' : ''}" data-corr="${i}">
+       <span>走廊${i + 1} • 位置[${r.x},${r.z}] • 大小(${r.w}×${r.d})</span><span class="x" data-delcorr="${i}">✕</span>
+     </div>`,
+            )
+            .join('') ||
+          '<div class="hint">「画/选走廊」模式下在房间之间拖出通道；房间贴边/重叠时不画也已连通</div>'
+        // 校验
+        saveDraft()
+      }
+
+      // ================= 交互（房间与走廊同一套拖拽逻辑，按模式作用于不同列表） =================
+      function activeList() {
+        return mode === 'room' ? L().rooms : L().corrRects
+      }
+      function getSel() {
+        return mode === 'room' ? sel : selCorr
+      }
+      function setSel(v) {
+        if (mode === 'room') sel = v
+        else selCorr = v
+      }
+
+      cv.addEventListener(
+        'wheel',
+        (e) => {
+          if (!e.ctrlKey) return
+          e.preventDefault() // 拦掉浏览器整页缩放
+          const r = cv.getBoundingClientRect()
+          const k = LOGIC / r.width
+          const mx = (e.clientX - r.left) * k - RULER,
+            my = (e.clientY - r.top) * k - RULER
+          const nz = Math.max(1, Math.min(MAX_ZOOM, zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+          if (nz === zoom) return
+          // 锚点缩放：鼠标所指的世界点在屏幕上保持不动
+          panX = mx - ((mx - panX) / zoom) * nz
+          panY = my - ((my - panY) / zoom) * nz
+          zoom = nz
+          clampPan()
+          render()
+        },
+        { passive: false },
+      )
+
+      cv.addEventListener('mousedown', (e) => {
+        if (spaceDown) {
+          panDrag = { mx: e.clientX, my: e.clientY, px: panX, py: panY }
+          cv.style.cursor = 'grabbing'
+          return
+        }
+        const { gx, gz } = cellOf(e)
+        const list = activeList()
+        const s = getSel()
+        // 缩放手柄仅房间有：走廊的手柄热区会挡住"从走廊端头接续画下一段"的起笔位，
+        // 而走廊画错重画成本极低，不值得为调长度牺牲高频操作
+        if (mode === 'room' && s !== -1 && list[s]) {
+          const r = list[s]
+          // 右下角手柄（1 格容差）
+          if (gx >= r.x + r.w - 1 && gx <= r.x + r.w && gz >= r.z + r.d - 1 && gz <= r.z + r.d) {
+            drag = { kind: 'resize' }
+            return
+          }
+        }
+        const hit = rectAt(list, gx, gz)
+        if (hit !== -1) {
+          setSel(hit)
+          const r = list[hit]
+          drag = { kind: 'move', dx: gx - r.x, dz: gz - r.z }
+        } else {
+          drag = { kind: 'new', sx: gx, sz: gz }
+          list.push({ x: gx, z: gz, w: 1, d: 1 })
+          setSel(list.length - 1)
+        }
+        render()
+      })
+
+      cv.addEventListener('mousemove', (e) => {
+        if (panDrag) {
+          const k = cvScale()
+          panX = panDrag.px + (e.clientX - panDrag.mx) * k
+          panY = panDrag.py + (e.clientY - panDrag.my) * k
+          clampPan()
+          render()
+          return
+        }
+        const s = getSel()
+        if (!drag || s === -1) return
+        const { gx, gz } = cellOf(e)
+        const r = activeList()[s]
+        if (!r) return
+        if (drag.kind === 'new') {
+          if (mode === 'corr') {
+            // 走廊固定 1 格宽：按拖拽主方向锁成横/纵直线
+            const dx = Math.abs(gx - drag.sx)
+            const dz = Math.abs(gz - drag.sz)
+            if (dx >= dz) {
+              r.x = Math.min(drag.sx, gx)
+              r.z = drag.sz
+              r.w = dx + 1
+              r.d = 1
+            } else {
+              r.x = drag.sx
+              r.z = Math.min(drag.sz, gz)
+              r.w = 1
+              r.d = dz + 1
+            }
+          } else {
+            r.x = Math.min(drag.sx, gx)
+            r.z = Math.min(drag.sz, gz)
+            r.w = Math.abs(gx - drag.sx) + 1
+            r.d = Math.abs(gz - drag.sz) + 1
+          }
+        } else if (drag.kind === 'move') {
+          r.x = Math.max(1, Math.min(GRID - 1 - r.w, gx - drag.dx))
+          r.z = Math.max(1, Math.min(GRID - 1 - r.d, gz - drag.dz))
+        } else if (drag.kind === 'resize') {
+          r.w = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.x, gx - r.x + 1))
+          r.d = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.z, gz - r.z + 1))
+        }
+        render()
+      })
+
+      window.addEventListener('mouseup', () => {
+        if (panDrag) {
+          panDrag = null
+          cv.style.cursor = spaceDown ? 'grab' : ''
+        }
+        const s = getSel()
+        if (drag && s !== -1) {
+          const list = activeList()
+          const r = list[s]
+          if (drag.kind === 'new' && mode === 'room' && (r.w < MIN_ROOM || r.d < MIN_ROOM)) {
+            list.splice(s, 1)
+            setSel(-1)
+            toast(`房间至少 ${MIN_ROOM}×${MIN_ROOM}，拖大一点再松手`)
+          } else if (drag.kind === 'new' && mode === 'corr' && r.w === 1 && r.d === 1) {
+            // 单击未拖动：丢弃防误触（想打 1 格门洞就拖 2 格、让一头搭在房间上）
+            list.splice(s, 1)
+            setSel(-1)
+            toast('走廊至少拖出 2 格长（多余部分会自动截断到房间边）')
+          } else {
+            r.x = Math.max(1, Math.min(GRID - 1 - r.w, r.x))
+            r.z = Math.max(1, Math.min(GRID - 1 - r.d, r.z))
+            // 走廊的任何编辑（新画/拖动/调长）结束后都按房间边裁剪：
+            // 伸进房间的部分切掉，横穿房间自动分裂成多段
+            if (mode === 'corr') {
+              list.splice(s, 1)
+              const segs = clipCorridor(r, L().rooms)
+              list.push(...segs)
+              setSel(segs.length > 0 ? list.length - segs.length : -1)
+              if (segs.length === 0) toast('走廊完全落在房间内，已移除')
+              else if (segs.length > 1) toast(`走廊被房间截断为 ${segs.length} 段`)
+            } else {
+              // 房间新画/挪动/调整后：全部走廊按新房间边重裁剪（维持「走廊不进房间」不变量）
+              const lv = L()
+              lv.corrRects = lv.corrRects.flatMap((c) => clipCorridor(c, lv.rooms))
+            }
+          }
+          render()
+        }
+        drag = null
+      })
+
+      window.addEventListener('keydown', (e) => {
+        if (
+          (e.key === 'Delete' || e.key === 'Backspace') &&
+          document.activeElement.tagName !== 'TEXTAREA'
+        ) {
+          const s = getSel()
+          if (s !== -1) {
+            activeList().splice(s, 1)
+            setSel(-1)
+            render()
+            e.preventDefault()
+          }
+        }
+        if (e.key === 'Escape') {
+          if ($('modalMask').classList.contains('open')) {
+            closeModal()
+            return
+          }
+          if ($('helpMask').classList.contains('open')) {
+            $('helpMask').classList.remove('open')
+            return
+          }
+          if ($('errMask').classList.contains('open')) {
+            $('errMask').classList.remove('open')
+            return
+          }
+          if ($('moreMenu').classList.contains('open')) {
+            $('moreMenu').classList.remove('open')
+            return
+          }
+          sel = -1
+          selCorr = -1
+          render()
+        }
+        if (e.code === 'Space' && !spaceDown && document.activeElement.tagName !== 'TEXTAREA') {
+          spaceDown = true
+          if (!panDrag) cv.style.cursor = 'grab'
+          e.preventDefault() // 拦掉页面滚动/按钮触发
+        }
+      })
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+          spaceDown = false
+          panDrag = null
+          cv.style.cursor = ''
+        }
+      })
+      // 切窗口时空格键抬起事件会丢，统一重置
+      window.addEventListener('blur', () => {
+        spaceDown = false
+        panDrag = null
+        cv.style.cursor = ''
+      })
+
+      // 模式切换
+      $('modeRoom').onclick = () => {
+        mode = 'room'
+        selCorr = -1
+        setModeUI()
+        render()
+      }
+      $('modeCorr').onclick = () => {
+        mode = 'corr'
+        sel = -1
+        setModeUI()
+        render()
+      }
+      function setModeUI() {
+        $('modeRoom').classList.toggle('active', mode === 'room')
+        $('modeCorr').classList.toggle('active', mode === 'corr')
+      }
+
+      // 页签/列表（事件委托）
+      $('tabs').addEventListener('click', (e) => {
+        const del = e.target.closest('[data-del]')
+        if (del) {
+          const i = +del.dataset.del
+          if (confirm(`确定删除第 ${i + 1} 关？`)) {
+            levels.splice(i, 1)
+            cur = Math.min(cur > i ? cur - 1 : cur, levels.length - 1)
+            sel = -1
+            selCorr = -1
+            render()
+          }
+          return
+        }
+        const row = e.target.closest('[data-tab]')
+        if (row) {
+          cur = +row.dataset.tab
+          sel = -1
+          selCorr = -1
+          render()
+        }
+      })
+      $('btnAddLevel').onclick = () => {
+        // 新关卡从空白开始（难度与灯光/幽灵设置沿用当前关，布局自己画），追加在列表末尾
+        const nl = blankLevel()
+        nl.darkAmbient = L().darkAmbient
+        nl.darkFogFar = L().darkFogFar
+        nl.ghostSpeed = L().ghostSpeed
+        nl.lightsOn = L().lightsOn === true
+        nl.ghostEnabled = L().ghostEnabled !== false
+        levels.push(nl)
+        cur = levels.length - 1
+        sel = -1
+        selCorr = -1
+        // 新关从画房间开始：无论此前处于什么模式都切回「房间」
+        mode = 'room'
+        setModeUI()
+        toast('已新增空白关卡（参数沿用上一关）')
+        render()
+      }
+      $('roomList').addEventListener('click', (e) => {
+        const del = e.target.closest('[data-delroom]')
+        if (del) {
+          L().rooms.splice(+del.dataset.delroom, 1)
+          sel = -1
+          render()
+          return
+        }
+        const row = e.target.closest('[data-room]')
+        if (row) {
+          mode = 'room'
+          sel = +row.dataset.room
+          setModeUI()
+          render()
+        }
+      })
+      $('corrList').addEventListener('click', (e) => {
+        const del = e.target.closest('[data-delcorr]')
+        if (del) {
+          L().corrRects.splice(+del.dataset.delcorr, 1)
+          selCorr = -1
+          render()
+          return
+        }
+        const row = e.target.closest('[data-corr]')
+        if (row) {
+          mode = 'corr'
+          selCorr = +row.dataset.corr
+          setModeUI()
+          render()
+        }
+      })
+
+      // 参数滑杆
+      $('ambient').oninput = (e) => {
+        L().darkAmbient = +e.target.value
+        render()
+      }
+      $('fog').oninput = (e) => {
+        L().darkFogFar = +e.target.value
+        render()
+      }
+      $('ghost').oninput = (e) => {
+        L().ghostSpeed = +e.target.value
+        render()
+      }
+      $('ckLights').onchange = (e) => {
+        L().lightsOn = e.target.checked
+        render()
+      }
+      $('ckGhost').onchange = (e) => {
+        L().ghostEnabled = e.target.checked
+        render()
+      }
+
+      // ================= 导入导出 =================
+      /** 有任何 err 的关卡下标列表（独木不成林等错误存在时导出/下载都被拦截） */
+      function levelsWithErrors() {
+        return levels
+          .map((lv, i) => [i, validate(lv)])
+          .filter(([, is]) => is.some(([k]) => k === 'err'))
+      }
+
+      function exportJSON() {
+        const out = {
+          levels: levels.map((lv) => {
+            const o = {
+              rooms: lv.rooms.map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d })),
+              doorCount: 1,
+              darkAmbient: lv.darkAmbient,
+              darkFogFar: lv.darkFogFar,
+              ghostSpeed: lv.ghostSpeed,
+              lightsOn: lv.lightsOn === true,
+              ghostEnabled: lv.ghostEnabled !== false,
+            }
+            if (lv.corrRects.length > 0)
+              o.corridorRects = lv.corrRects.map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d }))
+            return o
+          }),
+        }
+        return JSON.stringify(out, null, 2)
+      }
+      /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
+      function guardedJSON() {
+        const bad = levelsWithErrors()
+        if (bad.length) {
+          $('errBody').innerHTML = bad
+            .map(
+              ([i, issues]) =>
+                `<h3>第 ${i + 1} 关</h3>` +
+                issues
+                  .filter(([k]) => k !== 'ok')
+                  .map(([k, m]) => `<div class="${k}">${m}</div>`)
+                  .join(''),
+            )
+            .join('')
+          $('errMask').classList.add('open')
+          render()
+          return null
+        }
+        return exportJSON()
+      }
+      $('errClose').onclick = () => $('errMask').classList.remove('open')
+      $('errMask').onclick = (e) => {
+        if (e.target === $('errMask')) $('errMask').classList.remove('open')
+      }
+
+      function copyText(text) {
+        const fallback = () => {
+          const ta = document.createElement('textarea')
+          ta.value = text
+          ta.style.cssText = 'position:fixed;opacity:0'
+          document.body.appendChild(ta)
+          ta.select()
+          let ok = false
+          try {
+            ok = document.execCommand('copy')
+          } catch {
+            ok = false
+          }
+          ta.remove()
+          return ok
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text).then(
+            () => true,
+            () => fallback(),
+          )
+        }
+        return Promise.resolve(fallback())
+      }
+
+      // ================= 弹框（查看 / 导入共用一个结构） =================
+      function openModal(mode, text) {
+        $('modalTitle').textContent =
+          mode === 'view' ? '当前配置 JSON（粘贴覆盖 src/levels_data.json）' : '导入已有 JSON'
+        $('modalCopy').style.display = mode === 'view' ? '' : 'none'
+        $('modalOk').style.display = mode === 'view' ? 'none' : ''
+        const t = $('ioText')
+        t.readOnly = mode === 'view'
+        t.placeholder =
+          mode === 'view' ? '' : '把 levels_data.json 的全部内容粘贴到这里，点「确定导入」'
+        t.value = text || ''
+        $('modalMask').classList.add('open')
+        if (mode === 'import') t.focus()
+      }
+      function closeModal() {
+        $('modalMask').classList.remove('open')
+      }
+      $('modalClose').onclick = closeModal
+      $('btnMore').onclick = (e) => {
+        e.stopPropagation()
+        $('moreMenu').classList.toggle('open')
+      }
+      $('moreMenu').addEventListener('click', () => $('moreMenu').classList.remove('open'))
+      window.addEventListener('click', (e) => {
+        if (!e.target.closest('.more-wrap')) $('moreMenu').classList.remove('open')
+        if (!e.target.closest('.tip-icon')) $('ambPop').classList.remove('open')
+      })
+      $('ambTip').onclick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        $('ambPop').classList.toggle('open')
+      }
+      $('btnHelp').onclick = () => $('helpMask').classList.add('open')
+      $('helpClose').onclick = () => $('helpMask').classList.remove('open')
+      $('helpMask').onclick = (e) => {
+        if (e.target === $('helpMask')) $('helpMask').classList.remove('open')
+      }
+      $('modalMask').onclick = (e) => {
+        if (e.target === $('modalMask')) closeModal()
+      }
+      $('modalCopy').onclick = () =>
+        copyText($('ioText').value).then((ok) =>
+          toast(ok ? '已复制到剪贴板' : '复制失败，请手动全选复制'),
+        )
+      $('modalOk').onclick = () => {
+        try {
+          const data = JSON.parse($('ioText').value)
+          const arr = Array.isArray(data) ? data : data.levels
+          if (!Array.isArray(arr) || arr.length === 0) throw new Error('缺少 levels 数组')
+          loadLevelsData(arr)
+          closeModal()
+          toast(`已导入 ${levels.length} 个关卡`)
+          render()
+        } catch (err) {
+          toast('导入失败：' + err.message)
+        }
+      }
+
+      $('btnCopy').onclick = () => {
+        const json = guardedJSON()
+        if (json === null) return
+        copyText(json).then((ok) =>
+          toast(
+            ok
+              ? '已复制到剪贴板：粘贴覆盖 src/levels_data.json，重新构建即生效'
+              : '复制失败，请点「查看当前 JSON」手动复制',
+          ),
+        )
+      }
+      $('btnView').onclick = () => {
+        const json = guardedJSON()
+        if (json === null) return
+        openModal('view', json)
+      }
+      $('btnDownload').onclick = () => {
+        const json = guardedJSON()
+        if (json === null) return
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+        a.download = 'levels.json'
+        a.click()
+        URL.revokeObjectURL(a.href)
+      }
+      /** 把外部 levels 数组规范化载入编辑器（宽走廊拆 1 格线段并按房间裁剪） */
+      function loadLevelsData(arr) {
+        levels = arr.map((lv) => {
+          const rooms = (lv.rooms || []).map((r) => ({ x: +r.x, z: +r.z, w: +r.w, d: +r.d }))
+          const corrRects = (lv.corridorRects || [])
+            .map((r) => ({ x: +r.x, z: +r.z, w: +r.w, d: +r.d }))
+            .flatMap(normalizeCorr)
+            .flatMap((c) => clipCorridor(c, rooms))
+          return {
+            rooms,
+            corrRects,
+            darkAmbient: +lv.darkAmbient || 0.2,
+            darkFogFar: +lv.darkFogFar || 20,
+            ghostSpeed: +lv.ghostSpeed || 2.8,
+            lightsOn: lv.lightsOn === true,
+            ghostEnabled: lv.ghostEnabled !== false,
+          }
+        })
+        cur = 0
+        sel = -1
+        selCorr = -1
+      }
+      $('btnImport').onclick = () => openModal('import')
+      $('btnClear').onclick = () => {
+        if (confirm('清空全部关卡，回到一张空白画布？')) {
+          levels = [blankLevel()]
+          cur = 0
+          sel = -1
+          selCorr = -1
+          localStorage.removeItem('nc-editor-draft')
+          render()
+        }
+      }
+
+      // ================= 云端保存 / 加载 =================
+      const TOKEN_KEY = 'nc-admin-token'
+      function getAdminToken(forceAsk) {
+        let t = localStorage.getItem(TOKEN_KEY)
+        if (!t || forceAsk) {
+          t = prompt('请输入管理口令（保存关卡到云端需要）：')
+          if (t) localStorage.setItem(TOKEN_KEY, t)
+        }
+        return t
+      }
+      async function putLevels(json, token) {
+        return fetch('/api/levels', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: json,
+        })
+      }
+      async function cloudSave() {
+        const json = guardedJSON()
+        if (json === null) return
+        let token = getAdminToken(false)
+        if (!token) return
+        const btn = $('btnCloudSave')
+        btn.disabled = true
+        btn.textContent = '保存中…'
+        try {
+          let res = await putLevels(json, token)
+          if (res.status === 401) {
+            // 口令过期/记错：清掉重新问一次
+            localStorage.removeItem(TOKEN_KEY)
+            token = getAdminToken(true)
+            if (token) res = await putLevels(json, token)
+          }
+          if (res.ok) {
+            alert('已保存，全网生效（边缘节点最长约 1 分钟同步）')
+          } else {
+            const err = await res.json().catch(() => ({}))
+            alert('保存失败（HTTP ' + res.status + '）：' + (err.detail || err.error || '未知错误'))
+          }
+        } catch (e) {
+          alert('保存失败：网络错误 ' + e)
+        } finally {
+          btn.disabled = false
+          btn.textContent = '☁ 保存到云端'
+        }
+      }
+      $('btnCloudSave').onclick = cloudSave
+
+      // ================= 草稿自动保存 =================
+      let saveTimer = 0
+      function saveDraft() {
+        clearTimeout(saveTimer)
+        saveTimer = setTimeout(() => {
+          try {
+            localStorage.setItem('nc-editor-draft', JSON.stringify({ levels, cur }))
+          } catch {}
+        }, 400)
+      }
+      ;(async function init() {
+        setModeUI()
+        // 优先加载云端正式数据；失败/为空再回退本地草稿
+        let cloudLoaded = false
+        try {
+          const res = await fetch('/api/levels', { cache: 'no-store' })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && Array.isArray(data.levels) && data.levels.length) {
+              loadLevelsData(data.levels)
+              cloudLoaded = true
+            }
+          }
+        } catch {}
+        if (!cloudLoaded) {
+          try {
+            const d = JSON.parse(localStorage.getItem('nc-editor-draft'))
+            if (
+              d &&
+              Array.isArray(d.levels) &&
+              d.levels.length &&
+              confirm('云端暂无数据。检测到本地草稿，是否恢复？（取消 = 空白画布）')
+            ) {
+              levels = d.levels.map((lv) => ({
+                rooms: lv.rooms || [],
+                corrRects: lv.corrRects || [],
+                darkAmbient: lv.darkAmbient || 0.2,
+                darkFogFar: lv.darkFogFar || 20,
+                ghostSpeed: lv.ghostSpeed || 2.8,
+                lightsOn: lv.lightsOn === true,
+                ghostEnabled: lv.ghostEnabled !== false,
+              }))
+              cur = Math.min(d.cur || 0, levels.length - 1)
+            }
+          } catch {}
+        }
+        render()
+      })()
+    </script>
+  </body>
+</html>
