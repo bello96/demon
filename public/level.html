@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <title>方块噩梦 · 关卡编辑器</title>
+    <!-- 与游戏页同款 emoji 图标（内联 SVG，顺带消掉 /favicon.ico 404） -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👿</text></svg>" />
     <style>
       /* 与游戏页同款像素字体（仅拉丁字符生效，中文回退系统字体，观感与游戏一致） */
       @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
@@ -1795,6 +1797,14 @@
         drag = null;
       });
 
+      /** JSON 查看导入 / 帮助 / 错误清单任一弹层是否打开（打开时画布快捷键必须失效） */
+      function anyLayerOpen() {
+        return (
+          $("modalMask").classList.contains("open") ||
+          $("helpMask").classList.contains("open") ||
+          $("errMask").classList.contains("open")
+        );
+      }
       window.addEventListener("keydown", (e) => {
         // 弹框（口令门禁 / 游戏风提示框）打开时吞掉画布快捷键：
         // 避免在输入框里退格、或按 Del/空格时误伤底下选中的房间与视图
@@ -1809,8 +1819,15 @@
           }
           return;
         }
+        // 关卡行拖拽进行中：吞掉全部画布快捷键——Del 等会触发列表重建，
+        // 把拖拽中的行换成孤儿节点（Esc 收尾时机不对也会留下 transform 残影）
+        if (lvDrag && lvDrag.moved) {
+          e.preventDefault();
+          return;
+        }
         if (
           (e.key === "Delete" || e.key === "Backspace") &&
+          !anyLayerOpen() &&
           document.activeElement.tagName !== "TEXTAREA"
         ) {
           const s = getSel();
@@ -1845,6 +1862,7 @@
         if (
           e.code === "Space" &&
           !spaceDown &&
+          !anyLayerOpen() &&
           document.activeElement.tagName !== "TEXTAREA"
         ) {
           spaceDown = true;
@@ -1928,7 +1946,11 @@
         // capture 必须设在行元素而非 #tabs 容器：pointer capture 会把后续兼容
         // 鼠标事件（含合成 click）的 target 重定向到 capture 元素——若设在容器上，
         // click.target 变成 #tabs，closest("[data-tab]") 找不到行，点击切关会失效
-        row.setPointerCapture(e.pointerId);
+        try {
+          row.setPointerCapture(e.pointerId);
+        } catch {
+          // 指针在 down 与此行之间已失活（罕见）：放弃 capture，拖出列表由 window 级 up 兜底
+        }
       });
       $("tabs").addEventListener("pointermove", (e) => {
         if (!lvDrag) {
@@ -1981,7 +2003,9 @@
           lvDragJustEnded = false; // 兜底：松手点在列表外时 click 不经过 #tabs
         }, 0);
         // FLIP 落位：先记住松手时被拖行的视觉位置
-        const fromTop = d.row.getBoundingClientRect().top;
+        //（行若已被中途 render 换代成孤儿节点，则跳过落位动画只做数据重排）
+        const rowAlive = d.row.isConnected;
+        const fromTop = rowAlive ? d.row.getBoundingClientRect().top : 0;
         if (d.from !== d.to) {
           // 数组重排（关卡对象引用不变，只换位置）；当前关跟随它指向的关卡走
           const curLevel = levels[cur];
@@ -1992,7 +2016,7 @@
         render(); // 重建列表：让位行的过渡终点恰是新布局位置，无跳变
         // 被拖行从松手位置平滑滑入新家（先无过渡摆到旧视觉位，再过渡归零）
         const newRow = $("tabs").querySelector(`[data-tab="${d.to}"]`);
-        if (newRow) {
+        if (newRow && rowAlive) {
           const delta = fromTop - newRow.getBoundingClientRect().top;
           if (Math.abs(delta) > 1) {
             newRow.style.transition = "none";
@@ -2006,8 +2030,33 @@
           toast("已调整关卡顺序，保存到云端后生效");
         }
       };
-      $("tabs").addEventListener("pointerup", lvDragEnd);
-      $("tabs").addEventListener("pointercancel", lvDragEnd);
+      /** 取消拖拽（不落位）：切窗口 / 系统抢占指针时复原列表 */
+      const lvDragCancel = () => {
+        if (!lvDrag) {
+          return;
+        }
+        const wasMoved = lvDrag.moved;
+        lvDrag = null;
+        $("tabs").classList.remove("drag-active");
+        if (wasMoved) {
+          render(); // 重建即复原：清掉所有跟随/让位的行内 transform
+        }
+      };
+      // up/cancel 挂 window：capture 元素若被中途 render 换代，capture 会隐式释放，
+      // 松手点可能落在列表外——#tabs 上会漏接，悬挂的 lvDrag 将吞掉后续所有点击
+      window.addEventListener("pointerup", lvDragEnd);
+      window.addEventListener("pointercancel", lvDragCancel);
+      window.addEventListener("blur", lvDragCancel);
+      // 拖拽中锁死列表滚动：行让位量按 offsetTop 计算，滚动会让落位与视觉错位
+      $("tabs").addEventListener(
+        "wheel",
+        (e) => {
+          if (lvDrag && lvDrag.moved) {
+            e.preventDefault();
+          }
+        },
+        { passive: false },
+      );
       $("tabs").addEventListener("click", async (e) => {
         if (lvDragJustEnded) {
           lvDragJustEnded = false;
@@ -2072,6 +2121,7 @@
         nl.ghostSpeed = L().ghostSpeed;
         nl.lightsOn = L().lightsOn === true;
         nl.ghostEnabled = L().ghostEnabled !== false;
+        nl.minimapEnabled = L().minimapEnabled !== false;
         levels.push(nl);
         cur = levels.length - 1;
         sel = -1;
@@ -2328,25 +2378,49 @@
         a.click();
         URL.revokeObjectURL(a.href);
       };
-      /** 把外部 levels 数组规范化载入编辑器（宽走廊拆 1 格线段并按房间裁剪） */
+      /** 数值防御：非有限数回退 fallback，有限数夹进 [min,max]（导入任意 JSON 的进货闸） */
+      function numIn(v, min, max, fallback) {
+        const n = +v;
+        if (!Number.isFinite(n)) {
+          return fallback;
+        }
+        return Math.max(min, Math.min(max, n));
+      }
+      /** 把外部 levels 数组规范化载入编辑器（宽走廊拆 1 格线段并按房间裁剪）。
+       *  防御性清洗：缺字段/非数值的矩形直接丢弃（NaN 会溜过 < 比较的校验）；
+       *  坐标取整并钳进网格（超长走廊不钳会让 1 格拆分循环卡死页面）；
+       *  参数钳到滑杆合法范围。越界布局仍交给 validate 红色示警，由人来修 */
       function loadLevelsData(arr) {
-        levels = arr.map((lv) => {
-          const rooms = (lv.rooms || []).map((r) => ({
-            x: +r.x,
-            z: +r.z,
-            w: +r.w,
-            d: +r.d,
-          }));
-          const corrRects = (lv.corridorRects || [])
-            .map((r) => ({ x: +r.x, z: +r.z, w: +r.w, d: +r.d }))
+        const saneRect = (r) =>
+          r &&
+          Number.isFinite(+r.x) &&
+          Number.isFinite(+r.z) &&
+          Number.isFinite(+r.w) &&
+          Number.isFinite(+r.d);
+        const clampRect = (r) => ({
+          x: Math.max(0, Math.min(GRID - 1, Math.round(+r.x))),
+          z: Math.max(0, Math.min(GRID - 1, Math.round(+r.z))),
+          w: Math.max(1, Math.min(GRID, Math.round(+r.w))),
+          d: Math.max(1, Math.min(GRID, Math.round(+r.d))),
+        });
+        levels = arr.map((raw) => {
+          const lv = raw && typeof raw === "object" ? raw : {};
+          const rooms = (Array.isArray(lv.rooms) ? lv.rooms : [])
+            .filter(saneRect)
+            .map(clampRect);
+          const corrRects = (
+            Array.isArray(lv.corridorRects) ? lv.corridorRects : []
+          )
+            .filter(saneRect)
+            .map(clampRect)
             .flatMap(normalizeCorr)
             .flatMap((c) => clipCorridor(c, rooms));
           return {
             rooms,
             corrRects,
-            darkAmbient: +lv.darkAmbient || 0.2,
-            darkFogFar: +lv.darkFogFar || 20,
-            ghostSpeed: +lv.ghostSpeed || 2.8,
+            darkAmbient: numIn(lv.darkAmbient, 0.05, 0.3, 0.2),
+            darkFogFar: numIn(lv.darkFogFar, 8, 30, 20),
+            ghostSpeed: numIn(lv.ghostSpeed, 2, 6, 3),
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
             minimapEnabled: lv.minimapEnabled !== false,
@@ -2536,6 +2610,10 @@
        */
       function openDlg(opts) {
         return new Promise((resolve) => {
+          if (dlgResolve) {
+            // 防重入：前一个弹框按「取消」收场，避免其 await 方永久悬挂
+            dlgResolve(false);
+          }
           dlgResolve = resolve;
           $("dlgTitle").textContent = opts.title || "提示";
           $("dlgTitle").style.color =
