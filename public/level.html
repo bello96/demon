@@ -5,7 +5,7 @@
     <title>方块噩梦 · 关卡编辑器</title>
     <style>
       /* 与游戏页同款像素字体（仅拉丁字符生效，中文回退系统字体，观感与游戏一致） */
-      @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
       :root {
         color-scheme: dark;
       }
@@ -17,8 +17,8 @@
       /* ===== 游戏页同款视觉基调：纯黑底 / 像素字 / 方角粗边框 / 橙色强调 ===== */
       body {
         font:
-          15px/1.5 'VT323',
-          'Microsoft YaHei',
+          15px/1.5 "VT323",
+          "Microsoft YaHei",
           monospace;
         background: #050505;
         color: #ccc;
@@ -236,7 +236,7 @@
         margin: 12px 0 8px;
       }
       .panel h2::before {
-        content: '■ ';
+        content: "■ ";
         color: #a00;
       }
       .panel h2:first-child {
@@ -374,14 +374,14 @@
         cursor: pointer;
         align-items: center;
       }
-      .ctl input[type='checkbox'] {
+      .ctl input[type="checkbox"] {
         width: 15px;
         height: 15px;
         accent-color: #ffaa00;
         cursor: pointer;
       }
       /* 游戏页设置项同款滑杆：扁灰轨道 + 白色圆头 */
-      .ctl input[type='range'] {
+      .ctl input[type="range"] {
         width: 100%;
         height: 6px;
         border-radius: 3px;
@@ -391,7 +391,7 @@
         -webkit-appearance: none;
         appearance: none;
       }
-      .ctl input[type='range']::-webkit-slider-thumb {
+      .ctl input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
         width: 17px;
@@ -401,7 +401,7 @@
         cursor: pointer;
         border: 2px solid #555;
       }
-      .ctl input[type='range']::-moz-range-thumb {
+      .ctl input[type="range"]::-moz-range-thumb {
         width: 17px;
         height: 17px;
         border-radius: 50%;
@@ -409,7 +409,7 @@
         cursor: pointer;
         border: 2px solid #555;
       }
-      .ctl input[type='range']:disabled {
+      .ctl input[type="range"]:disabled {
         opacity: 0.35;
         cursor: not-allowed;
       }
@@ -509,7 +509,7 @@
         text-shadow: 2px 2px 0 #000;
       }
       .modal-head b::before {
-        content: '■ ';
+        content: "■ ";
         color: #a00;
       }
       .modal-acts {
@@ -577,18 +577,29 @@
         padding: 40px 46px;
         width: min(92vw, 440px);
         text-align: center;
-        font-family: 'VT323', monospace;
+        font-family: "VT323", monospace;
         image-rendering: pixelated;
       }
       .gate-box.shake {
         animation: gateShake 0.3s;
       }
       @keyframes gateShake {
-        0%, 100% { transform: translateX(0); }
-        20% { transform: translateX(-9px); }
-        40% { transform: translateX(9px); }
-        60% { transform: translateX(-6px); }
-        80% { transform: translateX(6px); }
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-9px);
+        }
+        40% {
+          transform: translateX(9px);
+        }
+        60% {
+          transform: translateX(-6px);
+        }
+        80% {
+          transform: translateX(6px);
+        }
       }
       .gate-title {
         color: #a00;
@@ -615,7 +626,7 @@
         border: 4px solid #555;
         border-radius: 0;
         color: #fff;
-        font-family: 'VT323', monospace;
+        font-family: "VT323", monospace;
         font-size: 26px;
         letter-spacing: 6px;
         text-align: center;
@@ -642,7 +653,7 @@
         font-size: 26px;
         letter-spacing: 10px;
         cursor: pointer;
-        font-family: 'VT323', monospace;
+        font-family: "VT323", monospace;
         transition: 0.1s;
       }
       .gate-box button:hover {
@@ -792,25 +803,39 @@
         <div class="panel">
           <h2>关卡参数</h2>
           <div class="ctl">
-            <label class="ck"><input type="checkbox" id="ckLights" /> 房间灯光</label>
+            <label class="ck"
+              ><input type="checkbox" id="ckLights" /> 房间灯光</label
+            >
           </div>
           <div class="ctl">
             <label>
-              <span>关灯时房间亮度 <span class="tip-icon" id="ambTip">!</span></span>
+              <span
+                >关灯时房间亮度
+                <span class="tip-icon" id="ambTip">!</span></span
+              >
               <b id="vAmb"></b>
             </label>
             <div class="tip-pop" id="ambPop">
               灯没打开时环境有多亮：越小越黑（0.05 几乎全黑、0.30
               朦胧可辨）；打开灯后各关一样亮，本值不生效
             </div>
-            <input type="range" id="ambient" min="0.05" max="0.30" step="0.01" />
+            <input
+              type="range"
+              id="ambient"
+              min="0.05"
+              max="0.30"
+              step="0.01"
+            />
           </div>
           <div class="ctl">
             <label>可视距离（米）<b id="vFog"></b></label>
             <input type="range" id="fog" min="8" max="30" step="1" />
           </div>
           <div class="ctl">
-            <label class="ck"><input type="checkbox" id="ckGhost" checked /> 出现幽灵（速度单位：米/秒）</label>
+            <label class="ck"
+              ><input type="checkbox" id="ckGhost" checked />
+              出现幽灵（米/秒）</label
+            >
           </div>
           <div class="ctl">
             <label>幽灵移动速度 <b id="vGhost"></b></label>
@@ -834,7 +859,9 @@
       <div class="modal">
         <div class="modal-head">
           <b>配置有错误，请修正后再操作</b>
-          <div class="modal-acts"><button id="errClose" class="gray">关闭</button></div>
+          <div class="modal-acts">
+            <button id="errClose" class="gray">关闭</button>
+          </div>
         </div>
         <div id="errBody"></div>
       </div>
@@ -844,26 +871,37 @@
       <div class="modal">
         <div class="modal-head">
           <b>使用说明</b>
-          <div class="modal-acts"><button id="helpClose" class="gray">关闭</button></div>
+          <div class="modal-acts">
+            <button id="helpClose" class="gray">关闭</button>
+          </div>
         </div>
         <div class="hint">
           · 地图 100×100，1 格 = 1 米<br />
-          · 出图流程：画好后点右上角「☁ 保存到云端」→ 所有玩家刷新游戏即玩到新关卡（边缘节点最长约 1 分钟同步）<br />
-          · 房间模式：空白处拖拽=新建房间；点房间=选中可拖动；拖右下角手柄=调大小；Del=删除<br />
+          · 出图流程：画好后点右上角「☁ 保存到云端」→
+          所有玩家刷新游戏即玩到新关卡（边缘节点最长约 1 分钟同步）<br />
+          ·
+          房间模式：空白处拖拽=新建房间；点房间=选中可拖动；拖右下角手柄=调大小；Del=删除<br />
           · 走廊模式：拖拽=画 1
           米宽走廊（斜拖自动锁横/纵直线）；点走廊=选中可拖动；Del=删除，画错就删掉重画<br />
-          · 冻结关卡：点关卡行的 ❄ 暂时停用该关（数据保留、游戏跳过、后面的关卡顺位前移），点 ▶
+          · 冻结关卡：点关卡行的 ❄
+          暂时停用该关（数据保留、游戏跳过、后面的关卡顺位前移），点 ▶
           解冻恢复；至少要保留一个启用中的关卡<br />
-          · 出生房与门/钥匙/雷达/开关的位置由游戏每局随机分配，编辑器只定房间与走廊<br />
-          · 房间可以重叠/贴边：重叠处自动打通合并，可拼出 L 形、凹形等不规则大房间
+          ·
+          出生房与门/钥匙/雷达/开关的位置由游戏每局随机分配，编辑器只定房间与走廊<br />
+          · 房间可以重叠/贴边：重叠处自动打通合并，可拼出 L
+          形、凹形等不规则大房间
           （每块矩形仍保留自己的房号，找东西的提示会更精确）<br />
           · 走廊固定 1 米宽；想要更宽的通道，就并排画几条贴边（贴边即打通）<br />
-          · 走廊只存在于房间之间：拖进房间的部分自动截断到房间边，横穿房间会分成两段<br />
-          · 走廊与走廊贴边/相接也打通，可拼出 L 形、T 形任意路网；两房之间开几条都行<br />
-          · 独木不成林：所有房间与走廊必须连成一片才能导出——房间贴边/重叠即打通，无需走廊；
+          ·
+          走廊只存在于房间之间：拖进房间的部分自动截断到房间边，横穿房间会分成两段<br />
+          · 走廊与走廊贴边/相接也打通，可拼出 L 形、T
+          形任意路网；两房之间开几条都行<br />
+          ·
+          独木不成林：所有房间与走廊必须连成一片才能导出——房间贴边/重叠即打通，无需走廊；
           孤立的房间或走廊（红框 ⚠）都是错误<br />
           · 虚线圆 = 关灯时的可视距离示意<br />
-          · Ctrl+滚轮：以鼠标为中心矢量放大（最小回到全图）；按住空格再拖拽画布可平移
+          ·
+          Ctrl+滚轮：以鼠标为中心矢量放大（最小回到全图）；按住空格再拖拽画布可平移
         </div>
       </div>
     </div>
@@ -900,20 +938,27 @@
         <div class="gate-title">方块噩梦</div>
         <div class="gate-sub">LEVEL EDITOR · 管理验证</div>
         <div id="gateDesc">请输入管理口令</div>
-        <input id="gateInput" type="password" autocomplete="off" spellcheck="false" />
+        <input
+          id="gateInput"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+        />
         <div id="gateErr"></div>
         <button id="gateEnter">进 入</button>
-        <button id="gateOffline" class="gate-minor gate-hide">离线进入（无法连接云端，仅编辑本地草稿）</button>
+        <button id="gateOffline" class="gate-minor gate-hide">
+          离线进入（无法连接云端，仅编辑本地草稿）
+        </button>
         <button id="gateCancel" class="gate-minor gate-hide">取 消</button>
       </div>
     </div>
 
     <script>
-      'use strict'
+      "use strict";
       // ================= 数据 =================
       const GRID = 100,
         CELL = 8,
-        MIN_ROOM = 6
+        MIN_ROOM = 6;
 
       /** 空白关卡（默认参数取第 1 关难度档：开局关灯、有幽灵） */
       const blankLevel = () => ({
@@ -925,28 +970,28 @@
         lightsOn: false,
         ghostEnabled: true,
         frozen: false,
-      })
+      });
       // 打开即空白从头配；要接着改现有关卡，把 levels_data.json 内容粘贴到底部文本框「导入」
-      let levels = [blankLevel()]
-      let cur = 0 // 当前关卡下标
-      let mode = 'room' // 'room' | 'corr'
-      let sel = -1 // 选中的房间下标（room 模式）
-      let selCorr = -1 // 选中的走廊下标（corr 模式）
+      let levels = [blankLevel()];
+      let cur = 0; // 当前关卡下标
+      let mode = "room"; // 'room' | 'corr'
+      let sel = -1; // 选中的房间下标（room 模式）
+      let selCorr = -1; // 选中的走廊下标（corr 模式）
       // 拖拽状态：null | {kind:'new'|'move'|'resize', ...}
-      let drag = null
+      let drag = null;
 
       // ================= 工具 =================
-      const $ = (id) => document.getElementById(id)
-      const cv = $('cv'),
-        ctx = cv.getContext('2d')
-      const L = () => levels[cur]
+      const $ = (id) => document.getElementById(id);
+      const cv = $("cv"),
+        ctx = cv.getContext("2d");
+      const L = () => levels[cur];
 
       function toast(msg) {
-        const el = $('toast')
-        el.textContent = msg
-        el.style.opacity = 1
-        clearTimeout(el._t)
-        el._t = setTimeout(() => (el.style.opacity = 0), 1800)
+        const el = $("toast");
+        el.textContent = msg;
+        el.style.opacity = 1;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => (el.style.opacity = 0), 1800);
       }
       // ================= 视口（矢量缩放/平移 + 外侧标尺）=================
       // Ctrl+滚轮以鼠标为锚点放大（最小 1 = 全图，最大 6 倍）；按住空格拖拽平移。
@@ -954,14 +999,14 @@
       // 画布四周留 RULER 边距：上/左画坐标标尺（随缩放平移动态标注），右上角标单位
       let zoom = 1,
         panX = 0,
-        panY = 0
-      const MAX_ZOOM = 6
-      const RULER = 24 // 标尺区宽度（地图外侧）
-      const VIEW = GRID * CELL // 世界视口边长（1:1 时恰好装下整图）
-      const LOGIC = RULER + VIEW + RULER // 逻辑画布边长 848：绘制与交互坐标的统一基准系
-      let dispK = 1 // 内部像素 / 逻辑边长（高清系数 = 显示尺寸/848 × dpr）
-      let spaceDown = false
-      let panDrag = null // {mx,my,px,py} 空格平移拖拽起点
+        panY = 0;
+      const MAX_ZOOM = 6;
+      const RULER = 24; // 标尺区宽度（地图外侧）
+      const VIEW = GRID * CELL; // 世界视口边长（1:1 时恰好装下整图）
+      const LOGIC = RULER + VIEW + RULER; // 逻辑画布边长 848：绘制与交互坐标的统一基准系
+      let dispK = 1; // 内部像素 / 逻辑边长（高清系数 = 显示尺寸/848 × dpr）
+      let spaceDown = false;
+      let panDrag = null; // {mx,my,px,py} 空格平移拖拽起点
 
       /** 画布尺寸自适应：正方形边长取「可用高 / 可用宽」较小者——
        *  1280×800 ~ 1920×1080 视口内不出滚动条；更小的屏钳到 560 交给滚动条，
@@ -972,68 +1017,76 @@
        *           - 余量 10（临界视口下字体渲染的亚像素差异不至于挤出滚动条）。
        *  内部分辨率同步为显示尺寸 × dpr——放大按矢量重画，格线文字不糊 */
       function syncCanvasSize() {
-        const doc = document.documentElement
-        const css = Math.max(560, Math.min(1050, doc.clientHeight - 28, doc.clientWidth - 694))
-        cv.style.width = css + 'px'
-        cv.style.height = css + 'px'
-        const layout = document.querySelector('.layout')
-        layout.style.height = css + 8 + 'px'
+        const doc = document.documentElement;
+        const css = Math.max(
+          560,
+          Math.min(1050, doc.clientHeight - 28, doc.clientWidth - 694),
+        );
+        cv.style.width = css + "px";
+        cv.style.height = css + "px";
+        const layout = document.querySelector(".layout");
+        layout.style.height = css + 8 + "px";
         // 兜底滚动条阈值 = 画布外框 + 左栏最小 190 + 右栏最小 430 + 两侧 gap 28
-        layout.style.minWidth = css + 8 + 648 + 'px'
-        const px = Math.round(css * (window.devicePixelRatio || 1))
+        layout.style.minWidth = css + 8 + 648 + "px";
+        const px = Math.round(css * (window.devicePixelRatio || 1));
         if (cv.width !== px) {
-          cv.width = px
-          cv.height = px
+          cv.width = px;
+          cv.height = px;
         }
-        dispK = cv.width / LOGIC
+        dispK = cv.width / LOGIC;
       }
-      syncCanvasSize()
-      window.addEventListener('resize', () => {
-        syncCanvasSize()
-        render()
-      })
+      syncCanvasSize();
+      window.addEventListener("resize", () => {
+        syncCanvasSize();
+        render();
+      });
 
       function clampPan() {
-        const span = GRID * CELL * zoom
-        panX = Math.min(0, Math.max(VIEW - span, panX))
-        panY = Math.min(0, Math.max(VIEW - span, panY))
+        const span = GRID * CELL * zoom;
+        panX = Math.min(0, Math.max(VIEW - span, panX));
+        panY = Math.min(0, Math.max(VIEW - span, panY));
       }
 
       /** 画布 CSS 显示尺寸 → 逻辑 848 坐标系的换算系数（交互输入统一换算到逻辑系） */
       function cvScale() {
-        return LOGIC / cv.getBoundingClientRect().width
+        return LOGIC / cv.getBoundingClientRect().width;
       }
 
       function cellOf(e) {
-        const r = cv.getBoundingClientRect()
-        const k = LOGIC / r.width
-        const wx = ((e.clientX - r.left) * k - RULER - panX) / zoom
-        const wy = ((e.clientY - r.top) * k - RULER - panY) / zoom
+        const r = cv.getBoundingClientRect();
+        const k = LOGIC / r.width;
+        const wx = ((e.clientX - r.left) * k - RULER - panX) / zoom;
+        const wy = ((e.clientY - r.top) * k - RULER - panY) / zoom;
         return {
           gx: Math.max(0, Math.min(GRID - 1, Math.floor(wx / CELL))),
           gz: Math.max(0, Math.min(GRID - 1, Math.floor(wy / CELL))),
-        }
+        };
       }
       function rectAt(list, gx, gz) {
         for (let i = list.length - 1; i >= 0; i--) {
-          const r = list[i]
-          if (gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d) return i
+          const r = list[i];
+          if (gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d)
+            return i;
         }
-        return -1
+        return -1;
       }
       function inAnyRoom(rooms, gx, gz) {
-        return rooms.some((r) => gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d)
+        return rooms.some(
+          (r) => gx >= r.x && gx < r.x + r.w && gz >= r.z && gz < r.z + r.d,
+        );
       }
 
       /** 任意矩形走廊 → 若干 1 格宽线段（导入旧数据/宽矩形时拆分） */
       function normalizeCorr(c) {
-        const out = []
+        const out = [];
         if (c.w >= c.d) {
-          for (let i = 0; i < c.d; i++) out.push({ x: c.x, z: c.z + i, w: c.w, d: 1 })
+          for (let i = 0; i < c.d; i++)
+            out.push({ x: c.x, z: c.z + i, w: c.w, d: 1 });
         } else {
-          for (let i = 0; i < c.w; i++) out.push({ x: c.x + i, z: c.z, w: 1, d: c.d })
+          for (let i = 0; i < c.w; i++)
+            out.push({ x: c.x + i, z: c.z, w: 1, d: c.d });
         }
-        return out
+        return out;
       }
 
       /**
@@ -1041,29 +1094,29 @@
        * 走廊只保留房间与房间之间的部分（横穿房间会分裂成多段）。
        */
       function clipCorridor(c, rooms) {
-        const segs = []
-        const horizontal = c.d === 1
-        const len = horizontal ? c.w : c.d
-        let runStart = -1
+        const segs = [];
+        const horizontal = c.d === 1;
+        const len = horizontal ? c.w : c.d;
+        let runStart = -1;
         for (let i = 0; i < len; i++) {
-          const x = horizontal ? c.x + i : c.x
-          const z = horizontal ? c.z : c.z + i
-          const inside = inAnyRoom(rooms, x, z)
-          if (!inside && runStart === -1) runStart = i
+          const x = horizontal ? c.x + i : c.x;
+          const z = horizontal ? c.z : c.z + i;
+          const inside = inAnyRoom(rooms, x, z);
+          if (!inside && runStart === -1) runStart = i;
           if (runStart !== -1 && (inside || i === len - 1)) {
-            const end = inside ? i - 1 : i
-            const segLen = end - runStart + 1
+            const end = inside ? i - 1 : i;
+            const segLen = end - runStart + 1;
             if (segLen >= 1) {
               segs.push(
                 horizontal
                   ? { x: c.x + runStart, z: c.z, w: segLen, d: 1 }
                   : { x: c.x, z: c.z + runStart, w: 1, d: segLen },
-              )
+              );
             }
-            runStart = -1
+            runStart = -1;
           }
         }
-        return segs
+        return segs;
       }
 
       /**
@@ -1071,98 +1124,104 @@
        * 返回 { unreachableRooms: 下标[], orphanCorrs: 下标[] }。
        */
       function simulate(lv) {
-        const g = new Uint8Array(GRID * GRID) // 0=墙 1=空地
+        const g = new Uint8Array(GRID * GRID); // 0=墙 1=空地
         const carve = (r) => {
           const x1 = Math.min(GRID - 2, r.x + r.w - 1),
-            z1 = Math.min(GRID - 2, r.z + r.d - 1)
+            z1 = Math.min(GRID - 2, r.z + r.d - 1);
           for (let x = Math.max(1, r.x); x <= x1; x++)
-            for (let z = Math.max(1, r.z); z <= z1; z++) g[x * GRID + z] = 1
-        }
-        lv.rooms.forEach(carve)
-        lv.corrRects.forEach(carve)
+            for (let z = Math.max(1, r.z); z <= z1; z++) g[x * GRID + z] = 1;
+        };
+        lv.rooms.forEach(carve);
+        lv.corrRects.forEach(carve);
         if (lv.rooms.length === 0)
-          return { unreachableRooms: [], orphanCorrs: lv.corrRects.map((_, i) => i) }
+          return {
+            unreachableRooms: [],
+            orphanCorrs: lv.corrRects.map((_, i) => i),
+          };
         // BFS from 房间 1 中心
-        const r0 = lv.rooms[0]
-        const start = Math.floor(r0.x + r0.w / 2) * GRID + Math.floor(r0.z + r0.d / 2)
-        const seen = new Uint8Array(GRID * GRID)
+        const r0 = lv.rooms[0];
+        const start =
+          Math.floor(r0.x + r0.w / 2) * GRID + Math.floor(r0.z + r0.d / 2);
+        const seen = new Uint8Array(GRID * GRID);
         if (g[start]) {
-          seen[start] = 1
-          const stack = [start]
+          seen[start] = 1;
+          const stack = [start];
           while (stack.length) {
-            const k = stack.pop()
+            const k = stack.pop();
             const x = Math.floor(k / GRID),
-              z = k % GRID
+              z = k % GRID;
             if (x > 0 && g[k - GRID] && !seen[k - GRID]) {
-              seen[k - GRID] = 1
-              stack.push(k - GRID)
+              seen[k - GRID] = 1;
+              stack.push(k - GRID);
             }
             if (x < GRID - 1 && g[k + GRID] && !seen[k + GRID]) {
-              seen[k + GRID] = 1
-              stack.push(k + GRID)
+              seen[k + GRID] = 1;
+              stack.push(k + GRID);
             }
             if (z > 0 && g[k - 1] && !seen[k - 1]) {
-              seen[k - 1] = 1
-              stack.push(k - 1)
+              seen[k - 1] = 1;
+              stack.push(k - 1);
             }
             if (z < GRID - 1 && g[k + 1] && !seen[k + 1]) {
-              seen[k + 1] = 1
-              stack.push(k + 1)
+              seen[k + 1] = 1;
+              stack.push(k + 1);
             }
           }
         }
-        const unreachableRooms = []
+        const unreachableRooms = [];
         lv.rooms.forEach((r, i) => {
-          if (i === 0) return
-          const c = Math.floor(r.x + r.w / 2) * GRID + Math.floor(r.z + r.d / 2)
-          if (!seen[c]) unreachableRooms.push(i)
-        })
-        const orphanCorrs = []
+          if (i === 0) return;
+          const c =
+            Math.floor(r.x + r.w / 2) * GRID + Math.floor(r.z + r.d / 2);
+          if (!seen[c]) unreachableRooms.push(i);
+        });
+        const orphanCorrs = [];
         lv.corrRects.forEach((r, i) => {
-          let touched = false
+          let touched = false;
           const x1 = Math.min(GRID - 2, r.x + r.w - 1),
-            z1 = Math.min(GRID - 2, r.z + r.d - 1)
+            z1 = Math.min(GRID - 2, r.z + r.d - 1);
           for (let x = Math.max(1, r.x); x <= x1 && !touched; x++)
             for (let z = Math.max(1, r.z); z <= z1 && !touched; z++)
-              if (seen[x * GRID + z]) touched = true
-          if (!touched) orphanCorrs.push(i)
-        })
-        return { unreachableRooms, orphanCorrs }
+              if (seen[x * GRID + z]) touched = true;
+          if (!touched) orphanCorrs.push(i);
+        });
+        return { unreachableRooms, orphanCorrs };
       }
 
       function validate(lv) {
-        const issues = []
-        const rs = lv.rooms
-        if (rs.length === 0) issues.push(['err', '至少画 1 个房间（玩家总得有地方出生）'])
+        const issues = [];
+        const rs = lv.rooms;
+        if (rs.length === 0)
+          issues.push(["err", "至少画 1 个房间（玩家总得有地方出生）"]);
         else if (rs.length < 6)
           issues.push([
-            'warn',
+            "warn",
             `房间只有 ${rs.length} 个：门/钥匙/雷达/开关/柜子会在同一房间里共处（够 6 间才能完全分散）`,
-          ])
+          ]);
         rs.forEach((r, i) => {
           if (r.w < MIN_ROOM || r.d < MIN_ROOM)
             issues.push([
-              'err',
+              "err",
               `房间 ${i + 1} 太小（${r.w}×${r.d}），至少 ${MIN_ROOM}×${MIN_ROOM}`,
-            ])
+            ]);
           if (r.x < 1 || r.z < 1 || r.x + r.w >= GRID || r.z + r.d >= GRID)
-            issues.push(['err', `房间 ${i + 1} 越界（四周至少留 1 格墙）`])
-        })
+            issues.push(["err", `房间 ${i + 1} 越界（四周至少留 1 格墙）`]);
+        });
         // 房间重叠/贴边都是合法拼接（合并成不规则大房间），不做任何检查
         // 独木不成林：连通性始终按格级事实检查——贴边/重叠即打通，不依赖走廊
-        const sim = simulate(lv)
+        const sim = simulate(lv);
         if (sim.unreachableRooms.length)
           issues.push([
-            'err',
-            `房间 ${sim.unreachableRooms.map((i) => i + 1).join('、')} 是孤岛：请贴到其他房间上或用走廊接入`,
-          ])
+            "err",
+            `房间 ${sim.unreachableRooms.map((i) => i + 1).join("、")} 是孤岛：请贴到其他房间上或用走廊接入`,
+          ]);
         if (sim.orphanCorrs.length)
           issues.push([
-            'err',
-            `走廊 ${sim.orphanCorrs.map((i) => i + 1).join('、')} 是孤木：请接到房间或已接通的走廊上`,
-          ])
-        if (issues.length === 0) issues.push(['ok', '✓ 配置合法，可以导出'])
-        return issues
+            "err",
+            `走廊 ${sim.orphanCorrs.map((i) => i + 1).join("、")} 是孤木：请接到房间或已接通的走廊上`,
+          ]);
+        if (issues.length === 0) issues.push(["ok", "✓ 配置合法，可以导出"]);
+        return issues;
       }
 
       // ================= 渲染 =================
@@ -1176,80 +1235,84 @@
           { h: true, c: r.z + r.d, a: r.x, b: r.x + r.w, off: -0.5 },
           { h: false, c: r.x, a: r.z, b: r.z + r.d, off: 0.5 },
           { h: false, c: r.x + r.w, a: r.z, b: r.z + r.d, off: -0.5 },
-        ]
+        ];
         for (const e of edges) {
           // 收集该边落在其他房间严格内部的区间并合并
-          const ins = []
+          const ins = [];
           for (let j = 0; j < rooms.length; j++) {
             if (j === self) {
-              continue
+              continue;
             }
-            const o = rooms[j]
-            const inBand = e.h ? e.c > o.z && e.c < o.z + o.d : e.c > o.x && e.c < o.x + o.w
+            const o = rooms[j];
+            const inBand = e.h
+              ? e.c > o.z && e.c < o.z + o.d
+              : e.c > o.x && e.c < o.x + o.w;
             if (!inBand) {
-              continue
+              continue;
             }
-            const s = Math.max(e.a, e.h ? o.x : o.z)
-            const t = Math.min(e.b, e.h ? o.x + o.w : o.z + o.d)
+            const s = Math.max(e.a, e.h ? o.x : o.z);
+            const t = Math.min(e.b, e.h ? o.x + o.w : o.z + o.d);
             if (s < t) {
-              ins.push([s, t])
+              ins.push([s, t]);
             }
           }
-          ins.sort((p, q) => p[0] - q[0])
-          const merged = []
+          ins.sort((p, q) => p[0] - q[0]);
+          const merged = [];
           for (const seg of ins) {
-            const last = merged[merged.length - 1]
+            const last = merged[merged.length - 1];
             if (last && seg[0] <= last[1]) {
-              last[1] = Math.max(last[1], seg[1])
+              last[1] = Math.max(last[1], seg[1]);
             } else {
-              merged.push([seg[0], seg[1]])
+              merged.push([seg[0], seg[1]]);
             }
           }
           // 内部段暗虚线、其余空隙实线
-          const fixed = e.c * CELL + e.off
+          const fixed = e.c * CELL + e.off;
           const drawSeg = (s, t, dashed) => {
             if (t - s <= 0) {
-              return
+              return;
             }
-            ctx.beginPath()
-            ctx.setLineDash(dashed ? [4, 4] : [])
-            ctx.strokeStyle = dashed ? dim : solid
+            ctx.beginPath();
+            ctx.setLineDash(dashed ? [4, 4] : []);
+            ctx.strokeStyle = dashed ? dim : solid;
             if (e.h) {
-              ctx.moveTo(s * CELL, fixed)
-              ctx.lineTo(t * CELL, fixed)
+              ctx.moveTo(s * CELL, fixed);
+              ctx.lineTo(t * CELL, fixed);
             } else {
-              ctx.moveTo(fixed, s * CELL)
-              ctx.lineTo(fixed, t * CELL)
+              ctx.moveTo(fixed, s * CELL);
+              ctx.lineTo(fixed, t * CELL);
             }
-            ctx.stroke()
-          }
-          let pos = e.a
+            ctx.stroke();
+          };
+          let pos = e.a;
           for (const [s, t] of merged) {
-            drawSeg(pos, s, false)
-            drawSeg(s, t, true)
-            pos = t
+            drawSeg(pos, s, false);
+            drawSeg(s, t, true);
+            pos = t;
           }
-          drawSeg(pos, e.b, false)
-          ctx.setLineDash([])
+          drawSeg(pos, e.b, false);
+          ctx.setLineDash([]);
         }
       }
 
       function render() {
-        const lv = L()
+        const lv = L();
         // 独木不成林：孤岛房间/孤立走廊实时红色示警
-        const sim = simulate(lv)
+        const sim = simulate(lv);
         // 背景明暗随「关灯亮度」示意；开局开灯的关卡直接亮档（背景在屏幕坐标系铺满视口）
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-        const shade = lv.lightsOn ? 64 : Math.round(10 + (lv.darkAmbient / 0.3) * 45)
-        ctx.fillStyle = `rgb(${shade},${shade},${shade + 4})`
-        ctx.fillRect(0, 0, cv.width, cv.height)
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const shade = lv.lightsOn
+          ? 64
+          : Math.round(10 + (lv.darkAmbient / 0.3) * 45);
+        ctx.fillStyle = `rgb(${shade},${shade},${shade + 4})`;
+        ctx.fillRect(0, 0, cv.width, cv.height);
         // 世界内容裁剪到标尺内侧的视口里，经视口变换绘制：缩放=矢量重画，放大不糊
         // （dispK：逻辑 848 系 → 实际内部像素的高清系数，所有层级统一乘上）
-        ctx.save()
-        ctx.setTransform(dispK, 0, 0, dispK, 0, 0)
-        ctx.beginPath()
-        ctx.rect(RULER, RULER, VIEW, VIEW)
-        ctx.clip()
+        ctx.save();
+        ctx.setTransform(dispK, 0, 0, dispK, 0, 0);
+        ctx.beginPath();
+        ctx.rect(RULER, RULER, VIEW, VIEW);
+        ctx.clip();
         ctx.setTransform(
           zoom * dispK,
           0,
@@ -1257,567 +1320,623 @@
           zoom * dispK,
           (RULER + panX) * dispK,
           (RULER + panY) * dispK,
-        )
+        );
 
         // 网格：1 米细格（极淡）+ 每 10 米主线 + 边缘坐标刻度
-        ctx.lineWidth = 1
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)'
-        ctx.beginPath()
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255,255,255,0.03)";
+        ctx.beginPath();
         for (let i = 0; i <= GRID; i++) {
-          if (i % 10 === 0) continue
-          ctx.moveTo(i * CELL + 0.5, 0)
-          ctx.lineTo(i * CELL + 0.5, GRID * CELL)
-          ctx.moveTo(0, i * CELL + 0.5)
-          ctx.lineTo(GRID * CELL, i * CELL + 0.5)
+          if (i % 10 === 0) continue;
+          ctx.moveTo(i * CELL + 0.5, 0);
+          ctx.lineTo(i * CELL + 0.5, GRID * CELL);
+          ctx.moveTo(0, i * CELL + 0.5);
+          ctx.lineTo(GRID * CELL, i * CELL + 0.5);
         }
-        ctx.stroke()
-        ctx.strokeStyle = 'rgba(255,255,255,0.10)'
-        ctx.beginPath()
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(255,255,255,0.10)";
+        ctx.beginPath();
         for (let i = 0; i <= GRID; i += 10) {
-          ctx.moveTo(i * CELL + 0.5, 0)
-          ctx.lineTo(i * CELL + 0.5, GRID * CELL)
-          ctx.moveTo(0, i * CELL + 0.5)
-          ctx.lineTo(GRID * CELL, i * CELL + 0.5)
+          ctx.moveTo(i * CELL + 0.5, 0);
+          ctx.lineTo(i * CELL + 0.5, GRID * CELL);
+          ctx.moveTo(0, i * CELL + 0.5);
+          ctx.lineTo(GRID * CELL, i * CELL + 0.5);
         }
-        ctx.stroke()
+        ctx.stroke();
 
         // 走廊（画在房间下层；孤立走廊橙红提示）
         lv.corrRects.forEach((r, i) => {
-          const orphan = sim.orphanCorrs.includes(i)
-          ctx.fillStyle = orphan ? 'rgba(215,70,55,0.6)' : 'rgba(150,125,80,0.55)'
-          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL)
-          if (i === selCorr && mode === 'corr') {
-            ctx.lineWidth = 2.5
-            ctx.strokeStyle = '#ffd257'
-            ctx.strokeRect(r.x * CELL + 0.5, r.z * CELL + 0.5, r.w * CELL - 1, r.d * CELL - 1)
-            ctx.fillStyle = 'rgba(255,255,255,0.85)'
-            ctx.font = 'bold 10px sans-serif'
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle'
-            ctx.fillText(`${r.w}×${r.d}`, (r.x + r.w / 2) * CELL, (r.z + r.d / 2) * CELL)
+          const orphan = sim.orphanCorrs.includes(i);
+          ctx.fillStyle = orphan
+            ? "rgba(215,70,55,0.6)"
+            : "rgba(150,125,80,0.55)";
+          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          if (i === selCorr && mode === "corr") {
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "#ffd257";
+            ctx.strokeRect(
+              r.x * CELL + 0.5,
+              r.z * CELL + 0.5,
+              r.w * CELL - 1,
+              r.d * CELL - 1,
+            );
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+              `${r.w}×${r.d}`,
+              (r.x + r.w / 2) * CELL,
+              (r.z + r.d / 2) * CELL,
+            );
           }
-        })
+        });
 
         // 房间
         lv.rooms.forEach((r, i) => {
-          const bad = r.w < MIN_ROOM || r.d < MIN_ROOM
-          const unreachable = sim.unreachableRooms.includes(i)
+          const bad = r.w < MIN_ROOM || r.d < MIN_ROOM;
+          const unreachable = sim.unreachableRooms.includes(i);
           // 孤岛房间与非法尺寸同级：红色示警（无法导出）
-          ctx.fillStyle = bad || unreachable ? 'rgba(160,50,50,0.45)' : 'rgba(70,110,80,0.5)'
-          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL)
-          const selRoom = i === sel && mode === 'room'
-          ctx.lineWidth = selRoom ? 2.5 : unreachable ? 2 : 1
+          ctx.fillStyle =
+            bad || unreachable ? "rgba(160,50,50,0.45)" : "rgba(70,110,80,0.5)";
+          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          const selRoom = i === sel && mode === "room";
+          ctx.lineWidth = selRoom ? 2.5 : unreachable ? 2 : 1;
           // 实线色按状态；重叠段的暗虚线用同色相低透明度
-          const solid = bad || unreachable ? '#ff6a6a' : selRoom ? '#7ad0ff' : 'rgba(255,255,255,0.4)'
+          const solid =
+            bad || unreachable
+              ? "#ff6a6a"
+              : selRoom
+                ? "#7ad0ff"
+                : "rgba(255,255,255,0.4)";
           const dim =
             bad || unreachable
-              ? 'rgba(255,106,106,0.35)'
+              ? "rgba(255,106,106,0.35)"
               : selRoom
-                ? 'rgba(122,208,255,0.4)'
-                : 'rgba(255,255,255,0.14)'
-          strokeRoomEdges(r, lv.rooms, i, solid, dim)
-          ctx.fillStyle = 'rgba(255,255,255,0.85)'
-          ctx.font = 'bold 11px sans-serif'
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
+                ? "rgba(122,208,255,0.4)"
+                : "rgba(255,255,255,0.14)";
+          strokeRoomEdges(r, lv.rooms, i, solid, dim);
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.font = "bold 11px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
           ctx.fillText(
-            `${i + 1}${unreachable ? ' ⚠' : ''}`,
+            `${i + 1}${unreachable ? " ⚠" : ""}`,
             (r.x + r.w / 2) * CELL,
             (r.z + r.d / 2) * CELL - 6,
-          )
-          ctx.fillStyle = 'rgba(255,255,255,0.45)'
-          ctx.font = '9px sans-serif'
-          ctx.fillText(`${r.w}×${r.d}`, (r.x + r.w / 2) * CELL, (r.z + r.d / 2) * CELL + 7)
+          );
+          ctx.fillStyle = "rgba(255,255,255,0.45)";
+          ctx.font = "9px sans-serif";
+          ctx.fillText(
+            `${r.w}×${r.d}`,
+            (r.x + r.w / 2) * CELL,
+            (r.z + r.d / 2) * CELL + 7,
+          );
           // 选中房间的右下角缩放手柄
-          if (i === sel && mode === 'room') {
-            ctx.fillStyle = '#7ad0ff'
-            ctx.fillRect((r.x + r.w) * CELL - 7, (r.z + r.d) * CELL - 7, 7, 7)
+          if (i === sel && mode === "room") {
+            ctx.fillStyle = "#7ad0ff";
+            ctx.fillRect((r.x + r.w) * CELL - 7, (r.z + r.d) * CELL - 7, 7, 7);
           }
-        })
+        });
 
         // 可视距离示意（地图中心，低透明度不抢主体）：虚线圆 + 半径虚线，文字标在半径中点；
         // 开局开灯=基本无雾，不画
         if (!lv.lightsOn) {
-          const fogCx = (GRID / 2) * CELL
-          const fogCz = (GRID / 2) * CELL
-          const fogR = lv.darkFogFar * CELL
-          ctx.setLineDash([6, 6])
-          ctx.strokeStyle = 'rgba(120,170,255,0.2)'
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          ctx.arc(fogCx, fogCz, fogR, 0, Math.PI * 2)
-          ctx.stroke()
+          const fogCx = (GRID / 2) * CELL;
+          const fogCz = (GRID / 2) * CELL;
+          const fogR = lv.darkFogFar * CELL;
+          ctx.setLineDash([6, 6]);
+          ctx.strokeStyle = "rgba(120,170,255,0.2)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(fogCx, fogCz, fogR, 0, Math.PI * 2);
+          ctx.stroke();
           // 半径虚线（圆心 → 右侧圆周）
-          ctx.strokeStyle = 'rgba(120,170,255,0.25)'
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          ctx.moveTo(fogCx, fogCz)
-          ctx.lineTo(fogCx + fogR, fogCz)
-          ctx.stroke()
-          ctx.setLineDash([])
-          ctx.fillStyle = 'rgba(120,170,255,0.25)'
-          ctx.font = '9px sans-serif'
-          ctx.textAlign = 'center'
-          ctx.fillText(`可视≈${lv.darkFogFar}m`, fogCx + fogR / 2, fogCz - 5)
+          ctx.strokeStyle = "rgba(120,170,255,0.25)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(fogCx, fogCz);
+          ctx.lineTo(fogCx + fogR, fogCz);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = "rgba(120,170,255,0.25)";
+          ctx.font = "9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`可视≈${lv.darkFogFar}m`, fogCx + fogR / 2, fogCz - 5);
         }
-        ctx.restore() // 解除世界视口裁剪
-        ctx.setTransform(dispK, 0, 0, dispK, 0, 0)
+        ctx.restore(); // 解除世界视口裁剪
+        ctx.setTransform(dispK, 0, 0, dispK, 0, 0);
 
         // 坐标数字（地图外侧，屏幕坐标系，无背景条）：0~100；放大时按可见范围动态标注并加密步进
-        ctx.font = '10px sans-serif'
-        ctx.textBaseline = 'alphabetic'
-        ctx.fillStyle = 'rgba(255,255,255,0.6)'
-        const step = zoom >= 5 ? 2 : zoom >= 2.5 ? 5 : 10
+        ctx.font = "10px sans-serif";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        const step = zoom >= 5 ? 2 : zoom >= 2.5 ? 5 : 10;
         for (let g = 0; g <= GRID; g += step) {
-          const sx = RULER + g * CELL * zoom + panX
+          const sx = RULER + g * CELL * zoom + panX;
           if (sx >= RULER - 0.5 && sx <= RULER + VIEW + 0.5) {
-            ctx.textAlign = 'center'
-            ctx.fillText(String(g), sx, RULER - 8)
+            ctx.textAlign = "center";
+            ctx.fillText(String(g), sx, RULER - 8);
           }
           // 纵轴跳过 0：左上角与横轴共用同一个 0
-          const sy = RULER + g * CELL * zoom + panY
+          const sy = RULER + g * CELL * zoom + panY;
           if (g > 0 && sy >= RULER - 0.5 && sy <= RULER + VIEW + 0.5) {
-            ctx.textAlign = 'right'
-            ctx.fillText(String(g), RULER - 7, sy + 3)
+            ctx.textAlign = "right";
+            ctx.fillText(String(g), RULER - 7, sy + 3);
           }
         }
         // 右上角单位
-        ctx.fillStyle = 'rgba(255,255,255,0.7)'
-        ctx.textAlign = 'left'
-        ctx.font = 'bold 11px sans-serif'
-        ctx.fillText('m', RULER + VIEW + 8, RULER - 8)
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.textAlign = "left";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("m", RULER + VIEW + 8, RULER - 8);
 
-        renderPanels()
+        renderPanels();
       }
 
       function renderPanels() {
-        const lv = L()
+        const lv = L();
         // 关卡列表（左侧竖排；新增按钮固定在列表下方，不随列表重建）
         // 未冻结关显示生效序号（= 游戏里的第几关，冻结关不占号），冻结关只显示停用标记
-        let liveNo = 0
-        $('tabs').innerHTML = levels
+        let liveNo = 0;
+        $("tabs").innerHTML = levels
           .map((tl, i) => {
-            const label = tl.frozen ? '❄ 已冻结（停用中）' : `第 ${++liveNo} 关`
+            const label = tl.frozen
+              ? "❄ 已冻结（停用中）"
+              : `第 ${++liveNo} 关`;
             const frzBtn = `<span class="x frz" data-frz="${i}" title="${
-              tl.frozen ? '解冻：恢复此关参与游戏' : '冻结：暂时停用此关（数据保留，游戏跳过）'
-            }">${tl.frozen ? '▶' : '❄'}</span>`
+              tl.frozen
+                ? "解冻：恢复此关参与游戏"
+                : "冻结：暂时停用此关（数据保留，游戏跳过）"
+            }">${tl.frozen ? "▶" : "❄"}</span>`;
             const delBtn =
-              levels.length > 1 ? `<span class="x" data-del="${i}" title="删除此关">✕</span>` : ''
-            return `<div class="row ${i === cur ? 'sel' : ''}${tl.frozen ? ' frozen' : ''}" data-tab="${i}">
+              levels.length > 1
+                ? `<span class="x" data-del="${i}" title="删除此关">✕</span>`
+                : "";
+            return `<div class="row ${i === cur ? "sel" : ""}${tl.frozen ? " frozen" : ""}" data-tab="${i}">
        <span>${label}</span><span class="acts">${frzBtn}${delBtn}</span>
-     </div>`
+     </div>`;
           })
-          .join('')
+          .join("");
         // 参数
-        $('ckLights').checked = lv.lightsOn === true
-        $('ckGhost').checked = lv.ghostEnabled !== false
-        $('ambient').value = lv.darkAmbient
-        $('vAmb').textContent = lv.darkAmbient.toFixed(2)
-        $('fog').value = lv.darkFogFar
-        $('vFog').textContent = lv.darkFogFar
-        $('ghost').value = lv.ghostSpeed
-        $('vGhost').textContent = lv.ghostSpeed.toFixed(2)
-        $('ghost').disabled = lv.ghostEnabled === false
+        $("ckLights").checked = lv.lightsOn === true;
+        $("ckGhost").checked = lv.ghostEnabled !== false;
+        $("ambient").value = lv.darkAmbient;
+        $("vAmb").textContent = lv.darkAmbient.toFixed(2);
+        $("fog").value = lv.darkFogFar;
+        $("vFog").textContent = lv.darkFogFar;
+        $("ghost").value = lv.ghostSpeed;
+        $("vGhost").textContent = lv.ghostSpeed.toFixed(2);
+        $("ghost").disabled = lv.ghostEnabled === false;
         // 房间列表
-        $('roomList').innerHTML =
+        $("roomList").innerHTML =
           lv.rooms
             .map(
               (r, i) =>
-                `<div class="row ${i === sel && mode === 'room' ? 'sel' : ''}" data-room="${i}">
+                `<div class="row ${i === sel && mode === "room" ? "sel" : ""}" data-room="${i}">
        <span title="房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delroom="${i}">✕</span>
      </div>`,
             )
-            .join('') || '<div class="hint">「画/选房间」模式下拖拽画布空白处</div>'
+            .join("") ||
+          '<div class="hint">「画/选房间」模式下拖拽画布空白处</div>';
         // 走廊列表
-        $('corrList').innerHTML =
+        $("corrList").innerHTML =
           lv.corrRects
             .map(
               (r, i) =>
-                `<div class="row ${i === selCorr && mode === 'corr' ? 'sel' : ''}" data-corr="${i}">
+                `<div class="row ${i === selCorr && mode === "corr" ? "sel" : ""}" data-corr="${i}">
        <span title="走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delcorr="${i}">✕</span>
      </div>`,
             )
-            .join('') ||
-          '<div class="hint">「画/选走廊」模式下在房间之间拖出通道；房间贴边/重叠时不画也已连通</div>'
+            .join("") ||
+          '<div class="hint">「画/选走廊」模式下在房间之间拖出通道；房间贴边/重叠时不画也已连通</div>';
         // 校验
-        saveDraft()
+        saveDraft();
       }
 
       // ================= 交互（房间与走廊同一套拖拽逻辑，按模式作用于不同列表） =================
       function activeList() {
-        return mode === 'room' ? L().rooms : L().corrRects
+        return mode === "room" ? L().rooms : L().corrRects;
       }
       function getSel() {
-        return mode === 'room' ? sel : selCorr
+        return mode === "room" ? sel : selCorr;
       }
       function setSel(v) {
-        if (mode === 'room') sel = v
-        else selCorr = v
+        if (mode === "room") sel = v;
+        else selCorr = v;
       }
 
       cv.addEventListener(
-        'wheel',
+        "wheel",
         (e) => {
-          if (!e.ctrlKey) return
-          e.preventDefault() // 拦掉浏览器整页缩放
-          const r = cv.getBoundingClientRect()
-          const k = LOGIC / r.width
+          if (!e.ctrlKey) return;
+          e.preventDefault(); // 拦掉浏览器整页缩放
+          const r = cv.getBoundingClientRect();
+          const k = LOGIC / r.width;
           const mx = (e.clientX - r.left) * k - RULER,
-            my = (e.clientY - r.top) * k - RULER
-          const nz = Math.max(1, Math.min(MAX_ZOOM, zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
-          if (nz === zoom) return
+            my = (e.clientY - r.top) * k - RULER;
+          const nz = Math.max(
+            1,
+            Math.min(MAX_ZOOM, zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)),
+          );
+          if (nz === zoom) return;
           // 锚点缩放：鼠标所指的世界点在屏幕上保持不动
-          panX = mx - ((mx - panX) / zoom) * nz
-          panY = my - ((my - panY) / zoom) * nz
-          zoom = nz
-          clampPan()
-          render()
+          panX = mx - ((mx - panX) / zoom) * nz;
+          panY = my - ((my - panY) / zoom) * nz;
+          zoom = nz;
+          clampPan();
+          render();
         },
         { passive: false },
-      )
+      );
 
-      cv.addEventListener('mousedown', (e) => {
+      cv.addEventListener("mousedown", (e) => {
         if (spaceDown) {
-          panDrag = { mx: e.clientX, my: e.clientY, px: panX, py: panY }
-          cv.style.cursor = 'grabbing'
-          return
+          panDrag = { mx: e.clientX, my: e.clientY, px: panX, py: panY };
+          cv.style.cursor = "grabbing";
+          return;
         }
-        const { gx, gz } = cellOf(e)
-        const list = activeList()
-        const s = getSel()
+        const { gx, gz } = cellOf(e);
+        const list = activeList();
+        const s = getSel();
         // 缩放手柄仅房间有：走廊的手柄热区会挡住"从走廊端头接续画下一段"的起笔位，
         // 而走廊画错重画成本极低，不值得为调长度牺牲高频操作
-        if (mode === 'room' && s !== -1 && list[s]) {
-          const r = list[s]
+        if (mode === "room" && s !== -1 && list[s]) {
+          const r = list[s];
           // 右下角手柄（1 格容差）
-          if (gx >= r.x + r.w - 1 && gx <= r.x + r.w && gz >= r.z + r.d - 1 && gz <= r.z + r.d) {
-            drag = { kind: 'resize' }
-            return
+          if (
+            gx >= r.x + r.w - 1 &&
+            gx <= r.x + r.w &&
+            gz >= r.z + r.d - 1 &&
+            gz <= r.z + r.d
+          ) {
+            drag = { kind: "resize" };
+            return;
           }
         }
-        const hit = rectAt(list, gx, gz)
+        const hit = rectAt(list, gx, gz);
         if (hit !== -1) {
-          setSel(hit)
-          const r = list[hit]
-          drag = { kind: 'move', dx: gx - r.x, dz: gz - r.z }
+          setSel(hit);
+          const r = list[hit];
+          drag = { kind: "move", dx: gx - r.x, dz: gz - r.z };
         } else {
-          drag = { kind: 'new', sx: gx, sz: gz }
-          list.push({ x: gx, z: gz, w: 1, d: 1 })
-          setSel(list.length - 1)
+          drag = { kind: "new", sx: gx, sz: gz };
+          list.push({ x: gx, z: gz, w: 1, d: 1 });
+          setSel(list.length - 1);
         }
-        render()
-      })
+        render();
+      });
 
-      cv.addEventListener('mousemove', (e) => {
+      cv.addEventListener("mousemove", (e) => {
         if (panDrag) {
-          const k = cvScale()
-          panX = panDrag.px + (e.clientX - panDrag.mx) * k
-          panY = panDrag.py + (e.clientY - panDrag.my) * k
-          clampPan()
-          render()
-          return
+          const k = cvScale();
+          panX = panDrag.px + (e.clientX - panDrag.mx) * k;
+          panY = panDrag.py + (e.clientY - panDrag.my) * k;
+          clampPan();
+          render();
+          return;
         }
-        const s = getSel()
-        if (!drag || s === -1) return
-        const { gx, gz } = cellOf(e)
-        const r = activeList()[s]
-        if (!r) return
-        if (drag.kind === 'new') {
-          if (mode === 'corr') {
+        const s = getSel();
+        if (!drag || s === -1) return;
+        const { gx, gz } = cellOf(e);
+        const r = activeList()[s];
+        if (!r) return;
+        if (drag.kind === "new") {
+          if (mode === "corr") {
             // 走廊固定 1 格宽：按拖拽主方向锁成横/纵直线
-            const dx = Math.abs(gx - drag.sx)
-            const dz = Math.abs(gz - drag.sz)
+            const dx = Math.abs(gx - drag.sx);
+            const dz = Math.abs(gz - drag.sz);
             if (dx >= dz) {
-              r.x = Math.min(drag.sx, gx)
-              r.z = drag.sz
-              r.w = dx + 1
-              r.d = 1
+              r.x = Math.min(drag.sx, gx);
+              r.z = drag.sz;
+              r.w = dx + 1;
+              r.d = 1;
             } else {
-              r.x = drag.sx
-              r.z = Math.min(drag.sz, gz)
-              r.w = 1
-              r.d = dz + 1
+              r.x = drag.sx;
+              r.z = Math.min(drag.sz, gz);
+              r.w = 1;
+              r.d = dz + 1;
             }
           } else {
-            r.x = Math.min(drag.sx, gx)
-            r.z = Math.min(drag.sz, gz)
-            r.w = Math.abs(gx - drag.sx) + 1
-            r.d = Math.abs(gz - drag.sz) + 1
+            r.x = Math.min(drag.sx, gx);
+            r.z = Math.min(drag.sz, gz);
+            r.w = Math.abs(gx - drag.sx) + 1;
+            r.d = Math.abs(gz - drag.sz) + 1;
           }
-        } else if (drag.kind === 'move') {
-          r.x = Math.max(1, Math.min(GRID - 1 - r.w, gx - drag.dx))
-          r.z = Math.max(1, Math.min(GRID - 1 - r.d, gz - drag.dz))
-        } else if (drag.kind === 'resize') {
-          r.w = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.x, gx - r.x + 1))
-          r.d = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.z, gz - r.z + 1))
+        } else if (drag.kind === "move") {
+          r.x = Math.max(1, Math.min(GRID - 1 - r.w, gx - drag.dx));
+          r.z = Math.max(1, Math.min(GRID - 1 - r.d, gz - drag.dz));
+        } else if (drag.kind === "resize") {
+          r.w = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.x, gx - r.x + 1));
+          r.d = Math.max(MIN_ROOM, Math.min(GRID - 1 - r.z, gz - r.z + 1));
         }
-        render()
-      })
+        render();
+      });
 
-      window.addEventListener('mouseup', () => {
+      window.addEventListener("mouseup", () => {
         if (panDrag) {
-          panDrag = null
-          cv.style.cursor = spaceDown ? 'grab' : ''
+          panDrag = null;
+          cv.style.cursor = spaceDown ? "grab" : "";
         }
-        const s = getSel()
+        const s = getSel();
         if (drag && s !== -1) {
-          const list = activeList()
-          const r = list[s]
-          if (drag.kind === 'new' && mode === 'room' && (r.w < MIN_ROOM || r.d < MIN_ROOM)) {
-            list.splice(s, 1)
-            setSel(-1)
-            toast(`房间至少 ${MIN_ROOM}×${MIN_ROOM}，拖大一点再松手`)
-          } else if (drag.kind === 'new' && mode === 'corr' && r.w === 1 && r.d === 1) {
+          const list = activeList();
+          const r = list[s];
+          if (
+            drag.kind === "new" &&
+            mode === "room" &&
+            (r.w < MIN_ROOM || r.d < MIN_ROOM)
+          ) {
+            list.splice(s, 1);
+            setSel(-1);
+            toast(`房间至少 ${MIN_ROOM}×${MIN_ROOM}，拖大一点再松手`);
+          } else if (
+            drag.kind === "new" &&
+            mode === "corr" &&
+            r.w === 1 &&
+            r.d === 1
+          ) {
             // 单击未拖动：丢弃防误触（想打 1 格门洞就拖 2 格、让一头搭在房间上）
-            list.splice(s, 1)
-            setSel(-1)
-            toast('走廊至少拖出 2 格长（多余部分会自动截断到房间边）')
+            list.splice(s, 1);
+            setSel(-1);
+            toast("走廊至少拖出 2 格长（多余部分会自动截断到房间边）");
           } else {
-            r.x = Math.max(1, Math.min(GRID - 1 - r.w, r.x))
-            r.z = Math.max(1, Math.min(GRID - 1 - r.d, r.z))
+            r.x = Math.max(1, Math.min(GRID - 1 - r.w, r.x));
+            r.z = Math.max(1, Math.min(GRID - 1 - r.d, r.z));
             // 走廊的任何编辑（新画/拖动/调长）结束后都按房间边裁剪：
             // 伸进房间的部分切掉，横穿房间自动分裂成多段
-            if (mode === 'corr') {
-              list.splice(s, 1)
-              const segs = clipCorridor(r, L().rooms)
-              list.push(...segs)
-              setSel(segs.length > 0 ? list.length - segs.length : -1)
-              if (segs.length === 0) toast('走廊完全落在房间内，已移除')
-              else if (segs.length > 1) toast(`走廊被房间截断为 ${segs.length} 段`)
+            if (mode === "corr") {
+              list.splice(s, 1);
+              const segs = clipCorridor(r, L().rooms);
+              list.push(...segs);
+              setSel(segs.length > 0 ? list.length - segs.length : -1);
+              if (segs.length === 0) toast("走廊完全落在房间内，已移除");
+              else if (segs.length > 1)
+                toast(`走廊被房间截断为 ${segs.length} 段`);
             } else {
               // 房间新画/挪动/调整后：全部走廊按新房间边重裁剪（维持「走廊不进房间」不变量）
-              const lv = L()
-              lv.corrRects = lv.corrRects.flatMap((c) => clipCorridor(c, lv.rooms))
+              const lv = L();
+              lv.corrRects = lv.corrRects.flatMap((c) =>
+                clipCorridor(c, lv.rooms),
+              );
             }
           }
-          render()
+          render();
         }
-        drag = null
-      })
+        drag = null;
+      });
 
-      window.addEventListener('keydown', (e) => {
+      window.addEventListener("keydown", (e) => {
         // 弹框（口令门禁 / 游戏风提示框）打开时吞掉画布快捷键：
         // 避免在输入框里退格、或按 Del/空格时误伤底下选中的房间与视图
         if (gateResolve || dlgResolve) {
           if (dlgResolve) {
-            if (e.key === 'Escape') {
-              dlgClose(false)
-            } else if (e.key === 'Enter') {
-              e.preventDefault()
-              dlgClose(true)
+            if (e.key === "Escape") {
+              dlgClose(false);
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              dlgClose(true);
             }
           }
-          return
+          return;
         }
         if (
-          (e.key === 'Delete' || e.key === 'Backspace') &&
-          document.activeElement.tagName !== 'TEXTAREA'
+          (e.key === "Delete" || e.key === "Backspace") &&
+          document.activeElement.tagName !== "TEXTAREA"
         ) {
-          const s = getSel()
+          const s = getSel();
           if (s !== -1) {
-            activeList().splice(s, 1)
-            setSel(-1)
-            render()
-            e.preventDefault()
+            activeList().splice(s, 1);
+            setSel(-1);
+            render();
+            e.preventDefault();
           }
         }
-        if (e.key === 'Escape') {
-          if ($('modalMask').classList.contains('open')) {
-            closeModal()
-            return
+        if (e.key === "Escape") {
+          if ($("modalMask").classList.contains("open")) {
+            closeModal();
+            return;
           }
-          if ($('helpMask').classList.contains('open')) {
-            $('helpMask').classList.remove('open')
-            return
+          if ($("helpMask").classList.contains("open")) {
+            $("helpMask").classList.remove("open");
+            return;
           }
-          if ($('errMask').classList.contains('open')) {
-            $('errMask').classList.remove('open')
-            return
+          if ($("errMask").classList.contains("open")) {
+            $("errMask").classList.remove("open");
+            return;
           }
-          if ($('moreMenu').classList.contains('open')) {
-            $('moreMenu').classList.remove('open')
-            return
+          if ($("moreMenu").classList.contains("open")) {
+            $("moreMenu").classList.remove("open");
+            return;
           }
-          sel = -1
-          selCorr = -1
-          render()
+          sel = -1;
+          selCorr = -1;
+          render();
         }
-        if (e.code === 'Space' && !spaceDown && document.activeElement.tagName !== 'TEXTAREA') {
-          spaceDown = true
-          if (!panDrag) cv.style.cursor = 'grab'
-          e.preventDefault() // 拦掉页面滚动/按钮触发
+        if (
+          e.code === "Space" &&
+          !spaceDown &&
+          document.activeElement.tagName !== "TEXTAREA"
+        ) {
+          spaceDown = true;
+          if (!panDrag) cv.style.cursor = "grab";
+          e.preventDefault(); // 拦掉页面滚动/按钮触发
         }
-      })
-      window.addEventListener('keyup', (e) => {
-        if (e.code === 'Space') {
-          spaceDown = false
-          panDrag = null
-          cv.style.cursor = ''
+      });
+      window.addEventListener("keyup", (e) => {
+        if (e.code === "Space") {
+          spaceDown = false;
+          panDrag = null;
+          cv.style.cursor = "";
         }
-      })
+      });
       // 切窗口时空格键抬起事件会丢，统一重置
-      window.addEventListener('blur', () => {
-        spaceDown = false
-        panDrag = null
-        cv.style.cursor = ''
-      })
+      window.addEventListener("blur", () => {
+        spaceDown = false;
+        panDrag = null;
+        cv.style.cursor = "";
+      });
 
       // 模式切换
-      $('modeRoom').onclick = () => {
-        mode = 'room'
-        selCorr = -1
-        setModeUI()
-        render()
-      }
-      $('modeCorr').onclick = () => {
-        mode = 'corr'
-        sel = -1
-        setModeUI()
-        render()
-      }
+      $("modeRoom").onclick = () => {
+        mode = "room";
+        selCorr = -1;
+        setModeUI();
+        render();
+      };
+      $("modeCorr").onclick = () => {
+        mode = "corr";
+        sel = -1;
+        setModeUI();
+        render();
+      };
       function setModeUI() {
-        $('modeRoom').classList.toggle('active', mode === 'room')
-        $('modeCorr').classList.toggle('active', mode === 'corr')
+        $("modeRoom").classList.toggle("active", mode === "room");
+        $("modeCorr").classList.toggle("active", mode === "corr");
       }
 
       // 页签/列表（事件委托）
       /** 除下标 skip 外未冻结关卡数（删除/冻结守卫共用：动手前算"剩几个能用的"） */
       function liveCountExcept(skip) {
-        return levels.filter((l, i) => i !== skip && !l.frozen).length
+        return levels.filter((l, i) => i !== skip && !l.frozen).length;
       }
       /** 关卡在游戏里的生效序号（冻结关不占号）；冻结关返回 0 */
       function liveNoOf(i) {
-        return levels[i].frozen ? 0 : levels.slice(0, i + 1).filter((l) => !l.frozen).length
+        return levels[i].frozen
+          ? 0
+          : levels.slice(0, i + 1).filter((l) => !l.frozen).length;
       }
-      $('tabs').addEventListener('click', async (e) => {
-        const frz = e.target.closest('[data-frz]')
+      $("tabs").addEventListener("click", async (e) => {
+        const frz = e.target.closest("[data-frz]");
         if (frz) {
-          const i = +frz.dataset.frz
+          const i = +frz.dataset.frz;
           // 冻结守卫：至少保留一个启用中的关卡，不允许全部冻结
           if (!levels[i].frozen && liveCountExcept(i) === 0) {
-            toast('至少保留一个启用中的关卡，不能全部冻结')
-            return
+            toast("至少保留一个启用中的关卡，不能全部冻结");
+            return;
           }
-          levels[i].frozen = !levels[i].frozen
+          levels[i].frozen = !levels[i].frozen;
           toast(
             levels[i].frozen
-              ? '已冻结：此关暂不参与游戏，保存到云端后生效'
-              : '已解冻：此关恢复参与游戏，保存到云端后生效',
-          )
-          render()
-          return
+              ? "已冻结：此关暂不参与游戏，保存到云端后生效"
+              : "已解冻：此关恢复参与游戏，保存到云端后生效",
+          );
+          render();
+          return;
         }
-        const del = e.target.closest('[data-del]')
+        const del = e.target.closest("[data-del]");
         if (del) {
-          const i = +del.dataset.del
+          const i = +del.dataset.del;
           // 删除守卫：删掉最后一个启用中的关卡会只剩冻结关，游戏没得玩
           if (!levels[i].frozen && liveCountExcept(i) === 0) {
-            toast('不能删除最后一个启用中的关卡（可先解冻其他关卡）')
-            return
+            toast("不能删除最后一个启用中的关卡（可先解冻其他关卡）");
+            return;
           }
-          const name = levels[i].frozen ? '这个已冻结的关卡' : `第 ${liveNoOf(i)} 关`
+          const name = levels[i].frozen
+            ? "这个已冻结的关卡"
+            : `第 ${liveNoOf(i)} 关`;
           if (
             await gameConfirm(`确定删除${name}？`, {
-              title: '删除关卡',
-              okText: '删 除',
-              tone: 'danger',
+              title: "删除关卡",
+              okText: "删 除",
+              tone: "danger",
             })
           ) {
-            levels.splice(i, 1)
-            cur = Math.min(cur > i ? cur - 1 : cur, levels.length - 1)
-            sel = -1
-            selCorr = -1
-            render()
+            levels.splice(i, 1);
+            cur = Math.min(cur > i ? cur - 1 : cur, levels.length - 1);
+            sel = -1;
+            selCorr = -1;
+            render();
           }
-          return
+          return;
         }
-        const row = e.target.closest('[data-tab]')
+        const row = e.target.closest("[data-tab]");
         if (row) {
-          cur = +row.dataset.tab
-          sel = -1
-          selCorr = -1
-          render()
+          cur = +row.dataset.tab;
+          sel = -1;
+          selCorr = -1;
+          render();
         }
-      })
-      $('btnAddLevel').onclick = () => {
+      });
+      $("btnAddLevel").onclick = () => {
         // 新关卡从空白开始（难度与灯光/幽灵设置沿用当前关，布局自己画），追加在列表末尾
-        const nl = blankLevel()
-        nl.darkAmbient = L().darkAmbient
-        nl.darkFogFar = L().darkFogFar
-        nl.ghostSpeed = L().ghostSpeed
-        nl.lightsOn = L().lightsOn === true
-        nl.ghostEnabled = L().ghostEnabled !== false
-        levels.push(nl)
-        cur = levels.length - 1
-        sel = -1
-        selCorr = -1
+        const nl = blankLevel();
+        nl.darkAmbient = L().darkAmbient;
+        nl.darkFogFar = L().darkFogFar;
+        nl.ghostSpeed = L().ghostSpeed;
+        nl.lightsOn = L().lightsOn === true;
+        nl.ghostEnabled = L().ghostEnabled !== false;
+        levels.push(nl);
+        cur = levels.length - 1;
+        sel = -1;
+        selCorr = -1;
         // 新关从画房间开始：无论此前处于什么模式都切回「房间」
-        mode = 'room'
-        setModeUI()
-        toast('已新增空白关卡（参数沿用上一关）')
-        render()
-      }
-      $('roomList').addEventListener('click', (e) => {
-        const del = e.target.closest('[data-delroom]')
+        mode = "room";
+        setModeUI();
+        toast("已新增空白关卡（参数沿用上一关）");
+        render();
+      };
+      $("roomList").addEventListener("click", (e) => {
+        const del = e.target.closest("[data-delroom]");
         if (del) {
-          L().rooms.splice(+del.dataset.delroom, 1)
-          sel = -1
-          render()
-          return
+          L().rooms.splice(+del.dataset.delroom, 1);
+          sel = -1;
+          render();
+          return;
         }
-        const row = e.target.closest('[data-room]')
+        const row = e.target.closest("[data-room]");
         if (row) {
-          mode = 'room'
-          sel = +row.dataset.room
-          setModeUI()
-          render()
+          mode = "room";
+          sel = +row.dataset.room;
+          setModeUI();
+          render();
         }
-      })
-      $('corrList').addEventListener('click', (e) => {
-        const del = e.target.closest('[data-delcorr]')
+      });
+      $("corrList").addEventListener("click", (e) => {
+        const del = e.target.closest("[data-delcorr]");
         if (del) {
-          L().corrRects.splice(+del.dataset.delcorr, 1)
-          selCorr = -1
-          render()
-          return
+          L().corrRects.splice(+del.dataset.delcorr, 1);
+          selCorr = -1;
+          render();
+          return;
         }
-        const row = e.target.closest('[data-corr]')
+        const row = e.target.closest("[data-corr]");
         if (row) {
-          mode = 'corr'
-          selCorr = +row.dataset.corr
-          setModeUI()
-          render()
+          mode = "corr";
+          selCorr = +row.dataset.corr;
+          setModeUI();
+          render();
         }
-      })
+      });
 
       // 参数滑杆
-      $('ambient').oninput = (e) => {
-        L().darkAmbient = +e.target.value
-        render()
-      }
-      $('fog').oninput = (e) => {
-        L().darkFogFar = +e.target.value
-        render()
-      }
-      $('ghost').oninput = (e) => {
-        L().ghostSpeed = +e.target.value
-        render()
-      }
-      $('ckLights').onchange = (e) => {
-        L().lightsOn = e.target.checked
-        render()
-      }
-      $('ckGhost').onchange = (e) => {
-        L().ghostEnabled = e.target.checked
-        render()
-      }
+      $("ambient").oninput = (e) => {
+        L().darkAmbient = +e.target.value;
+        render();
+      };
+      $("fog").oninput = (e) => {
+        L().darkFogFar = +e.target.value;
+        render();
+      };
+      $("ghost").oninput = (e) => {
+        L().ghostSpeed = +e.target.value;
+        render();
+      };
+      $("ckLights").onchange = (e) => {
+        L().lightsOn = e.target.checked;
+        render();
+      };
+      $("ckGhost").onchange = (e) => {
+        L().ghostEnabled = e.target.checked;
+        render();
+      };
 
       // ================= 导入导出 =================
       /** 有任何 err 的关卡下标列表（独木不成林等错误存在时导出/下载都被拦截） */
       function levelsWithErrors() {
         return levels
           .map((lv, i) => [i, validate(lv)])
-          .filter(([, is]) => is.some(([k]) => k === 'err'))
+          .filter(([, is]) => is.some(([k]) => k === "err"));
       }
 
       function exportJSON() {
@@ -1831,164 +1950,185 @@
               ghostSpeed: lv.ghostSpeed,
               lightsOn: lv.lightsOn === true,
               ghostEnabled: lv.ghostEnabled !== false,
-            }
+            };
             // 冻结状态随数据上云（游戏端跳过该关）；未冻结不写字段，保持与小程序格式兼容
-            if (lv.frozen === true) o.frozen = true
+            if (lv.frozen === true) o.frozen = true;
             if (lv.corrRects.length > 0)
-              o.corridorRects = lv.corrRects.map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d }))
-            return o
+              o.corridorRects = lv.corrRects.map((r) => ({
+                x: r.x,
+                z: r.z,
+                w: r.w,
+                d: r.d,
+              }));
+            return o;
           }),
-        }
-        return JSON.stringify(out, null, 2)
+        };
+        return JSON.stringify(out, null, 2);
       }
       /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
       function guardedJSON() {
         // 全部冻结 = 游戏无关可玩：交互层已拦截，这里兜「导入 JSON」等旁路（与服务端校验同规则）
         if (!levels.some((lv) => !lv.frozen)) {
-          $('errBody').innerHTML =
-            '<div class="err">全部关卡都已冻结：请至少解冻一个关卡（游戏必须有关可玩）</div>'
-          $('errMask').classList.add('open')
-          return null
+          $("errBody").innerHTML =
+            '<div class="err">全部关卡都已冻结：请至少解冻一个关卡（游戏必须有关可玩）</div>';
+          $("errMask").classList.add("open");
+          return null;
         }
-        const bad = levelsWithErrors()
+        const bad = levelsWithErrors();
         if (bad.length) {
-          $('errBody').innerHTML = bad
+          $("errBody").innerHTML = bad
             .map(
               ([i, issues]) =>
                 `<h3>${levels[i].frozen ? `❄ 已冻结的关卡（列表第 ${i + 1} 行）` : `第 ${liveNoOf(i)} 关`}</h3>` +
                 issues
-                  .filter(([k]) => k !== 'ok')
+                  .filter(([k]) => k !== "ok")
                   .map(([k, m]) => `<div class="${k}">${m}</div>`)
-                  .join(''),
+                  .join(""),
             )
-            .join('')
-          $('errMask').classList.add('open')
-          render()
-          return null
+            .join("");
+          $("errMask").classList.add("open");
+          render();
+          return null;
         }
-        return exportJSON()
+        return exportJSON();
       }
-      $('errClose').onclick = () => $('errMask').classList.remove('open')
-      $('errMask').onclick = (e) => {
-        if (e.target === $('errMask')) $('errMask').classList.remove('open')
-      }
+      $("errClose").onclick = () => $("errMask").classList.remove("open");
+      $("errMask").onclick = (e) => {
+        if (e.target === $("errMask")) $("errMask").classList.remove("open");
+      };
 
       function copyText(text) {
         const fallback = () => {
-          const ta = document.createElement('textarea')
-          ta.value = text
-          ta.style.cssText = 'position:fixed;opacity:0'
-          document.body.appendChild(ta)
-          ta.select()
-          let ok = false
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.cssText = "position:fixed;opacity:0";
+          document.body.appendChild(ta);
+          ta.select();
+          let ok = false;
           try {
-            ok = document.execCommand('copy')
+            ok = document.execCommand("copy");
           } catch {
-            ok = false
+            ok = false;
           }
-          ta.remove()
-          return ok
-        }
+          ta.remove();
+          return ok;
+        };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           return navigator.clipboard.writeText(text).then(
             () => true,
             () => fallback(),
-          )
+          );
         }
-        return Promise.resolve(fallback())
+        return Promise.resolve(fallback());
       }
 
       // ================= 弹框（查看 / 导入共用一个结构） =================
       function openModal(mode, text) {
-        $('modalTitle').textContent =
-          mode === 'view' ? '当前配置 JSON（粘贴覆盖 src/levels_data.json）' : '导入已有 JSON'
-        $('modalCopy').style.display = mode === 'view' ? '' : 'none'
-        $('modalOk').style.display = mode === 'view' ? 'none' : ''
-        const t = $('ioText')
-        t.readOnly = mode === 'view'
+        $("modalTitle").textContent =
+          mode === "view"
+            ? "当前配置 JSON（粘贴覆盖 src/levels_data.json）"
+            : "导入已有 JSON";
+        $("modalCopy").style.display = mode === "view" ? "" : "none";
+        $("modalOk").style.display = mode === "view" ? "none" : "";
+        const t = $("ioText");
+        t.readOnly = mode === "view";
         t.placeholder =
-          mode === 'view' ? '' : '把 levels_data.json 的全部内容粘贴到这里，点「确定导入」'
-        t.value = text || ''
-        $('modalMask').classList.add('open')
-        if (mode === 'import') t.focus()
+          mode === "view"
+            ? ""
+            : "把 levels_data.json 的全部内容粘贴到这里，点「确定导入」";
+        t.value = text || "";
+        $("modalMask").classList.add("open");
+        if (mode === "import") t.focus();
       }
       function closeModal() {
-        $('modalMask').classList.remove('open')
+        $("modalMask").classList.remove("open");
       }
-      $('modalClose').onclick = closeModal
-      $('btnMore').onclick = (e) => {
-        e.stopPropagation()
-        $('moreMenu').classList.toggle('open')
-      }
-      $('moreMenu').addEventListener('click', () => $('moreMenu').classList.remove('open'))
-      window.addEventListener('click', (e) => {
-        if (!e.target.closest('.more-wrap')) $('moreMenu').classList.remove('open')
-        if (!e.target.closest('.tip-icon')) $('ambPop').classList.remove('open')
-      })
-      $('ambTip').onclick = (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        $('ambPop').classList.toggle('open')
-      }
-      $('btnHelp').onclick = () => $('helpMask').classList.add('open')
-      $('helpClose').onclick = () => $('helpMask').classList.remove('open')
-      $('helpMask').onclick = (e) => {
-        if (e.target === $('helpMask')) $('helpMask').classList.remove('open')
-      }
-      $('modalMask').onclick = (e) => {
-        if (e.target === $('modalMask')) closeModal()
-      }
-      $('modalCopy').onclick = () =>
-        copyText($('ioText').value).then((ok) =>
-          toast(ok ? '已复制到剪贴板' : '复制失败，请手动全选复制'),
-        )
-      $('modalOk').onclick = () => {
+      $("modalClose").onclick = closeModal;
+      $("btnMore").onclick = (e) => {
+        e.stopPropagation();
+        $("moreMenu").classList.toggle("open");
+      };
+      $("moreMenu").addEventListener("click", () =>
+        $("moreMenu").classList.remove("open"),
+      );
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest(".more-wrap"))
+          $("moreMenu").classList.remove("open");
+        if (!e.target.closest(".tip-icon"))
+          $("ambPop").classList.remove("open");
+      });
+      $("ambTip").onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        $("ambPop").classList.toggle("open");
+      };
+      $("btnHelp").onclick = () => $("helpMask").classList.add("open");
+      $("helpClose").onclick = () => $("helpMask").classList.remove("open");
+      $("helpMask").onclick = (e) => {
+        if (e.target === $("helpMask")) $("helpMask").classList.remove("open");
+      };
+      $("modalMask").onclick = (e) => {
+        if (e.target === $("modalMask")) closeModal();
+      };
+      $("modalCopy").onclick = () =>
+        copyText($("ioText").value).then((ok) =>
+          toast(ok ? "已复制到剪贴板" : "复制失败，请手动全选复制"),
+        );
+      $("modalOk").onclick = () => {
         try {
-          const data = JSON.parse($('ioText').value)
-          const arr = Array.isArray(data) ? data : data.levels
-          if (!Array.isArray(arr) || arr.length === 0) throw new Error('缺少 levels 数组')
-          loadLevelsData(arr)
-          closeModal()
-          toast(`已导入 ${levels.length} 个关卡`)
-          render()
+          const data = JSON.parse($("ioText").value);
+          const arr = Array.isArray(data) ? data : data.levels;
+          if (!Array.isArray(arr) || arr.length === 0)
+            throw new Error("缺少 levels 数组");
+          loadLevelsData(arr);
+          closeModal();
+          toast(`已导入 ${levels.length} 个关卡`);
+          render();
         } catch (err) {
-          toast('导入失败：' + err.message)
+          toast("导入失败：" + err.message);
         }
-      }
+      };
 
-      $('btnCopy').onclick = () => {
-        const json = guardedJSON()
-        if (json === null) return
+      $("btnCopy").onclick = () => {
+        const json = guardedJSON();
+        if (json === null) return;
         copyText(json).then((ok) =>
           toast(
             ok
-              ? '已复制到剪贴板：粘贴覆盖 src/levels_data.json，重新构建即生效'
-              : '复制失败，请点「查看当前 JSON」手动复制',
+              ? "已复制到剪贴板：粘贴覆盖 src/levels_data.json，重新构建即生效"
+              : "复制失败，请点「查看当前 JSON」手动复制",
           ),
-        )
-      }
-      $('btnView').onclick = () => {
-        const json = guardedJSON()
-        if (json === null) return
-        openModal('view', json)
-      }
-      $('btnDownload').onclick = () => {
-        const json = guardedJSON()
-        if (json === null) return
-        const a = document.createElement('a')
-        a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
-        a.download = 'levels.json'
-        a.click()
-        URL.revokeObjectURL(a.href)
-      }
+        );
+      };
+      $("btnView").onclick = () => {
+        const json = guardedJSON();
+        if (json === null) return;
+        openModal("view", json);
+      };
+      $("btnDownload").onclick = () => {
+        const json = guardedJSON();
+        if (json === null) return;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(
+          new Blob([json], { type: "application/json" }),
+        );
+        a.download = "levels.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
       /** 把外部 levels 数组规范化载入编辑器（宽走廊拆 1 格线段并按房间裁剪） */
       function loadLevelsData(arr) {
         levels = arr.map((lv) => {
-          const rooms = (lv.rooms || []).map((r) => ({ x: +r.x, z: +r.z, w: +r.w, d: +r.d }))
+          const rooms = (lv.rooms || []).map((r) => ({
+            x: +r.x,
+            z: +r.z,
+            w: +r.w,
+            d: +r.d,
+          }));
           const corrRects = (lv.corridorRects || [])
             .map((r) => ({ x: +r.x, z: +r.z, w: +r.w, d: +r.d }))
             .flatMap(normalizeCorr)
-            .flatMap((c) => clipCorridor(c, rooms))
+            .flatMap((c) => clipCorridor(c, rooms));
           return {
             rooms,
             corrRects,
@@ -1998,89 +2138,89 @@
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
             frozen: lv.frozen === true,
-          }
-        })
-        cur = 0
-        sel = -1
-        selCorr = -1
+          };
+        });
+        cur = 0;
+        sel = -1;
+        selCorr = -1;
       }
-      $('btnImport').onclick = () => openModal('import')
+      $("btnImport").onclick = () => openModal("import");
       // 返回游戏主页（草稿已自动保存在本地，下次进入可恢复）
-      $('btnBackGame').onclick = () => {
-        location.href = '/'
-      }
-      $('btnClear').onclick = async () => {
+      $("btnBackGame").onclick = () => {
+        location.href = "/";
+      };
+      $("btnClear").onclick = async () => {
         if (
-          await gameConfirm('清空全部关卡，回到一张空白画布？', {
-            title: '清空画布',
-            okText: '清 空',
-            tone: 'danger',
+          await gameConfirm("清空全部关卡，回到一张空白画布？", {
+            title: "清空画布",
+            okText: "清 空",
+            tone: "danger",
           })
         ) {
-          levels = [blankLevel()]
-          cur = 0
-          sel = -1
-          selCorr = -1
-          localStorage.removeItem('nc-editor-draft')
-          render()
+          levels = [blankLevel()];
+          cur = 0;
+          sel = -1;
+          selCorr = -1;
+          localStorage.removeItem("nc-editor-draft");
+          render();
         }
-      }
+      };
 
       // ================= 管理口令：进门校验 + 游戏风格弹框 =================
-      const TOKEN_KEY = 'nc-admin-token'
+      const TOKEN_KEY = "nc-admin-token";
 
       /**
        * 服务端预校验口令（POST /api/levels 只验 Authorization，不读写数据）。
        * 返回 'ok' | 'unauthorized' | 'offline'（接口不可达：本地 dev 无 Functions / 断网 / 云端异常）
        */
       async function verifyToken(token) {
-        const ctrl = new AbortController()
-        const timer = setTimeout(() => ctrl.abort(), 6000)
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
         try {
-          const res = await fetch('/api/levels', {
-            method: 'POST',
-            headers: { Authorization: 'Bearer ' + token },
+          const res = await fetch("/api/levels", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token },
             signal: ctrl.signal,
-          })
-          if (res.ok) return 'ok'
-          if (res.status === 401) return 'unauthorized'
-          return 'offline'
+          });
+          if (res.ok) return "ok";
+          if (res.status === 401) return "unauthorized";
+          return "offline";
         } catch {
-          return 'offline'
+          return "offline";
         } finally {
-          clearTimeout(timer)
+          clearTimeout(timer);
         }
       }
 
       /** 弹框当前等待中的 resolve；null = 弹框未在等待输入 */
-      let gateResolve = null
-      let gateAllowCancel = false
-      let gateHideTimer = 0
+      let gateResolve = null;
+      let gateAllowCancel = false;
+      let gateHideTimer = 0;
 
       function gateBusy(busy) {
-        $('gateEnter').disabled = busy
-        $('gateInput').disabled = busy
-        $('gateEnter').textContent = busy ? '验证中…' : '进 入'
+        $("gateEnter").disabled = busy;
+        $("gateInput").disabled = busy;
+        $("gateEnter").textContent = busy ? "验证中…" : "进 入";
       }
       function gateError(msg) {
-        $('gateErr').textContent = msg || ''
+        $("gateErr").textContent = msg || "";
         if (msg) {
-          const box = $('gateBox')
-          box.classList.remove('shake')
-          void box.offsetWidth // 强制回流以重置抖动动画
-          box.classList.add('shake')
+          const box = $("gateBox");
+          box.classList.remove("shake");
+          void box.offsetWidth; // 强制回流以重置抖动动画
+          box.classList.add("shake");
         }
       }
       /** 淡出弹框并回传结果：token 字符串 / 'offline'（离线进入）/ null（取消） */
       function gateClose(result) {
-        const r = gateResolve
-        gateResolve = null
-        $('gateMask').classList.add('pass')
-        clearTimeout(gateHideTimer)
+        const r = gateResolve;
+        gateResolve = null;
+        $("gateMask").classList.add("pass");
+        clearTimeout(gateHideTimer);
         gateHideTimer = setTimeout(() => {
-          $('gateMask').style.display = 'none'
-        }, 400)
-        if (r) r(result)
+          $("gateMask").style.display = "none";
+        }, 400);
+        if (r) r(result);
       }
       /**
        * 打开口令弹框。resolve 时机：
@@ -2089,62 +2229,63 @@
        *  - 用户点「取 消」（仅 allowCancel 场景出现）→ resolve(null)
        */
       function requestToken(opts) {
-        const o = opts || {}
+        const o = opts || {};
         return new Promise((resolve) => {
-          gateResolve = resolve
-          gateAllowCancel = !!o.allowCancel
-          $('gateDesc').textContent = o.reason || '请输入管理口令'
-          $('gateInput').value = ''
-          gateError('')
-          $('gateOffline').classList.add('gate-hide')
+          gateResolve = resolve;
+          gateAllowCancel = !!o.allowCancel;
+          $("gateDesc").textContent = o.reason || "请输入管理口令";
+          $("gateInput").value = "";
+          gateError("");
+          $("gateOffline").classList.add("gate-hide");
           if (o.offline) {
-            gateError('无法连接云端服务')
-            if (!gateAllowCancel) $('gateOffline').classList.remove('gate-hide')
+            gateError("无法连接云端服务");
+            if (!gateAllowCancel)
+              $("gateOffline").classList.remove("gate-hide");
           }
-          $('gateCancel').classList.toggle('gate-hide', !gateAllowCancel)
-          clearTimeout(gateHideTimer)
-          const mask = $('gateMask')
-          mask.style.display = 'flex'
-          mask.classList.remove('pass')
-          gateBusy(false)
-          $('gateInput').focus()
-        })
+          $("gateCancel").classList.toggle("gate-hide", !gateAllowCancel);
+          clearTimeout(gateHideTimer);
+          const mask = $("gateMask");
+          mask.style.display = "flex";
+          mask.classList.remove("pass");
+          gateBusy(false);
+          $("gateInput").focus();
+        });
       }
       async function gateSubmit() {
-        if (!gateResolve) return
-        const v = $('gateInput').value.trim()
+        if (!gateResolve) return;
+        const v = $("gateInput").value.trim();
         if (!v) {
-          gateError('口令不能为空')
-          return
+          gateError("口令不能为空");
+          return;
         }
-        gateBusy(true)
-        const st = await verifyToken(v)
-        gateBusy(false)
-        if (st === 'ok') {
-          localStorage.setItem(TOKEN_KEY, v)
-          gateClose(v)
-        } else if (st === 'unauthorized') {
-          localStorage.removeItem(TOKEN_KEY)
-          gateError('口令错误，请重试')
-          $('gateInput').value = ''
-          $('gateInput').focus()
+        gateBusy(true);
+        const st = await verifyToken(v);
+        gateBusy(false);
+        if (st === "ok") {
+          localStorage.setItem(TOKEN_KEY, v);
+          gateClose(v);
+        } else if (st === "unauthorized") {
+          localStorage.removeItem(TOKEN_KEY);
+          gateError("口令错误，请重试");
+          $("gateInput").value = "";
+          $("gateInput").focus();
         } else {
-          gateError('无法连接云端服务')
+          gateError("无法连接云端服务");
           // 保存场景（可取消）无离线进入的意义，只有进门场景露出该按钮
-          if (!gateAllowCancel) $('gateOffline').classList.remove('gate-hide')
+          if (!gateAllowCancel) $("gateOffline").classList.remove("gate-hide");
         }
       }
-      $('gateEnter').onclick = gateSubmit
-      $('gateInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') gateSubmit()
-      })
-      $('gateOffline').onclick = () => gateClose('offline')
-      $('gateCancel').onclick = () => gateClose(null)
+      $("gateEnter").onclick = gateSubmit;
+      $("gateInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") gateSubmit();
+      });
+      $("gateOffline").onclick = () => gateClose("offline");
+      $("gateCancel").onclick = () => gateClose(null);
 
       // ================= 通用游戏风弹框（替代浏览器 alert / confirm） =================
       /** 弹框当前等待中的 resolve；null = 未打开 */
-      let dlgResolve = null
-      let dlgHideTimer = 0
+      let dlgResolve = null;
+      let dlgHideTimer = 0;
       /**
        * 打开游戏风格弹框，resolve(true)=确定 / resolve(false)=取消（Esc 同取消）。
        * opts：title 标题；msg 正文（支持 \n 换行）；okText / cancelText 按钮文案，
@@ -2152,112 +2293,132 @@
        */
       function openDlg(opts) {
         return new Promise((resolve) => {
-          dlgResolve = resolve
-          $('dlgTitle').textContent = opts.title || '提示'
-          $('dlgTitle').style.color =
-            opts.tone === 'ok' ? '#0c0' : opts.tone === 'danger' ? '#ff4444' : '#fff'
-          $('dlgMsg').textContent = opts.msg || ''
-          $('dlgOk').textContent = opts.okText || '确 定'
-          const c = $('dlgCancel')
+          dlgResolve = resolve;
+          $("dlgTitle").textContent = opts.title || "提示";
+          $("dlgTitle").style.color =
+            opts.tone === "ok"
+              ? "#0c0"
+              : opts.tone === "danger"
+                ? "#ff4444"
+                : "#fff";
+          $("dlgMsg").textContent = opts.msg || "";
+          $("dlgOk").textContent = opts.okText || "确 定";
+          const c = $("dlgCancel");
           if (opts.cancelText === null) {
-            c.classList.add('gate-hide')
+            c.classList.add("gate-hide");
           } else {
-            c.classList.remove('gate-hide')
-            c.textContent = opts.cancelText || '取 消'
+            c.classList.remove("gate-hide");
+            c.textContent = opts.cancelText || "取 消";
           }
-          clearTimeout(dlgHideTimer)
-          const mask = $('dlgMask')
-          mask.style.display = 'flex'
-          mask.classList.remove('pass')
-          $('dlgOk').focus()
-        })
+          clearTimeout(dlgHideTimer);
+          const mask = $("dlgMask");
+          mask.style.display = "flex";
+          mask.classList.remove("pass");
+          $("dlgOk").focus();
+        });
       }
       /** 淡出弹框并回传结果（与口令弹框同款淡出节奏） */
       function dlgClose(result) {
-        const r = dlgResolve
-        dlgResolve = null
-        $('dlgMask').classList.add('pass')
-        clearTimeout(dlgHideTimer)
+        const r = dlgResolve;
+        dlgResolve = null;
+        $("dlgMask").classList.add("pass");
+        clearTimeout(dlgHideTimer);
         dlgHideTimer = setTimeout(() => {
-          $('dlgMask').style.display = 'none'
-        }, 400)
-        if (r) r(result)
+          $("dlgMask").style.display = "none";
+        }, 400);
+        if (r) r(result);
       }
-      const gameAlert = (msg, opts) => openDlg({ msg, cancelText: null, ...opts })
-      const gameConfirm = (msg, opts) => openDlg({ msg, ...opts })
-      $('dlgOk').onclick = () => dlgClose(true)
-      $('dlgCancel').onclick = () => dlgClose(false)
+      const gameAlert = (msg, opts) =>
+        openDlg({ msg, cancelText: null, ...opts });
+      const gameConfirm = (msg, opts) => openDlg({ msg, ...opts });
+      $("dlgOk").onclick = () => dlgClose(true);
+      $("dlgCancel").onclick = () => dlgClose(false);
 
       // ================= 云端保存 / 加载 =================
       async function putLevels(json, token) {
-        return fetch('/api/levels', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        return fetch("/api/levels", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
           body: json,
-        })
+        });
       }
       async function cloudSave() {
-        const json = guardedJSON()
-        if (json === null) return
-        let token = localStorage.getItem(TOKEN_KEY)
+        const json = guardedJSON();
+        if (json === null) return;
+        let token = localStorage.getItem(TOKEN_KEY);
         if (!token) {
-          token = await requestToken({ allowCancel: true })
-          if (!token || token === 'offline') return
+          token = await requestToken({ allowCancel: true });
+          if (!token || token === "offline") return;
         }
-        const btn = $('btnCloudSave')
-        btn.disabled = true
-        btn.textContent = '保存中…'
+        const btn = $("btnCloudSave");
+        btn.disabled = true;
+        btn.textContent = "保存中…";
         try {
-          let res = await putLevels(json, token)
+          let res = await putLevels(json, token);
           if (res.status === 401) {
             // 口令过期/被改：清掉重新弹框（弹框内部已完成服务端预校验）
-            localStorage.removeItem(TOKEN_KEY)
-            token = await requestToken({ allowCancel: true, reason: '口令已失效，请重新输入' })
-            if (!token || token === 'offline') {
-              return // 用户放弃：静默结束（finally 恢复按钮）
+            localStorage.removeItem(TOKEN_KEY);
+            token = await requestToken({
+              allowCancel: true,
+              reason: "口令已失效，请重新输入",
+            });
+            if (!token || token === "offline") {
+              return; // 用户放弃：静默结束（finally 恢复按钮）
             }
-            res = await putLevels(json, token)
+            res = await putLevels(json, token);
           }
           if (res.ok) {
-            gameAlert('已保存，全网生效（边缘节点最长约 1 分钟同步）', {
-              title: '保存成功',
-              tone: 'ok',
-            })
+            gameAlert("已保存，全网生效（边缘节点最长约 1 分钟同步）", {
+              title: "保存成功",
+              tone: "ok",
+            });
             // 保存成功后画布内容即云端内容：清掉草稿，之后的草稿都代表"未上云的新改动"
-            localStorage.removeItem('nc-editor-draft')
+            localStorage.removeItem("nc-editor-draft");
           } else {
-            const err = await res.json().catch(() => ({}))
+            const err = await res.json().catch(() => ({}));
             gameAlert(
-              '保存失败（HTTP ' + res.status + '）：' + (err.detail || err.error || '未知错误'),
-              { title: '保存失败', tone: 'danger' },
-            )
+              "保存失败（HTTP " +
+                res.status +
+                "）：" +
+                (err.detail || err.error || "未知错误"),
+              { title: "保存失败", tone: "danger" },
+            );
           }
         } catch (e) {
-          gameAlert('保存失败：网络错误 ' + e, { title: '保存失败', tone: 'danger' })
+          gameAlert("保存失败：网络错误 " + e, {
+            title: "保存失败",
+            tone: "danger",
+          });
         } finally {
-          btn.disabled = false
-          btn.textContent = '☁ 保存到云端'
+          btn.disabled = false;
+          btn.textContent = "☁ 保存到云端";
         }
       }
-      $('btnCloudSave').onclick = cloudSave
+      $("btnCloudSave").onclick = cloudSave;
 
       // ================= 草稿自动保存 =================
-      let saveTimer = 0
+      let saveTimer = 0;
       function saveDraft() {
-        clearTimeout(saveTimer)
+        clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
           try {
-            localStorage.setItem('nc-editor-draft', JSON.stringify({ levels, cur }))
+            localStorage.setItem(
+              "nc-editor-draft",
+              JSON.stringify({ levels, cur }),
+            );
           } catch {}
-        }, 400)
+        }, 400);
       }
       async function init() {
-        setModeUI()
+        setModeUI();
         // 先读本地草稿（存在即代表有未上云的改动——云端保存成功时会清草稿）
-        let draft = null
+        let draft = null;
         try {
-          const d = JSON.parse(localStorage.getItem('nc-editor-draft'))
-          if (d && Array.isArray(d.levels) && d.levels.length) draft = d
+          const d = JSON.parse(localStorage.getItem("nc-editor-draft"));
+          if (d && Array.isArray(d.levels) && d.levels.length) draft = d;
         } catch {}
         const restoreDraft = () => {
           levels = draft.levels.map((lv) => ({
@@ -2269,71 +2430,77 @@
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
             frozen: lv.frozen === true,
-          }))
-          cur = Math.min(draft.cur || 0, levels.length - 1)
-        }
+          }));
+          cur = Math.min(draft.cur || 0, levels.length - 1);
+        };
         // 优先加载云端正式数据；与本地草稿冲突时让用户二选一，绝不静默覆盖草稿
-        let loaded = false
+        let loaded = false;
         try {
-          const res = await fetch('/api/levels', { cache: 'no-store' })
+          const res = await fetch("/api/levels", { cache: "no-store" });
           if (res.ok) {
-            const data = await res.json()
+            const data = await res.json();
             if (data && Array.isArray(data.levels) && data.levels.length) {
               if (
                 !draft ||
-                (await gameConfirm('云端已有正式关卡数据，\n本地还有一份未上云的草稿。', {
-                  title: '发现本地草稿',
-                  okText: '加载云端数据',
-                  cancelText: '恢复本地草稿',
-                }))
+                (await gameConfirm(
+                  "云端已有正式关卡数据，\n本地还有一份未上云的草稿。",
+                  {
+                    title: "发现本地草稿",
+                    okText: "加载云端数据",
+                    cancelText: "恢复本地草稿",
+                  },
+                ))
               ) {
-                loadLevelsData(data.levels)
+                loadLevelsData(data.levels);
               } else {
-                restoreDraft()
+                restoreDraft();
               }
-              loaded = true
+              loaded = true;
             }
           }
         } catch {}
         if (
           !loaded &&
           draft &&
-          (await gameConfirm('云端暂无数据。检测到本地草稿，是否恢复？', {
-            title: '发现本地草稿',
-            okText: '恢复草稿',
-            cancelText: '空白画布',
+          (await gameConfirm("云端暂无数据。检测到本地草稿，是否恢复？", {
+            title: "发现本地草稿",
+            okText: "恢复草稿",
+            cancelText: "空白画布",
           }))
         ) {
-          restoreDraft()
+          restoreDraft();
         }
-        render()
+        render();
       }
 
       /** 进门流程：先过口令门禁（服务端校验通过 / 离线进入），再加载云端数据与草稿 */
-      ;(async function boot() {
-        render() // 遮罩底下先画一帧空白画布，玻璃模糊后有编辑器轮廓可见
-        const saved = localStorage.getItem(TOKEN_KEY)
+      (async function boot() {
+        render(); // 遮罩底下先画一帧空白画布，玻璃模糊后有编辑器轮廓可见
+        const saved = localStorage.getItem(TOKEN_KEY);
         if (saved) {
           // 已记住口令：静默校验，通过则免输入直接进入
-          $('gateDesc').textContent = '正在验证口令…'
-          gateBusy(true)
-          const st = await verifyToken(saved)
-          if (st === 'ok') {
-            gateClose(saved)
+          $("gateDesc").textContent = "正在验证口令…";
+          gateBusy(true);
+          const st = await verifyToken(saved);
+          if (st === "ok") {
+            gateClose(saved);
           } else {
-            if (st === 'unauthorized') {
-              localStorage.removeItem(TOKEN_KEY)
+            if (st === "unauthorized") {
+              localStorage.removeItem(TOKEN_KEY);
             }
             await requestToken({
-              reason: st === 'unauthorized' ? '口令已失效，请重新输入' : '请输入管理口令',
-              offline: st === 'offline',
-            })
+              reason:
+                st === "unauthorized"
+                  ? "口令已失效，请重新输入"
+                  : "请输入管理口令",
+              offline: st === "offline",
+            });
           }
         } else {
-          await requestToken({})
+          await requestToken({});
         }
-        await init()
-      })()
+        await init();
+      })();
     </script>
   </body>
 </html>
