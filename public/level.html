@@ -807,7 +807,7 @@
             <input type="range" id="fog" min="8" max="30" step="1" />
           </div>
           <div class="ctl">
-            <label class="ck"><input type="checkbox" id="ckGhost" checked /> 出现幽灵</label>
+            <label class="ck"><input type="checkbox" id="ckGhost" checked /> 出现幽灵（速度单位：米/秒）</label>
           </div>
           <div class="ctl">
             <label>幽灵移动速度 <b id="vGhost"></b></label>
@@ -1163,6 +1163,74 @@
       }
 
       // ================= 渲染 =================
+      /** 房间描边（重叠感知）：四条边逐段绘制——暴露在外的段实线；
+       *  落进其他房间内部的段改暗虚线（重叠即打通，这些线段处并没有真实的墙）。
+       *  贴边不算内部：边线恰好压在对方边界上时仍画实线分界 */
+      function strokeRoomEdges(r, rooms, self, solid, dim) {
+        // 四条边：h=横边；c=固定轴格坐标；a→b=延伸区间；off=向矩形内侧的半像素偏移
+        const edges = [
+          { h: true, c: r.z, a: r.x, b: r.x + r.w, off: 0.5 },
+          { h: true, c: r.z + r.d, a: r.x, b: r.x + r.w, off: -0.5 },
+          { h: false, c: r.x, a: r.z, b: r.z + r.d, off: 0.5 },
+          { h: false, c: r.x + r.w, a: r.z, b: r.z + r.d, off: -0.5 },
+        ]
+        for (const e of edges) {
+          // 收集该边落在其他房间严格内部的区间并合并
+          const ins = []
+          for (let j = 0; j < rooms.length; j++) {
+            if (j === self) {
+              continue
+            }
+            const o = rooms[j]
+            const inBand = e.h ? e.c > o.z && e.c < o.z + o.d : e.c > o.x && e.c < o.x + o.w
+            if (!inBand) {
+              continue
+            }
+            const s = Math.max(e.a, e.h ? o.x : o.z)
+            const t = Math.min(e.b, e.h ? o.x + o.w : o.z + o.d)
+            if (s < t) {
+              ins.push([s, t])
+            }
+          }
+          ins.sort((p, q) => p[0] - q[0])
+          const merged = []
+          for (const seg of ins) {
+            const last = merged[merged.length - 1]
+            if (last && seg[0] <= last[1]) {
+              last[1] = Math.max(last[1], seg[1])
+            } else {
+              merged.push([seg[0], seg[1]])
+            }
+          }
+          // 内部段暗虚线、其余空隙实线
+          const fixed = e.c * CELL + e.off
+          const drawSeg = (s, t, dashed) => {
+            if (t - s <= 0) {
+              return
+            }
+            ctx.beginPath()
+            ctx.setLineDash(dashed ? [4, 4] : [])
+            ctx.strokeStyle = dashed ? dim : solid
+            if (e.h) {
+              ctx.moveTo(s * CELL, fixed)
+              ctx.lineTo(t * CELL, fixed)
+            } else {
+              ctx.moveTo(fixed, s * CELL)
+              ctx.lineTo(fixed, t * CELL)
+            }
+            ctx.stroke()
+          }
+          let pos = e.a
+          for (const [s, t] of merged) {
+            drawSeg(pos, s, false)
+            drawSeg(s, t, true)
+            pos = t
+          }
+          drawSeg(pos, e.b, false)
+          ctx.setLineDash([])
+        }
+      }
+
       function render() {
         const lv = L()
         // 独木不成林：孤岛房间/孤立走廊实时红色示警
@@ -1234,14 +1302,17 @@
           // 孤岛房间与非法尺寸同级：红色示警（无法导出）
           ctx.fillStyle = bad || unreachable ? 'rgba(160,50,50,0.45)' : 'rgba(70,110,80,0.5)'
           ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL)
-          ctx.lineWidth = i === sel && mode === 'room' ? 2.5 : unreachable ? 2 : 1
-          ctx.strokeStyle =
+          const selRoom = i === sel && mode === 'room'
+          ctx.lineWidth = selRoom ? 2.5 : unreachable ? 2 : 1
+          // 实线色按状态；重叠段的暗虚线用同色相低透明度
+          const solid = bad || unreachable ? '#ff6a6a' : selRoom ? '#7ad0ff' : 'rgba(255,255,255,0.4)'
+          const dim =
             bad || unreachable
-              ? '#ff6a6a'
-              : i === sel && mode === 'room'
-                ? '#7ad0ff'
-                : 'rgba(255,255,255,0.4)'
-          ctx.strokeRect(r.x * CELL + 0.5, r.z * CELL + 0.5, r.w * CELL - 1, r.d * CELL - 1)
+              ? 'rgba(255,106,106,0.35)'
+              : selRoom
+                ? 'rgba(122,208,255,0.4)'
+                : 'rgba(255,255,255,0.14)'
+          strokeRoomEdges(r, lv.rooms, i, solid, dim)
           ctx.fillStyle = 'rgba(255,255,255,0.85)'
           ctx.font = 'bold 11px sans-serif'
           ctx.textAlign = 'center'
