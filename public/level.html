@@ -14,16 +14,32 @@
         margin: 0;
         padding: 0;
       }
+      /* ===== 游戏页同款视觉基调：纯黑底 / 像素字 / 方角粗边框 / 橙色强调 ===== */
       body {
         font:
-          13px/1.5 -apple-system,
-          'Segoe UI',
+          15px/1.5 'VT323',
           'Microsoft YaHei',
-          sans-serif;
-        background: #17141d;
-        color: #cfc9d6;
+          monospace;
+        background: #050505;
+        color: #ccc;
         padding: 10px 14px;
         user-select: none;
+      }
+      /* 暗色像素风滚动条（列表 / 弹框 / 文本框通用，与游戏选关面板一致） */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1a1a1a;
+        border: 1px solid #333;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #555;
+        border: 1px solid #777;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #666;
       }
       /* 操作按钮在右栏顶部独占一行（左对齐），下方卡片顺次下移 */
       .header .btns {
@@ -31,23 +47,64 @@
         gap: 8px;
         align-items: center;
       }
+      /* ===== 游戏按钮缩小版：黑灰底 / 白粗边 / 方角 / 按下缩放 ===== */
+      .header .btns button,
+      .modal button,
+      .modes button,
+      #btnAddLevel {
+        background: #444;
+        border: 3px solid #fff;
+        border-radius: 0;
+        color: #fff;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 17px;
+        line-height: 1.2;
+        letter-spacing: 1px;
+        transition: 0.1s;
+        image-rendering: pixelated;
+      }
+      .header .btns button:hover,
+      .modal button:hover,
+      .modes button:hover,
+      #btnAddLevel:hover {
+        background: #666;
+        transform: scale(1.04);
+      }
+      .header .btns button:active,
+      .modal button:active,
+      .modes button:active,
+      #btnAddLevel:active {
+        transform: scale(0.96);
+      }
+      /* 次要按钮：暗底灰边（同口令弹框的次要按钮） */
+      .header .btns button.gray,
+      .modal button.gray {
+        background: #1d1d1d;
+        border-color: #666;
+        color: #aaa;
+      }
+      .header .btns button.gray:hover,
+      .modal button.gray:hover {
+        background: #2c2c2c;
+        color: #fff;
+      }
       .more-wrap {
         position: relative;
       }
       .menu {
         position: absolute;
-        top: calc(100% + 4px);
+        top: calc(100% + 6px);
         left: 0;
         display: none;
         flex-direction: column;
         gap: 6px;
-        padding: 6px;
-        min-width: 176px;
+        padding: 8px;
+        min-width: 190px;
         z-index: 7;
-        background: #201b29;
-        border: 1px solid #3a3348;
-        border-radius: 8px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        background: rgba(0, 0, 0, 0.95);
+        border: 3px solid #555;
       }
       .menu.open {
         display: flex;
@@ -57,28 +114,27 @@
         text-align: left;
       }
       .menu button:hover {
-        background: #2d4a5a;
-        color: #fff;
-        border-color: #5090a0;
+        /* 下拉容器内缩放会溢出边框，只做变色反馈 */
+        transform: none;
       }
       /* 关卡行比房间/走廊行更高更醒目 */
       #tabs.list .row {
         padding: 9px 8px;
-        font-size: 13px;
+        font-size: 16px;
       }
       #btnAddLevel {
         width: 100%;
-        margin-top: 8px;
-        background: #1f2a22;
-        color: #b6aec6;
-        border: 1px solid #35513c;
-        padding: 7px 0;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
+        margin-top: 10px;
+        background: #1d1d1d;
+        border-color: #666;
+        color: #aaa;
+        padding: 8px 0;
+        font-size: 16px;
       }
       #btnAddLevel:hover {
-        background: #253527;
+        background: #2c2c2c;
+        color: #fff;
+        border-color: #999;
       }
       /* 布局高度与画布对齐（画布 = max(800, 100vh-22) + 边框 2）：两侧栏卡片可到底 */
       .layout {
@@ -95,10 +151,11 @@
         flex-shrink: 0;
         height: 100%;
       }
+      /* 面板卡片：游戏菜单同款黑底粗边方角 */
       .panel {
-        background: #201b29;
-        border: 1px solid #322b40;
-        border-radius: 8px;
+        background: #0b0b0b;
+        border: 3px solid #555;
+        border-radius: 0;
         padding: 12px;
         width: 272px;
       }
@@ -144,81 +201,95 @@
         min-height: 0;
         max-height: none;
         overflow-y: auto;
-        font-size: 11px;
+        font-size: 13px;
       }
       .cols .row > span:first-child {
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      /* 面板标题：白字黑影 + 红色像素方块前缀（呼应游戏红标题） */
       .panel h2 {
-        font-size: 13px;
-        color: #a99ac9;
-        margin: 10px 0 6px;
+        font-size: 18px;
+        font-weight: normal;
+        color: #fff;
+        letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000;
+        margin: 12px 0 8px;
+      }
+      .panel h2::before {
+        content: '■ ';
+        color: #a00;
       }
       .panel h2:first-child {
         margin-top: 0;
       }
       .modes {
         display: flex;
-        gap: 6px;
+        gap: 8px;
       }
       .modes button {
         flex: 1;
         padding: 8px 4px;
-        background: #262130;
-        color: #b6aec6;
-        border: 1px solid #3a3348;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
+        font-size: 16px;
+        background: #1d1d1d;
+        border-color: #666;
+        color: #aaa;
+      }
+      .modes button:hover {
+        background: #2c2c2c;
       }
       .modes button.active {
-        background: #2d4a5a;
-        color: #fff;
-        border-color: #5090a0;
+        background: #332200;
+        color: #ffaa00;
+        border-color: #ffaa00;
       }
       .hint {
-        color: #776f85;
-        font-size: 12px;
+        color: #888;
+        font-size: 13px;
         margin-top: 6px;
+        line-height: 1.7;
       }
       #errBody {
         max-height: 60vh;
         overflow-y: auto;
-        font-size: 12px;
+        font-size: 14px;
       }
       #errBody h3 {
-        font-size: 13px;
-        color: #a99ac9;
-        margin: 8px 0 5px;
+        font-size: 16px;
+        font-weight: normal;
+        color: #ffaa00;
+        letter-spacing: 1px;
+        margin: 10px 0 5px;
       }
       #errBody h3:first-child {
         margin-top: 0;
       }
       #errBody div {
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 5px 9px;
+        border-radius: 0;
         margin-bottom: 5px;
       }
       #errBody .err {
-        background: #3d2026;
-        color: #ff9c9c;
+        background: #2a0d0d;
+        color: #ff6a6a;
+        border-left: 4px solid #a00;
       }
       #errBody .warn {
-        background: #3d3520;
-        color: #ffd98c;
+        background: #2a230d;
+        color: #ffd257;
+        border-left: 4px solid #a80;
       }
       canvas {
         background: #000;
-        border: 1px solid #3a3348;
-        border-radius: 6px;
+        border: 1px solid #555;
+        border-radius: 0;
         cursor: crosshair;
         display: block;
         /* 显示尺寸由 syncCanvasSize() 接管：跟随视口高度自适应、最小 800px，
        内部分辨率同步 ×dpr 重设，放大按矢量重画不糊 */
       }
       .ctl {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         position: relative;
       }
       .ctl:last-child {
@@ -226,37 +297,36 @@
       }
       .tip-icon {
         display: inline-block;
-        width: 14px;
-        height: 14px;
-        line-height: 14px;
+        width: 16px;
+        height: 16px;
+        line-height: 13px;
         text-align: center;
-        border-radius: 50%;
-        background: #3a3348;
-        color: #ffd98c;
-        font-size: 10px;
+        border: 1px solid #ffaa00;
+        border-radius: 0;
+        background: #000;
+        color: #ffaa00;
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
         margin-left: 4px;
         user-select: none;
       }
       .tip-icon:hover {
-        background: #4a4158;
+        background: #332200;
       }
       .tip-pop {
         position: absolute;
         left: 0;
         right: 0;
-        top: 22px;
+        top: 24px;
         z-index: 5;
         display: none;
-        background: #2a2436;
-        border: 1px solid #4a4158;
-        border-radius: 8px;
-        padding: 8px 10px;
-        color: #cfc9d6;
-        font-size: 12px;
-        line-height: 1.5;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.95);
+        border: 2px solid #555;
+        padding: 9px 11px;
+        color: #ccc;
+        font-size: 13px;
+        line-height: 1.6;
       }
       .tip-pop.open {
         display: block;
@@ -264,21 +334,59 @@
       .ctl label {
         display: flex;
         justify-content: space-between;
-        color: #b6aec6;
-        margin-bottom: 3px;
+        color: #ccc;
+        margin-bottom: 4px;
+        font-size: 16px;
       }
+      /* 参数当前值：游戏设置项同款橙色高亮 */
       .ctl label b {
-        color: #e8dfa0;
-        font-weight: 600;
+        color: #ffaa00;
+        font-weight: bold;
       }
       .ctl label.ck {
         justify-content: flex-start;
-        gap: 6px;
+        gap: 8px;
         cursor: pointer;
         align-items: center;
       }
+      .ctl input[type='checkbox'] {
+        width: 15px;
+        height: 15px;
+        accent-color: #ffaa00;
+        cursor: pointer;
+      }
+      /* 游戏页设置项同款滑杆：扁灰轨道 + 白色圆头 */
       .ctl input[type='range'] {
         width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: #444;
+        outline: none;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .ctl input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        border: 2px solid #555;
+      }
+      .ctl input[type='range']::-moz-range-thumb {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        border: 2px solid #555;
+      }
+      .ctl input[type='range']:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
       }
       .ctl.off {
         opacity: 0.35;
@@ -286,34 +394,38 @@
       .list {
         max-height: 340px;
         overflow-y: auto;
-        font-size: 12px;
+        font-size: 14px;
       }
+      /* 列表行：透明边框占位，选中换橙色描边（同游戏选关卡片的当前关高亮） */
       .list .row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 8px;
-        border-radius: 4px;
+        padding: 7px 8px;
+        border: 2px solid transparent;
+        border-radius: 0;
         cursor: pointer;
       }
       .list .row > span:first-child {
         white-space: nowrap;
       }
       .list .row:hover {
-        background: #2a2436;
+        background: #1a1a1a;
+        border-color: #444;
       }
       .list .row.sel {
-        background: #2d4a5a;
-        color: #fff;
+        background: #1f1503;
+        border-color: #ffaa00;
+        color: #ffaa00;
       }
       .list .row .x {
-        color: #a05050;
+        color: #c05050;
         padding: 0 5px;
         cursor: pointer;
         font-weight: bold;
       }
       .list .row .x:hover {
-        color: #ff8080;
+        color: #ff6a6a;
       }
       /* 关卡行右侧操作组：冻结/解冻 + 删除 */
       .list .row .acts {
@@ -335,26 +447,13 @@
       #tabs .row.frozen.sel {
         opacity: 0.8;
       }
-      .header .btns button,
-      .modal button {
-        background: #2d4a5a;
-        color: #fff;
-        border: 1px solid #5090a0;
-        padding: 7px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-      }
-      .header .btns button.gray,
-      .modal button.gray {
-        background: #262130;
-        color: #b6aec6;
-        border-color: #3a3348;
-      }
+      /* ===== 弹层（错误 / 帮助 / JSON）：玻璃遮罩 + 游戏菜单同款黑底粗边 ===== */
       .modal-mask {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.55);
+        background: rgba(8, 6, 12, 0.55);
+        backdrop-filter: blur(12px) saturate(0.7);
+        -webkit-backdrop-filter: blur(12px) saturate(0.7);
         display: none;
         align-items: center;
         justify-content: center;
@@ -366,17 +465,27 @@
       .modal {
         width: 760px;
         max-width: 92vw;
-        background: #1b1724;
-        border: 1px solid #3a3348;
-        border-radius: 10px;
-        padding: 14px;
+        background: rgba(0, 0, 0, 0.92);
+        border: 4px solid #555;
+        border-radius: 0;
+        padding: 18px;
       }
       .modal-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
-        color: #e8e2f2;
+        margin-bottom: 12px;
+        color: #fff;
+      }
+      .modal-head b {
+        font-size: 22px;
+        font-weight: normal;
+        letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000;
+      }
+      .modal-head b::before {
+        content: '■ ';
+        color: #a00;
       }
       .modal-acts {
         display: flex;
@@ -385,30 +494,37 @@
       .modal textarea {
         width: 100%;
         height: 340px;
-        background: #14111a;
+        background: #0d0d0d;
         color: #9cc59c;
-        border: 1px solid #322b40;
-        border-radius: 6px;
+        border: 2px solid #555;
+        border-radius: 0;
         padding: 8px;
         font:
-          11px/1.4 Consolas,
+          12px/1.4 Consolas,
           monospace;
         user-select: text;
         box-sizing: border-box;
+        outline: none;
       }
+      .modal textarea:focus {
+        border-color: #ffaa00;
+      }
+      /* 顶部轻提示：黑底橙边像素条 */
       #toast {
         position: fixed;
         left: 50%;
         top: 18px;
         transform: translateX(-50%);
-        background: #2d4a5a;
-        color: #fff;
-        padding: 8px 22px;
-        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.92);
+        border: 3px solid #ffaa00;
+        color: #ffaa00;
+        padding: 8px 24px;
+        font-size: 17px;
+        letter-spacing: 1px;
         opacity: 0;
         transition: opacity 0.25s;
         pointer-events: none;
-        z-index: 9;
+        z-index: 1010;
       }
 
       /* ===== 进门口令弹框（游戏页同款风格：黑底 / 粗边框 / 红标题 / 像素字） ===== */
@@ -529,6 +645,49 @@
       }
       .gate-box .gate-hide {
         display: none;
+      }
+
+      /* ===== 通用游戏风弹框（替代浏览器 alert/confirm：删除确认 / 保存结果 / 草稿恢复） ===== */
+      #dlgMask {
+        position: fixed;
+        inset: 0;
+        z-index: 990;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8, 6, 12, 0.55);
+        backdrop-filter: blur(12px) saturate(0.7);
+        -webkit-backdrop-filter: blur(12px) saturate(0.7);
+        transition: opacity 0.35s;
+      }
+      #dlgMask.pass {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .dlg-title {
+        color: #fff;
+        font-size: 34px;
+        line-height: 1.1;
+        margin-bottom: 18px;
+        text-shadow: 3px 3px 0 #000;
+        letter-spacing: 3px;
+      }
+      .dlg-msg {
+        color: #ccc;
+        font-size: 20px;
+        line-height: 1.55;
+        margin-bottom: 10px;
+        /* 正文支持 \n 手动换行（如草稿冲突说明） */
+        white-space: pre-line;
+      }
+      /* 弹框按钮：中文文案居多，字距比口令按钮收紧 */
+      .dlg-box button {
+        font-size: 24px;
+        letter-spacing: 3px;
+      }
+      .dlg-box button.gate-minor {
+        font-size: 19px;
+        letter-spacing: 2px;
       }
     </style>
   </head>
@@ -661,6 +820,16 @@
     </div>
 
     <div id="toast"></div>
+
+    <!-- 通用游戏风弹框：替代浏览器默认 alert/confirm（删除确认 / 保存结果 / 草稿恢复等） -->
+    <div id="dlgMask">
+      <div class="gate-box dlg-box">
+        <div class="dlg-title" id="dlgTitle">提示</div>
+        <div class="dlg-msg" id="dlgMsg"></div>
+        <button id="dlgOk">确 定</button>
+        <button id="dlgCancel" class="gate-minor">取 消</button>
+      </div>
+    </div>
 
     <!-- 进门口令弹框：页面加载即遮挡全页，口令通过服务端校验后才放行 -->
     <div id="gateMask">
@@ -1282,6 +1451,19 @@
       })
 
       window.addEventListener('keydown', (e) => {
+        // 弹框（口令门禁 / 游戏风提示框）打开时吞掉画布快捷键：
+        // 避免在输入框里退格、或按 Del/空格时误伤底下选中的房间与视图
+        if (gateResolve || dlgResolve) {
+          if (dlgResolve) {
+            if (e.key === 'Escape') {
+              dlgClose(false)
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              dlgClose(true)
+            }
+          }
+          return
+        }
         if (
           (e.key === 'Delete' || e.key === 'Backspace') &&
           document.activeElement.tagName !== 'TEXTAREA'
@@ -1362,7 +1544,7 @@
       function liveNoOf(i) {
         return levels[i].frozen ? 0 : levels.slice(0, i + 1).filter((l) => !l.frozen).length
       }
-      $('tabs').addEventListener('click', (e) => {
+      $('tabs').addEventListener('click', async (e) => {
         const frz = e.target.closest('[data-frz]')
         if (frz) {
           const i = +frz.dataset.frz
@@ -1389,7 +1571,13 @@
             return
           }
           const name = levels[i].frozen ? '这个已冻结的关卡' : `第 ${liveNoOf(i)} 关`
-          if (confirm(`确定删除${name}？`)) {
+          if (
+            await gameConfirm(`确定删除${name}？`, {
+              title: '删除关卡',
+              okText: '删 除',
+              tone: 'danger',
+            })
+          ) {
             levels.splice(i, 1)
             cur = Math.min(cur > i ? cur - 1 : cur, levels.length - 1)
             sel = -1
@@ -1672,8 +1860,14 @@
         selCorr = -1
       }
       $('btnImport').onclick = () => openModal('import')
-      $('btnClear').onclick = () => {
-        if (confirm('清空全部关卡，回到一张空白画布？')) {
+      $('btnClear').onclick = async () => {
+        if (
+          await gameConfirm('清空全部关卡，回到一张空白画布？', {
+            title: '清空画布',
+            okText: '清 空',
+            tone: 'danger',
+          })
+        ) {
           levels = [blankLevel()]
           cur = 0
           sel = -1
@@ -1798,6 +1992,53 @@
       $('gateOffline').onclick = () => gateClose('offline')
       $('gateCancel').onclick = () => gateClose(null)
 
+      // ================= 通用游戏风弹框（替代浏览器 alert / confirm） =================
+      /** 弹框当前等待中的 resolve；null = 未打开 */
+      let dlgResolve = null
+      let dlgHideTimer = 0
+      /**
+       * 打开游戏风格弹框，resolve(true)=确定 / resolve(false)=取消（Esc 同取消）。
+       * opts：title 标题；msg 正文（支持 \n 换行）；okText / cancelText 按钮文案，
+       * cancelText 传 null = 纯提示（只有确定）；tone：'ok' 绿标题 / 'danger' 红标题 / 缺省白
+       */
+      function openDlg(opts) {
+        return new Promise((resolve) => {
+          dlgResolve = resolve
+          $('dlgTitle').textContent = opts.title || '提示'
+          $('dlgTitle').style.color =
+            opts.tone === 'ok' ? '#0c0' : opts.tone === 'danger' ? '#ff4444' : '#fff'
+          $('dlgMsg').textContent = opts.msg || ''
+          $('dlgOk').textContent = opts.okText || '确 定'
+          const c = $('dlgCancel')
+          if (opts.cancelText === null) {
+            c.classList.add('gate-hide')
+          } else {
+            c.classList.remove('gate-hide')
+            c.textContent = opts.cancelText || '取 消'
+          }
+          clearTimeout(dlgHideTimer)
+          const mask = $('dlgMask')
+          mask.style.display = 'flex'
+          mask.classList.remove('pass')
+          $('dlgOk').focus()
+        })
+      }
+      /** 淡出弹框并回传结果（与口令弹框同款淡出节奏） */
+      function dlgClose(result) {
+        const r = dlgResolve
+        dlgResolve = null
+        $('dlgMask').classList.add('pass')
+        clearTimeout(dlgHideTimer)
+        dlgHideTimer = setTimeout(() => {
+          $('dlgMask').style.display = 'none'
+        }, 400)
+        if (r) r(result)
+      }
+      const gameAlert = (msg, opts) => openDlg({ msg, cancelText: null, ...opts })
+      const gameConfirm = (msg, opts) => openDlg({ msg, ...opts })
+      $('dlgOk').onclick = () => dlgClose(true)
+      $('dlgCancel').onclick = () => dlgClose(false)
+
       // ================= 云端保存 / 加载 =================
       async function putLevels(json, token) {
         return fetch('/api/levels', {
@@ -1829,15 +2070,21 @@
             res = await putLevels(json, token)
           }
           if (res.ok) {
-            alert('已保存，全网生效（边缘节点最长约 1 分钟同步）')
+            gameAlert('已保存，全网生效（边缘节点最长约 1 分钟同步）', {
+              title: '保存成功',
+              tone: 'ok',
+            })
             // 保存成功后画布内容即云端内容：清掉草稿，之后的草稿都代表"未上云的新改动"
             localStorage.removeItem('nc-editor-draft')
           } else {
             const err = await res.json().catch(() => ({}))
-            alert('保存失败（HTTP ' + res.status + '）：' + (err.detail || err.error || '未知错误'))
+            gameAlert(
+              '保存失败（HTTP ' + res.status + '）：' + (err.detail || err.error || '未知错误'),
+              { title: '保存失败', tone: 'danger' },
+            )
           }
         } catch (e) {
-          alert('保存失败：网络错误 ' + e)
+          gameAlert('保存失败：网络错误 ' + e, { title: '保存失败', tone: 'danger' })
         } finally {
           btn.disabled = false
           btn.textContent = '☁ 保存到云端'
@@ -1885,7 +2132,11 @@
             if (data && Array.isArray(data.levels) && data.levels.length) {
               if (
                 !draft ||
-                confirm('云端已有正式关卡数据，本地还有一份未上云的草稿。\n「确定」= 加载云端数据（草稿将被覆盖）；「取消」= 恢复本地草稿。')
+                (await gameConfirm('云端已有正式关卡数据，\n本地还有一份未上云的草稿。', {
+                  title: '发现本地草稿',
+                  okText: '加载云端数据',
+                  cancelText: '恢复本地草稿',
+                }))
               ) {
                 loadLevelsData(data.levels)
               } else {
@@ -1895,7 +2146,15 @@
             }
           }
         } catch {}
-        if (!loaded && draft && confirm('云端暂无数据。检测到本地草稿，是否恢复？（取消 = 空白画布）')) {
+        if (
+          !loaded &&
+          draft &&
+          (await gameConfirm('云端暂无数据。检测到本地草稿，是否恢复？', {
+            title: '发现本地草稿',
+            okText: '恢复草稿',
+            cancelText: '空白画布',
+          }))
+        ) {
           restoreDraft()
         }
         render()
