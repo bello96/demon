@@ -53,6 +53,7 @@ describe('parseLevelsData', () => {
     ['ghostSpeed<=0', { ...validLevel, ghostSpeed: 0 }],
     ['lightsOn 非布尔', { ...validLevel, lightsOn: 1 }],
     ['ghostEnabled 非布尔', { ...validLevel, ghostEnabled: 'yes' }],
+    ['minimapEnabled 非布尔', { ...validLevel, minimapEnabled: 'no' }],
     ['frozen 非布尔', { ...validLevel, frozen: 1 }],
   ])('%s → 整包拒绝返回 null', (_name, lv) => {
     expect(parseLevelsData({ levels: [lv] })).toBeNull()
@@ -68,6 +69,14 @@ describe('parseLevelsData', () => {
     const out = parseLevelsData({ levels: [validLevel, { ...validLevel, frozen: true }] })
     expect(out![0].frozen).toBe(false)
     expect(out![1].frozen).toBe(true)
+  })
+
+  it('minimapEnabled 缺省 true、写 false 保留', () => {
+    const out = parseLevelsData({
+      levels: [validLevel, { ...validLevel, minimapEnabled: false }],
+    })
+    expect(out![0].minimapEnabled).toBe(true)
+    expect(out![1].minimapEnabled).toBe(false)
   })
 
   it('全部关卡都冻结 → 整包拒绝返回 null', () => {

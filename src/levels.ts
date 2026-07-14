@@ -19,6 +19,8 @@ export interface LevelConfig {
   lightsOn: boolean
   /** 本关是否出现幽灵（默认 true；false=无追逐的纯逃脱关） */
   ghostEnabled: boolean
+  /** 是否显示小地图（默认 true）：false=隐藏右上角缩略图，M 键放大也失效 */
+  minimapEnabled: boolean
   /** 是否冻结（默认 false）：true=暂时停用，游戏端跳过此关、后续关卡顺位前移；数据保留可随时解冻 */
   frozen: boolean
 }
@@ -33,6 +35,7 @@ const FALLBACK_LEVELS: LevelConfig[] = [
     ghostSpeed: 2.6,
     lightsOn: false,
     ghostEnabled: true,
+    minimapEnabled: true,
     frozen: false,
   },
 ]
@@ -81,6 +84,7 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostSpeed?: unknown
       lightsOn?: unknown
       ghostEnabled?: unknown
+      minimapEnabled?: unknown
       frozen?: unknown
     }
     if (!Array.isArray(l.rooms) || l.rooms.length === 0 || !l.rooms.every(rectOk)) {
@@ -98,11 +102,14 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
     if (l.darkAmbient <= 0 || l.darkFogFar < 5 || l.ghostSpeed <= 0 || l.ghostSpeed > 5.9) {
       return null
     }
-    // 三个开关都是可选布尔：缺省用默认值，写了就必须是 true/false
+    // 四个开关都是可选布尔：缺省用默认值，写了就必须是 true/false
     if (l.lightsOn !== undefined && typeof l.lightsOn !== 'boolean') {
       return null
     }
     if (l.ghostEnabled !== undefined && typeof l.ghostEnabled !== 'boolean') {
+      return null
+    }
+    if (l.minimapEnabled !== undefined && typeof l.minimapEnabled !== 'boolean') {
       return null
     }
     if (l.frozen !== undefined && typeof l.frozen !== 'boolean') {
@@ -119,6 +126,7 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostSpeed: l.ghostSpeed,
       lightsOn: l.lightsOn === true,
       ghostEnabled: l.ghostEnabled !== false,
+      minimapEnabled: l.minimapEnabled !== false,
       frozen: l.frozen === true,
     })
   }

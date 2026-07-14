@@ -833,6 +833,12 @@
           </div>
           <div class="ctl">
             <label class="ck"
+              ><input type="checkbox" id="ckMinimap" checked />
+              显示地图缩略图（含 M 键放大）</label
+            >
+          </div>
+          <div class="ctl">
+            <label class="ck"
               ><input type="checkbox" id="ckGhost" checked />
               出现幽灵（米/秒）</label
             >
@@ -969,6 +975,7 @@
         ghostSpeed: 2.6,
         lightsOn: false,
         ghostEnabled: true,
+        minimapEnabled: true,
         frozen: false,
       });
       // 打开即空白从头配；要接着改现有关卡，把 levels_data.json 内容粘贴到底部文本框「导入」
@@ -1501,6 +1508,7 @@
         // 参数
         $("ckLights").checked = lv.lightsOn === true;
         $("ckGhost").checked = lv.ghostEnabled !== false;
+        $("ckMinimap").checked = lv.minimapEnabled !== false;
         $("ambient").value = lv.darkAmbient;
         $("vAmb").textContent = lv.darkAmbient.toFixed(2);
         $("fog").value = lv.darkFogFar;
@@ -1930,6 +1938,10 @@
         L().ghostEnabled = e.target.checked;
         render();
       };
+      $("ckMinimap").onchange = (e) => {
+        L().minimapEnabled = e.target.checked;
+        render();
+      };
 
       // ================= 导入导出 =================
       /** 有任何 err 的关卡下标列表（独木不成林等错误存在时导出/下载都被拦截） */
@@ -1953,6 +1965,8 @@
             };
             // 冻结状态随数据上云（游戏端跳过该关）；未冻结不写字段，保持与小程序格式兼容
             if (lv.frozen === true) o.frozen = true;
+            // 小地图默认显示：只有显式关闭才写字段（同上，保持格式兼容）
+            if (lv.minimapEnabled === false) o.minimapEnabled = false;
             if (lv.corrRects.length > 0)
               o.corridorRects = lv.corrRects.map((r) => ({
                 x: r.x,
@@ -2137,6 +2151,7 @@
             ghostSpeed: +lv.ghostSpeed || 2.8,
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
+            minimapEnabled: lv.minimapEnabled !== false,
             frozen: lv.frozen === true,
           };
         });
@@ -2429,6 +2444,7 @@
             ghostSpeed: lv.ghostSpeed || 2.8,
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
+            minimapEnabled: lv.minimapEnabled !== false,
             frozen: lv.frozen === true,
           }));
           cur = Math.min(draft.cur || 0, levels.length - 1);

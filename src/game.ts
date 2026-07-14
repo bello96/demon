@@ -36,6 +36,8 @@ class Game {
   private levelCleared = 0
   /** 选关面板中当前选中（高亮）的关卡：单击卡片选中，「进入游戏」按钮确认进入 */
   private selectedLevel = 1
+  /** 本关是否允许显示小地图（关卡配置 minimapEnabled）：false 时 M 键也失效 */
+  private minimapAllowed = true
 
   constructor() {
     initLocalization()
@@ -122,6 +124,13 @@ class Game {
   private applyLevelConfig(cfg: LevelConfig): void {
     this.ghost.setSpeed(cfg.ghostSpeed)
     this.ghost.setEnabled(cfg.ghostEnabled)
+    this.minimapAllowed = cfg.minimapEnabled
+    // 禁用小地图的关卡：立即藏起并清掉上一关可能残留的 M 键放大态
+    const minimap = document.getElementById('minimap')
+    if (minimap && !this.minimapAllowed) {
+      minimap.style.display = 'none'
+      minimap.classList.remove('large')
+    }
     this.player.setEnvDark(cfg.darkAmbient, cfg.darkFogFar)
 
     const fog = this.scene.fog as THREE.Fog
@@ -232,7 +241,7 @@ class Game {
     document.getElementById('game-info')!.style.display = 'block'
     const minimap = document.getElementById('minimap')
     if (minimap) {
-      minimap.style.display = 'block'
+      minimap.style.display = this.minimapAllowed ? 'block' : 'none'
     }
 
     const cabinetOverlay = document.getElementById('cabinet-overlay')
@@ -336,7 +345,7 @@ class Game {
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       this.player.handleInput(e, true)
-      if (e.code === 'KeyM') {
+      if (e.code === 'KeyM' && this.minimapAllowed) {
         document.getElementById('minimap')?.classList.toggle('large')
       }
     })
@@ -502,7 +511,9 @@ class Game {
       document.getElementById('game-over')!.classList.remove('hidden')
     }
 
-    drawMinimap('minimap', this.world, this.player, this.ghost)
+    if (this.minimapAllowed) {
+      drawMinimap('minimap', this.world, this.player, this.ghost)
+    }
     this.renderer.render(this.scene, this.camera)
   }
 }
