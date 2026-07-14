@@ -49,7 +49,7 @@ describe('parseLevelsData', () => {
     ['房间越界 x+w>=100', { ...validLevel, rooms: [{ x: 20, z: 10, w: 80, d: 30 }] }],
     ['darkAmbient<=0', { ...validLevel, darkAmbient: 0 }],
     ['darkFogFar<5', { ...validLevel, darkFogFar: 4 }],
-    ['ghostSpeed>5.9', { ...validLevel, ghostSpeed: 6 }],
+    ['ghostSpeed>6', { ...validLevel, ghostSpeed: 6.1 }],
     ['ghostSpeed<=0', { ...validLevel, ghostSpeed: 0 }],
     ['lightsOn 非布尔', { ...validLevel, lightsOn: 1 }],
     ['ghostEnabled 非布尔', { ...validLevel, ghostEnabled: 'yes' }],

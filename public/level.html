@@ -833,19 +833,17 @@
           </div>
           <div class="ctl">
             <label class="ck"
-              ><input type="checkbox" id="ckMinimap" checked />
-              显示地图缩略图（含 M 键放大）</label
+              ><input type="checkbox" id="ckMinimap" checked /> 显示地图</label
             >
           </div>
           <div class="ctl">
             <label class="ck"
-              ><input type="checkbox" id="ckGhost" checked />
-              出现幽灵（米/秒）</label
+              ><input type="checkbox" id="ckGhost" checked /> 出现幽灵</label
             >
           </div>
           <div class="ctl">
-            <label>幽灵移动速度 <b id="vGhost"></b></label>
-            <input type="range" id="ghost" min="2.0" max="4.5" step="0.05" />
+            <label>幽灵速度（米/秒）<b id="vGhost"></b></label>
+            <input type="range" id="ghost" min="2.0" max="6.0" step="0.05" />
           </div>
         </div>
         <div class="cols">
@@ -972,7 +970,7 @@
         corrRects: [],
         darkAmbient: 0.2,
         darkFogFar: 20,
-        ghostSpeed: 2.6,
+        ghostSpeed: 3,
         lightsOn: false,
         ghostEnabled: true,
         minimapEnabled: true,

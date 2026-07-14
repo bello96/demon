@@ -14,6 +14,7 @@ interface TranslationStrings {
   doorLocked: string
   gotKey: string
   gotRadar: string
+  gotShoes: string
   selectLevel: string
   enterGame: string
   levelLabel: string
@@ -43,6 +44,7 @@ const translations: Record<string, TranslationStrings> = {
     doorLocked: '门锁住了 (需要钥匙)',
     gotKey: '[已获得钥匙，赶快找到逃生的门吧] ',
     gotRadar: '[已获得雷达，可在小地图查看幽灵位置] ',
+    gotShoes: '[已获得鞋子，移动速度提升 50%] ',
     selectLevel: '选择关卡',
     enterGame: '进入游戏',
     levelLabel: '第 {n} 关',
@@ -70,6 +72,7 @@ const translations: Record<string, TranslationStrings> = {
     doorLocked: 'Door locked (Key required)',
     gotKey: '[Key obtained, find the exit!] ',
     gotRadar: '[Radar obtained, ghost visible on minimap] ',
+    gotShoes: '[Shoes obtained, move 50% faster] ',
     selectLevel: 'Select Level',
     enterGame: 'Enter Game',
     levelLabel: 'Level {n}',

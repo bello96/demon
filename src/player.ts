@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { t } from './localization'
-import { LIT_AMBIENT, LIT_FOG_FAR } from './constants'
+import { DARK_FOG_NEAR, LIT_AMBIENT, LIT_FOG_FAR, LIT_FOG_NEAR } from './constants'
 import type { World } from './world'
 import type { SoundGenerator } from './sound_generator'
 
@@ -13,7 +13,8 @@ const EXIT_OFFSETS: ReadonlyArray<readonly [number, number]> = [
 export class Player {
   pos = new THREE.Vector3(0, 1, 0)
   vel = new THREE.Vector3()
-  readonly speed = 6
+  /** 基础步行速度（米/秒）：Shift 疾跑 ×1.5；拾到鞋子再 ×1.5，两者可叠乘（4 → 6 → 9） */
+  readonly baseSpeed = 4
   readonly jumpForce = 10
   readonly gravity = 25
   readonly height = 1.75
@@ -35,6 +36,7 @@ export class Player {
 
   hasKey = false
   hasRadar = false
+  hasShoes = false
   hasWon = false
 
   keys: Record<string, boolean> = {}
@@ -85,6 +87,7 @@ export class Player {
     this.flashlight.intensity = this.flashlightIntensity
     this.hasKey = false
     this.hasRadar = false
+    this.hasShoes = false
     this.hasWon = false
     this.keys = {}
     this.camera.rotation.set(0, 0, 0, 'YXZ')
@@ -172,11 +175,13 @@ export class Player {
           // 状态源用 switchObj.isOn，避免多开关场景下 ambientLight 被其它因素影响导致状态漂移
           if (!switchObj.isOn) {
             this.ambientLight.intensity = LIT_AMBIENT
+            ;(this.scene.fog as THREE.Fog).near = LIT_FOG_NEAR
             ;(this.scene.fog as THREE.Fog).far = LIT_FOG_FAR
             switchObj.handle.rotation.x = Math.PI / 4
             switchObj.isOn = true
           } else {
             this.ambientLight.intensity = this.darkAmbient
+            ;(this.scene.fog as THREE.Fog).near = DARK_FOG_NEAR
             ;(this.scene.fog as THREE.Fog).far = this.darkFogFar
             switchObj.handle.rotation.x = -Math.PI / 4
             switchObj.isOn = false
@@ -192,6 +197,13 @@ export class Player {
       } else if (item.type === 'radar') {
         this.playSound('pickup')
         this.hasRadar = true
+        item.collected = true
+        if (item.mesh) { item.mesh.visible = false }
+        this.updateUI()
+        return
+      } else if (item.type === 'shoes') {
+        this.playSound('pickup')
+        this.hasShoes = true
         item.collected = true
         if (item.mesh) { item.mesh.visible = false }
         this.updateUI()
@@ -229,6 +241,7 @@ export class Player {
       let text = ''
       if (this.hasKey) { text += t('gotKey') }
       if (this.hasRadar) { text += t('gotRadar') }
+      if (this.hasShoes) { text += t('gotShoes') }
       info.innerText = text
     }
   }
@@ -240,7 +253,8 @@ export class Player {
       return
     }
 
-    const speed = this.keys['ShiftLeft'] ? this.speed * 1.5 : this.speed
+    const speed =
+      this.baseSpeed * (this.hasShoes ? 1.5 : 1) * (this.keys['ShiftLeft'] ? 1.5 : 1)
 
     this._forward.set(0, 0, -1).applyAxisAngle(this._yAxis, this.yaw)
     this._right.set(1, 0, 0).applyAxisAngle(this._yAxis, this.yaw)

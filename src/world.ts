@@ -411,7 +411,9 @@ export class World {
     const doorRoom = nextRoom()
     const switchRoom = nextRoom()
     const keyRoom = nextRoom()
-    const radarRoom = nextRoom()
+    // 关卡关闭小地图时雷达无处显示（雷达=在小地图标出幽灵位置），不投放也不占房
+    const radarRoom = opts.radarEnabled !== false ? nextRoom() : null
+    const shoesRoom = nextRoom()
     // 柜子占满剩余未用房间；一间不剩时也放 1 个，保证总有处可躲
     const cabinetRooms = roomCursor < others.length ? others.slice(roomCursor) : [nextRoom()]
 
@@ -532,7 +534,7 @@ export class World {
     }
 
     // Radar — random position in room
-    {
+    if (radarRoom) {
       const rp = randomInRoom(radarRoom)
       const radarMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), materials.radar)
       radarMesh.position.set(rp.x, 0.5, rp.z)
@@ -541,6 +543,26 @@ export class World {
         type: 'radar',
         pos: radarMesh.position.clone(),
         mesh: radarMesh
+      })
+    }
+
+    // Shoes — 一双并排的小皮靴：拾取后步行速度 ×1.5（player 侧生效）
+    {
+      const sp = randomInRoom(shoesRoom)
+      const shoesGroup = new THREE.Group()
+      shoesGroup.position.set(sp.x, 0.12, sp.z)
+      shoesGroup.rotation.y = Math.random() * Math.PI * 2
+      const shoeGeo = new THREE.BoxGeometry(0.16, 0.14, 0.4)
+      const left = new THREE.Mesh(shoeGeo, materials.shoes)
+      left.position.x = -0.11
+      const right = new THREE.Mesh(shoeGeo, materials.shoes)
+      right.position.x = 0.11
+      shoesGroup.add(left, right)
+      this.worldGroup.add(shoesGroup)
+      this.interactables.push({
+        type: 'shoes',
+        pos: shoesGroup.position.clone(),
+        mesh: shoesGroup
       })
     }
 

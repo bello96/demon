@@ -13,7 +13,7 @@ export interface LevelConfig {
   darkAmbient: number
   /** 关灯时可视距离（米）：雾可逐关变浓 */
   darkFogFar: number
-  /** 幽灵巡逻速度：追击时 ×1.5；玩家步行 6 / 疾跑 9，上限须留出逃生余地 */
+  /** 幽灵巡逻速度（2.0~6.0）：追击时 ×1.5；玩家步行 4 / 疾跑 6，拾鞋后 6 / 9 */
   ghostSpeed: number
   /** 开局房间灯是否已打开（默认 false=摸黑找开关；开着时玩家仍可去把它关掉） */
   lightsOn: boolean
@@ -32,7 +32,7 @@ const FALLBACK_LEVELS: LevelConfig[] = [
     doorCount: 1,
     darkAmbient: 0.2,
     darkFogFar: 20,
-    ghostSpeed: 2.6,
+    ghostSpeed: 3,
     lightsOn: false,
     ghostEnabled: true,
     minimapEnabled: true,
@@ -99,7 +99,7 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
     if (!num(l.darkAmbient) || !num(l.darkFogFar) || !num(l.ghostSpeed)) {
       return null
     }
-    if (l.darkAmbient <= 0 || l.darkFogFar < 5 || l.ghostSpeed <= 0 || l.ghostSpeed > 5.9) {
+    if (l.darkAmbient <= 0 || l.darkFogFar < 5 || l.ghostSpeed <= 0 || l.ghostSpeed > 6) {
       return null
     }
     // 四个开关都是可选布尔：缺省用默认值，写了就必须是 true/false

@@ -9,7 +9,7 @@ import { loadingManager, texturesLoaded } from './utils'
 import { BUILTIN_LEVELS, getLevelConfig, type LevelConfig } from './levels'
 import { loadLevels } from './level_service'
 import { isLevelUnlocked, migrateProgress } from './progress'
-import { LIT_AMBIENT, LIT_FOG_FAR } from './constants'
+import { DARK_FOG_NEAR, LIT_AMBIENT, LIT_FOG_FAR, LIT_FOG_NEAR } from './constants'
 
 class Game {
   private isPlaying = false
@@ -45,9 +45,10 @@ class Game {
 
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x050505)
-    this.scene.fog = new THREE.Fog(0x050505, 2, 12)
+    this.scene.fog = new THREE.Fog(0x050505, DARK_FOG_NEAR, 12)
 
-    this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100)
+    // 远裁剪面须大于开灯雾远平面（LIT_FOG_FAR=200），否则大房间开灯后远墙先被相机裁掉
+    this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220)
     this.renderer = new THREE.WebGLRenderer({ antialias: false })
     this.renderer.setSize(window.innerWidth, window.innerHeight)
     this.renderer.shadowMap.enabled = true
@@ -112,7 +113,12 @@ class Game {
   /** 按关卡配置重建世界并应用环境/幽灵参数（进关、重玩、切关共用） */
   private buildLevel(n: number): void {
     const cfg = getLevelConfig(this.levels, n)
-    this.world.regenerate(cfg.rooms, { doorCount: cfg.doorCount, corridorRects: cfg.corridorRects })
+    this.world.regenerate(cfg.rooms, {
+      doorCount: cfg.doorCount,
+      corridorRects: cfg.corridorRects,
+      // 小地图被关卡关闭时，依赖它显示的雷达同步不投放
+      radarEnabled: cfg.minimapEnabled
+    })
     this.updateSwitchInfo()
     this.player.reset()
     this.ghost.reset()
@@ -139,9 +145,11 @@ class Game {
       this.world.lightSwitch.isOn = true
       this.world.lightSwitch.handle.rotation.x = Math.PI / 4
       this.ambientLight.intensity = LIT_AMBIENT
+      fog.near = LIT_FOG_NEAR
       fog.far = LIT_FOG_FAR
     } else {
       this.ambientLight.intensity = cfg.darkAmbient
+      fog.near = DARK_FOG_NEAR
       fog.far = cfg.darkFogFar
     }
 

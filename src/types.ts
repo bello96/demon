@@ -21,6 +21,8 @@ export interface MansionOptions {
    * 与 1 号房不连通的房间补一条 L 形直廊。
    */
   corridorRects?: RoomLayout[]
+  /** 是否投放雷达（默认 true）：关卡关闭小地图时雷达无处显示，同步不投放 */
+  radarEnabled?: boolean
 }
 
 export interface LightSwitch {
@@ -31,11 +33,12 @@ export interface LightSwitch {
 }
 
 export interface Interactable {
-  type: 'cabinet' | 'switch' | 'key' | 'radar' | 'door'
+  type: 'cabinet' | 'switch' | 'key' | 'radar' | 'shoes' | 'door'
   pos: THREE.Vector3
   // box 仅 switch 会用到精确 AABB 判定（目前也只是预留，未被读取），其它交互物靠 pos 距离即可
   box?: THREE.Box3
   obj?: LightSwitch
-  mesh?: THREE.Mesh
+  // 拾取后隐藏的展示物：鞋子是一双两只（Group），故放宽到 Object3D
+  mesh?: THREE.Object3D
   collected?: boolean
 }

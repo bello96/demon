@@ -121,6 +121,10 @@ export const materials = {
     roughness: 0.5,
     metalness: 0.5,
   }),
+  shoes: new THREE.MeshStandardMaterial({
+    color: 0x8b4513,
+    roughness: 0.6,
+  }),
   door: new THREE.MeshStandardMaterial({
     map: createPixelTexture("#3e2723", 0.2, true, "planks"),
     roughness: 0.9,
