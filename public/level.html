@@ -368,17 +368,66 @@
         color: #ffaa00;
         font-weight: bold;
       }
-      .ctl label.ck {
-        justify-content: flex-start;
-        gap: 8px;
-        cursor: pointer;
+      /* 关卡参数两列布局：左列勾选开关定宽收窄、右列滑杆吃满剩余；
+         同一行是同主题参数（灯光 / 地图 / 幽灵），面板高度随之收紧 */
+      .ctl-row {
+        display: flex;
         align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
       }
-      .ctl input[type="checkbox"] {
+      .ctl-row:last-child {
+        margin-bottom: 0;
+      }
+      .ctl-row > .ck {
+        flex: 0 0 100px;
+        /* 撑满行高：右缘分隔竖线可贯穿整行 */
+        align-self: stretch;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        color: #ccc;
+        font-size: 15px;
+        cursor: pointer;
+        /* 与右侧滑杆区之间的浅色分隔线 */
+        border-right: 1px solid #333;
+      }
+      .ctl-row > .ck input {
+        margin: 0;
+      }
+      /* 右列单行横排：标签 — 滑杆 — 数值 同一水平线 */
+      .ctl-row > .ctl {
+        flex: 1;
+        min-width: 0;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .ctl-row > .ctl > label {
+        margin-bottom: 0;
+        flex-shrink: 0;
+        font-size: 15px;
+        width: 120px;
+      }
+      .ctl-row > .ctl input[type="range"] {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+      }
+      .ctl-row > .ctl > b {
+        color: #ffaa00;
+        font-weight: bold;
+        min-width: 36px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .panel input[type="checkbox"] {
         width: 15px;
         height: 15px;
         accent-color: #ffaa00;
         cursor: pointer;
+        flex-shrink: 0;
       }
       /* 游戏页设置项同款滑杆：扁灰轨道 + 白色圆头 */
       .ctl input[type="range"] {
@@ -802,48 +851,47 @@
         </div>
         <div class="panel">
           <h2>关卡参数</h2>
-          <div class="ctl">
+          <div class="ctl-row">
             <label class="ck"
               ><input type="checkbox" id="ckLights" /> 房间灯光</label
             >
-          </div>
-          <div class="ctl">
-            <label>
-              <span
-                >关灯时房间亮度
-                <span class="tip-icon" id="ambTip">!</span></span
+            <div class="ctl">
+              <label
+                >关灯房间亮度 <span class="tip-icon" id="ambTip">!</span></label
               >
+              <div class="tip-pop" id="ambPop">
+                灯没打开时环境有多亮：越小越黑（0.05 几乎全黑、0.30
+                朦胧可辨）；打开灯后各关一样亮，本值不生效
+              </div>
+              <input
+                type="range"
+                id="ambient"
+                min="0.05"
+                max="0.30"
+                step="0.01"
+              />
               <b id="vAmb"></b>
-            </label>
-            <div class="tip-pop" id="ambPop">
-              灯没打开时环境有多亮：越小越黑（0.05 几乎全黑、0.30
-              朦胧可辨）；打开灯后各关一样亮，本值不生效
             </div>
-            <input
-              type="range"
-              id="ambient"
-              min="0.05"
-              max="0.30"
-              step="0.01"
-            />
           </div>
-          <div class="ctl">
-            <label>可视距离（米）<b id="vFog"></b></label>
-            <input type="range" id="fog" min="8" max="30" step="1" />
-          </div>
-          <div class="ctl">
+          <div class="ctl-row">
             <label class="ck"
               ><input type="checkbox" id="ckMinimap" checked /> 显示地图</label
             >
+            <div class="ctl">
+              <label>关灯可视距离 (m)</label>
+              <input type="range" id="fog" min="8" max="30" step="1" />
+              <b id="vFog"></b>
+            </div>
           </div>
-          <div class="ctl">
+          <div class="ctl-row">
             <label class="ck"
               ><input type="checkbox" id="ckGhost" checked /> 出现幽灵</label
             >
-          </div>
-          <div class="ctl">
-            <label>幽灵速度（米/秒）<b id="vGhost"></b></label>
-            <input type="range" id="ghost" min="2.0" max="6.0" step="0.05" />
+            <div class="ctl">
+              <label>幽灵移动速度(m/s)</label>
+              <input type="range" id="ghost" min="2.0" max="6.0" step="0.05" />
+              <b id="vGhost"></b>
+            </div>
           </div>
         </div>
         <div class="cols">
@@ -1524,7 +1572,7 @@
      </div>`,
             )
             .join("") ||
-          '<div class="hint">「画/选房间」模式下拖拽画布空白处</div>';
+          '<div class="hint">在「画/选房间」模式下拖拽画布</div>';
         // 走廊列表
         $("corrList").innerHTML =
           lv.corrRects
@@ -1535,7 +1583,7 @@
      </div>`,
             )
             .join("") ||
-          '<div class="hint">「画/选走廊」模式下在房间之间拖出通道；房间贴边/重叠时不画也已连通</div>';
+          '<div class="hint">在「画/选走廊」模式下在房间之间拖出通道</div>';
         // 校验
         saveDraft();
       }
