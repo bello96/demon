@@ -732,7 +732,7 @@
         display: none;
       }
 
-      /* ===== 通用游戏风弹框（替代浏览器 alert/confirm：删除确认 / 保存结果 / 草稿恢复） ===== */
+      /* ===== 通用游戏风弹框（替代浏览器 alert/confirm：删除确认 / 保存结果 / 退出保存提醒） ===== */
       #dlgMask {
         position: fixed;
         inset: 0;
@@ -762,7 +762,7 @@
         font-size: 20px;
         line-height: 1.55;
         margin-bottom: 10px;
-        /* 正文支持 \n 手动换行（如草稿冲突说明） */
+        /* 正文支持 \n 手动换行（如退出保存提醒说明） */
         white-space: pre-line;
       }
       /* 弹框按钮：中文文案居多，字距比口令按钮收紧 */
@@ -773,6 +773,16 @@
       .dlg-box button.gate-minor {
         font-size: 19px;
         letter-spacing: 2px;
+      }
+      /* 第三按钮的破坏性动作配色（如「不保存，直接退出」），与清空按钮同色系 */
+      .gate-box button.gate-minor.dlg-danger {
+        background: #1a0808;
+        border-color: #822;
+        color: #ff6a6a;
+      }
+      .gate-box button.gate-minor.dlg-danger:hover {
+        background: #2a0d0d;
+        border-color: #ff4444;
       }
 
       /* ===== 窄视口（左右栏被压向最小宽）：缩字紧排防换行/截断 =====
@@ -974,12 +984,13 @@
 
     <div id="toast"></div>
 
-    <!-- 通用游戏风弹框：替代浏览器默认 alert/confirm（删除确认 / 保存结果 / 草稿恢复等） -->
+    <!-- 通用游戏风弹框：替代浏览器默认 alert/confirm（删除确认 / 保存结果 / 退出保存提醒等） -->
     <div id="dlgMask">
       <div class="gate-box dlg-box">
         <div class="dlg-title" id="dlgTitle">提示</div>
         <div class="dlg-msg" id="dlgMsg"></div>
         <button id="dlgOk">确 定</button>
+        <button id="dlgThird" class="gate-minor dlg-danger gate-hide"></button>
         <button id="dlgCancel" class="gate-minor">取 消</button>
       </div>
     </div>
@@ -999,7 +1010,7 @@
         <div id="gateErr"></div>
         <button id="gateEnter">进 入</button>
         <button id="gateOffline" class="gate-minor gate-hide">
-          离线进入（无法连接云端，仅编辑本地草稿）
+          离线进入（无法连接云端，改动不会被保存）
         </button>
         <button id="gateCancel" class="gate-minor gate-hide">取 消</button>
       </div>
@@ -1584,8 +1595,6 @@
             )
             .join("") ||
           '<div class="hint">在「画/选走廊」模式下在房间之间拖出通道</div>';
-        // 校验
-        saveDraft();
       }
 
       // ================= 交互（房间与走廊同一套拖拽逻辑，按模式作用于不同列表） =================
@@ -2206,9 +2215,30 @@
         selCorr = -1;
       }
       $("btnImport").onclick = () => openModal("import");
-      // 返回游戏主页（草稿已自动保存在本地，下次进入可恢复）
-      $("btnBackGame").onclick = () => {
-        location.href = "/";
+      // 返回游戏主页：有未上云的改动时先弹框三选一（保存并退出 / 不保存退出 / 取消）
+      $("btnBackGame").onclick = async () => {
+        if (!isDirty()) {
+          location.href = "/";
+          return;
+        }
+        const choice = await openDlg({
+          title: "未保存的修改",
+          msg: "当前改动尚未保存到云端，\n退出后将丢失。",
+          okText: "保存并退出",
+          thirdText: "不保存，直接退出",
+          cancelText: "取 消",
+        });
+        if (choice === true) {
+          // 保存成功才跳转；失败时 cloudSave 已弹错误框，留在编辑器
+          if (await cloudSave({ silent: true })) {
+            bypassUnload = true;
+            location.href = "/";
+          }
+        } else if (choice === "third") {
+          bypassUnload = true;
+          location.href = "/";
+        }
+        // choice === false（取消/Esc）：留在编辑器
       };
       $("btnClear").onclick = async () => {
         if (
@@ -2222,10 +2252,18 @@
           cur = 0;
           sel = -1;
           selCorr = -1;
-          localStorage.removeItem("nc-editor-draft");
           render();
         }
       };
+      // 关闭标签页 / 刷新：有未上云改动时用浏览器原生确认框兜底
+      //（浏览器限制：此场景无法弹自定义样式弹框，也无法在框内直接触发保存）
+      window.addEventListener("beforeunload", (e) => {
+        if (bypassUnload || !isDirty()) {
+          return;
+        }
+        e.preventDefault();
+        e.returnValue = ""; // 旧版 Chrome 需要 returnValue 才会弹窗
+      });
 
       // ================= 管理口令：进门校验 + 游戏风格弹框 =================
       const TOKEN_KEY = "nc-admin-token";
@@ -2350,7 +2388,8 @@
       /**
        * 打开游戏风格弹框，resolve(true)=确定 / resolve(false)=取消（Esc 同取消）。
        * opts：title 标题；msg 正文（支持 \n 换行）；okText / cancelText 按钮文案，
-       * cancelText 传 null = 纯提示（只有确定）；tone：'ok' 绿标题 / 'danger' 红标题 / 缺省白
+       * cancelText 传 null = 纯提示（只有确定）；tone：'ok' 绿标题 / 'danger' 红标题 / 缺省白；
+       * thirdText 传字符串时在确定和取消之间显示第三个按钮（红色调），resolve('third')
        */
       function openDlg(opts) {
         return new Promise((resolve) => {
@@ -2364,6 +2403,13 @@
                 : "#fff";
           $("dlgMsg").textContent = opts.msg || "";
           $("dlgOk").textContent = opts.okText || "确 定";
+          const t = $("dlgThird");
+          if (opts.thirdText) {
+            t.classList.remove("gate-hide");
+            t.textContent = opts.thirdText;
+          } else {
+            t.classList.add("gate-hide");
+          }
           const c = $("dlgCancel");
           if (opts.cancelText === null) {
             c.classList.add("gate-hide");
@@ -2393,6 +2439,7 @@
         openDlg({ msg, cancelText: null, ...opts });
       const gameConfirm = (msg, opts) => openDlg({ msg, ...opts });
       $("dlgOk").onclick = () => dlgClose(true);
+      $("dlgThird").onclick = () => dlgClose("third");
       $("dlgCancel").onclick = () => dlgClose(false);
 
       // ================= 云端保存 / 加载 =================
@@ -2406,13 +2453,17 @@
           body: json,
         });
       }
-      async function cloudSave() {
+      /**
+       * 保存到云端。返回 true = 保存成功（供「保存并退出」判断能否跳转）。
+       * opts.silent = true 时成功不弹提示框（退出前保存：跳转本身即反馈），失败仍弹框。
+       */
+      async function cloudSave(opts = {}) {
         const json = guardedJSON();
-        if (json === null) return;
+        if (json === null) return false;
         let token = localStorage.getItem(TOKEN_KEY);
         if (!token) {
           token = await requestToken({ allowCancel: true });
-          if (!token || token === "offline") return;
+          if (!token || token === "offline") return false;
         }
         const btn = $("btnCloudSave");
         btn.disabled = true;
@@ -2427,17 +2478,20 @@
               reason: "口令已失效，请重新输入",
             });
             if (!token || token === "offline") {
-              return; // 用户放弃：静默结束（finally 恢复按钮）
+              return false; // 用户放弃：静默结束（finally 恢复按钮）
             }
             res = await putLevels(json, token);
           }
           if (res.ok) {
-            gameAlert("已保存，全网生效（边缘节点最长约 1 分钟同步）", {
-              title: "保存成功",
-              tone: "ok",
-            });
-            // 保存成功后画布内容即云端内容：清掉草稿，之后的草稿都代表"未上云的新改动"
-            localStorage.removeItem("nc-editor-draft");
+            // 画布内容即云端内容：刷新快照，退出时不再提醒
+            cloudSnapshot = JSON.stringify(levels);
+            if (!opts.silent) {
+              gameAlert("已保存，全网生效（边缘节点最长约 1 分钟同步）", {
+                title: "保存成功",
+                tone: "ok",
+              });
+            }
+            return true;
           } else {
             const err = await res.json().catch(() => ({}));
             gameAlert(
@@ -2447,95 +2501,56 @@
                 (err.detail || err.error || "未知错误"),
               { title: "保存失败", tone: "danger" },
             );
+            return false;
           }
         } catch (e) {
           gameAlert("保存失败：网络错误 " + e, {
             title: "保存失败",
             tone: "danger",
           });
+          return false;
         } finally {
           btn.disabled = false;
           btn.textContent = "☁ 保存到云端";
         }
       }
-      $("btnCloudSave").onclick = cloudSave;
+      $("btnCloudSave").onclick = () => cloudSave();
 
-      // ================= 草稿自动保存 =================
-      let saveTimer = 0;
-      function saveDraft() {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          try {
-            localStorage.setItem(
-              "nc-editor-draft",
-              JSON.stringify({ levels, cur }),
-            );
-          } catch {}
-        }, 400);
+      // ================= 未保存检测（云端快照比对，替代旧本地草稿机制） =================
+      /** 与云端一致时的画布快照；编辑后与当前 levels 不一致 = 有未上云的改动 */
+      let cloudSnapshot = JSON.stringify(levels);
+      /** 「不保存直接退出 / 保存成功后退出」置 true，跳过 beforeunload 原生拦截 */
+      let bypassUnload = false;
+      function isDirty() {
+        return JSON.stringify(levels) !== cloudSnapshot;
       }
       async function init() {
         setModeUI();
-        // 先读本地草稿（存在即代表有未上云的改动——云端保存成功时会清草稿）
-        let draft = null;
-        try {
-          const d = JSON.parse(localStorage.getItem("nc-editor-draft"));
-          if (d && Array.isArray(d.levels) && d.levels.length) draft = d;
-        } catch {}
-        const restoreDraft = () => {
-          levels = draft.levels.map((lv) => ({
-            rooms: lv.rooms || [],
-            corrRects: lv.corrRects || [],
-            darkAmbient: lv.darkAmbient || 0.2,
-            darkFogFar: lv.darkFogFar || 20,
-            ghostSpeed: lv.ghostSpeed || 2.8,
-            lightsOn: lv.lightsOn === true,
-            ghostEnabled: lv.ghostEnabled !== false,
-            minimapEnabled: lv.minimapEnabled !== false,
-            frozen: lv.frozen === true,
-          }));
-          cur = Math.min(draft.cur || 0, levels.length - 1);
-        };
-        // 优先加载云端正式数据；与本地草稿冲突时让用户二选一，绝不静默覆盖草稿
-        let loaded = false;
+        // 旧版草稿机制已移除：清掉历史残留，避免 localStorage 脏数据常驻
+        localStorage.removeItem("nc-editor-draft");
+        // 进入页面直接加载云端正式数据；是否保存改动的决定推迟到退出时
+        let cloudOk = false;
         try {
           const res = await fetch("/api/levels", { cache: "no-store" });
           if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.levels) && data.levels.length) {
-              if (
-                !draft ||
-                (await gameConfirm(
-                  "云端已有正式关卡数据，\n本地还有一份未上云的草稿。",
-                  {
-                    title: "发现本地草稿",
-                    okText: "加载云端数据",
-                    cancelText: "恢复本地草稿",
-                  },
-                ))
-              ) {
-                loadLevelsData(data.levels);
-              } else {
-                restoreDraft();
-              }
-              loaded = true;
+              loadLevelsData(data.levels);
             }
+            cloudOk = true; // 请求成功但云端为空也算正常：空白画布从头配
           }
         } catch {}
-        if (
-          !loaded &&
-          draft &&
-          (await gameConfirm("云端暂无数据。检测到本地草稿，是否恢复？", {
-            title: "发现本地草稿",
-            okText: "恢复草稿",
-            cancelText: "空白画布",
-          }))
-        ) {
-          restoreDraft();
+        if (!cloudOk) {
+          gameAlert(
+            "云端关卡数据加载失败，当前是一张空白画布。\n请勿直接「保存到云端」，以免覆盖线上正式关卡。",
+            { title: "加载失败", tone: "danger" },
+          );
         }
+        cloudSnapshot = JSON.stringify(levels);
         render();
       }
 
-      /** 进门流程：先过口令门禁（服务端校验通过 / 离线进入），再加载云端数据与草稿 */
+      /** 进门流程：先过口令门禁（服务端校验通过 / 离线进入），再直接加载云端数据 */
       (async function boot() {
         render(); // 遮罩底下先画一帧空白画布，玻璃模糊后有编辑器轮廓可见
         const saved = localStorage.getItem(TOKEN_KEY);
