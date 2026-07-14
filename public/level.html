@@ -90,28 +90,16 @@
         background: #2c2c2c;
         color: #fff;
       }
-      /* 窄视口（左右栏被压向最小宽）：按钮与面板标题缩小防换行 */
-      @media (max-width: 1600px) {
-        .header .btns button {
-          font-size: 15px;
-          padding: 6px 10px;
-          letter-spacing: 0;
-        }
-        .modes button {
-          font-size: 14px;
-          letter-spacing: 0;
-          padding: 7px 2px;
-          white-space: nowrap;
-        }
-        .panel h2 {
-          font-size: 16px;
-          letter-spacing: 1px;
-        }
-        /* 左栏最窄（190）：标题再收一档保持单行 */
-        .side.left .panel h2 {
-          font-size: 14px;
-          letter-spacing: 0;
-        }
+      /* 清空 = 危险操作：红边红字（游戏死亡色） */
+      #btnClear {
+        background: #1a0505;
+        border-color: #a00;
+        color: #ff6a6a;
+      }
+      #btnClear:hover {
+        background: #2a0d0d;
+        border-color: #ff4444;
+        color: #ff8080;
       }
       .more-wrap {
         position: relative;
@@ -160,13 +148,14 @@
         border-color: #999;
       }
       /* 布局：三栏随视口伸缩（1280×800 ~ 1920×1080 无滚动条）。
-         高度由 syncCanvasSize() 与画布外框同步；小于最小档时 min-width 撑出滚动条
-         （配合 justify-content: center，超宽屏内容居中、两侧留白且不会裁切左栏） */
+         高度与 min-width 均由 syncCanvasSize() 同步——min-width 用显式数字
+         （两侧栏最小宽 + 画布 + 间隙）而非 min-content：列表行 nowrap 文本的
+         固有宽度不参与页面宽度，小于最小档时才撑出滚动条；配合
+         justify-content: center，超宽屏内容居中、两侧留白且不会裁切左栏 */
       .layout {
         display: flex;
         gap: 14px;
         justify-content: center;
-        min-width: fit-content;
       }
       /* 两侧栏：独立卡片纵向排列，撑满布局高度 */
       .side {
@@ -723,6 +712,41 @@
         font-size: 19px;
         letter-spacing: 2px;
       }
+
+      /* ===== 窄视口（左右栏被压向最小宽）：缩字紧排防换行/截断 =====
+         必须放在样式表末尾：与上方基础规则同特异性，靠书写顺序取胜 */
+      @media (max-width: 1600px) {
+        .header .btns button {
+          font-size: 15px;
+          padding: 6px 10px;
+          letter-spacing: 0;
+        }
+        .modes button {
+          font-size: 14px;
+          letter-spacing: 0;
+          padding: 7px 2px;
+          white-space: nowrap;
+        }
+        .panel h2 {
+          font-size: 16px;
+          letter-spacing: 1px;
+        }
+        /* 左栏最窄（190）：标题再收一档保持单行 */
+        .side.left .panel h2 {
+          font-size: 14px;
+          letter-spacing: 0;
+        }
+        /* 房间/走廊列表最窄时：缩字紧排版，一行放全「房间1·坐标[x,z]·尺寸(w×d)」 */
+        .cols .list {
+          font-size: 11px;
+        }
+        .cols .list .row {
+          padding: 6px 4px;
+        }
+        .cols .list .row .x {
+          padding: 0 2px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -941,14 +965,18 @@
        *  更大的屏钳到 1050 四周留白（布局高度同步 = 画布 + 外框边框 8）。
        *  可用高 = 视口高 - body 上下留白 20 - 外框 8；
        *  可用宽 = 视口宽 - body 左右留白 28 - 两侧 gap 28 - 外框 8
-       *           - 左栏最小 190 - 右栏最小 430（见 .side.left/.side.right）。
+       *           - 左栏最小 190 - 右栏最小 430（见 .side.left/.side.right）
+       *           - 余量 10（临界视口下字体渲染的亚像素差异不至于挤出滚动条）。
        *  内部分辨率同步为显示尺寸 × dpr——放大按矢量重画，格线文字不糊 */
       function syncCanvasSize() {
         const doc = document.documentElement
-        const css = Math.max(560, Math.min(1050, doc.clientHeight - 28, doc.clientWidth - 684))
+        const css = Math.max(560, Math.min(1050, doc.clientHeight - 28, doc.clientWidth - 694))
         cv.style.width = css + 'px'
         cv.style.height = css + 'px'
-        document.querySelector('.layout').style.height = css + 8 + 'px'
+        const layout = document.querySelector('.layout')
+        layout.style.height = css + 8 + 'px'
+        // 兜底滚动条阈值 = 画布外框 + 左栏最小 190 + 右栏最小 430 + 两侧 gap 28
+        layout.style.minWidth = css + 8 + 648 + 'px'
         const px = Math.round(css * (window.devicePixelRatio || 1))
         if (cv.width !== px) {
           cv.width = px
@@ -1322,7 +1350,7 @@
             .map(
               (r, i) =>
                 `<div class="row ${i === sel && mode === 'room' ? 'sel' : ''}" data-room="${i}">
-       <span>房间${i + 1} • 位置[${r.x},${r.z}] • 大小(${r.w}×${r.d})</span><span class="x" data-delroom="${i}">✕</span>
+       <span title="房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delroom="${i}">✕</span>
      </div>`,
             )
             .join('') || '<div class="hint">「画/选房间」模式下拖拽画布空白处</div>'
@@ -1332,7 +1360,7 @@
             .map(
               (r, i) =>
                 `<div class="row ${i === selCorr && mode === 'corr' ? 'sel' : ''}" data-corr="${i}">
-       <span>走廊${i + 1} • 位置[${r.x},${r.z}] • 大小(${r.w}×${r.d})</span><span class="x" data-delcorr="${i}">✕</span>
+       <span title="走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delcorr="${i}">✕</span>
      </div>`,
             )
             .join('') ||
