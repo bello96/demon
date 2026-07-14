@@ -95,13 +95,13 @@
       /* 清空 = 危险操作：红边红字（游戏死亡色） */
       #btnClear {
         background: #1a0505;
-        border-color: #a00;
+        border-color: #ff6a6a;
         color: #ff6a6a;
       }
       #btnClear:hover {
         background: #2a0d0d;
         border-color: #ff4444;
-        color: #ff8080;
+        color: #ff4444;
       }
       .more-wrap {
         position: relative;
@@ -322,19 +322,18 @@
       }
       .tip-icon {
         display: inline-block;
-        width: 16px;
-        height: 16px;
-        line-height: 13px;
+        width: 14px;
+        height: 14px;
+        line-height: 12px;
         text-align: center;
         border: 1px solid #ffaa00;
-        border-radius: 0;
+        border-radius: 50%;
         background: #000;
         color: #ffaa00;
-        font-size: 12px;
-        font-weight: bold;
+        font-size: 10px;
         cursor: pointer;
-        margin-left: 4px;
         user-select: none;
+        margin-left: 5px;
       }
       .tip-icon:hover {
         background: #332200;
@@ -409,6 +408,7 @@
         flex-shrink: 0;
         font-size: 15px;
         width: 120px;
+        justify-content: flex-start;
       }
       .ctl-row > .ctl input[type="range"] {
         flex: 1;
@@ -520,6 +520,31 @@
       }
       #tabs .row.frozen.sel {
         opacity: 0.8;
+      }
+      /* ===== 关卡行拖拽排序：普通行让位平滑滑动；被拖行贴指针实时跟随 ===== */
+      #tabs .row {
+        transition: transform 0.16s ease;
+        touch-action: none; /* 触屏上拖行不触发页面滚动 */
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      /* 被拖行：关闭过渡（跟随指针不能有滞后），悬浮高亮压在让位行之上 */
+      #tabs .row.dragging {
+        transition: none;
+        position: relative;
+        z-index: 5;
+        background: #1f1503;
+        border-color: #ffaa00;
+        box-shadow: 0 5px 16px rgba(0, 0, 0, 0.65);
+        opacity: 1;
+      }
+      /* 拖拽进行中：全列表抓取光标，压掉指针扫过其他行时的 hover 噪音 */
+      #tabs.drag-active .row {
+        cursor: grabbing;
+      }
+      #tabs.drag-active .row:not(.dragging):not(.sel):hover {
+        background: transparent;
+        border-color: transparent;
       }
       /* ===== 弹层（错误 / 帮助 / JSON）：玻璃遮罩 + 游戏菜单同款黑底粗边 ===== */
       .modal-mask {
@@ -831,7 +856,8 @@
           </div>
         </div>
         <div class="panel grow">
-          <h2>关卡（点击切换）</h2>
+          <h2>关卡</h2>
+          <!-- <h3>点选·拖动排序</h3> -->
           <div class="list" id="tabs"></div>
           <button id="btnAddLevel">＋ 新增关卡</button>
         </div>
@@ -844,8 +870,8 @@
       <div class="side right">
         <div class="header">
           <div class="btns">
-            <button id="btnCloudSave">☁ 保存到云端</button>
-            <button id="btnCopy">复制 JSON</button>
+            <button id="btnCloudSave">☁ 保存</button>
+            <button id="btnCopy">复制</button>
             <button id="btnClear" class="gray">清空</button>
             <div class="more-wrap">
               <button id="btnMore" class="gray">更多 ▾</button>
@@ -1869,7 +1895,124 @@
           ? 0
           : levels.slice(0, i + 1).filter((l) => !l.frozen).length;
       }
+      // ===== 关卡列表拖拽排序（按住行上下拖动换位；未超阈值视为点击切关） =====
+      /** 进行中的拖拽：{from 起始下标, to 目标下标, startY, row 行元素, rows 全部行, step 相邻行距, moved 是否已超阈值} */
+      let lvDrag = null;
+      /** 拖拽落位后抑制紧随的合成 click，避免误触发切关 */
+      let lvDragJustEnded = false;
+      $("tabs").addEventListener("pointerdown", (e) => {
+        if (e.button !== 0 || lvDrag) {
+          return;
+        }
+        if (e.target.closest(".x")) {
+          return; // 冻结/删除按钮：不启动拖拽，放行 click
+        }
+        const row = e.target.closest("[data-tab]");
+        if (!row || levels.length < 2) {
+          return;
+        }
+        const rows = [...$("tabs").children];
+        lvDrag = {
+          from: +row.dataset.tab,
+          to: +row.dataset.tab,
+          startY: e.clientY,
+          row,
+          rows,
+          // 相邻行位移步长：用实际 offsetTop 差，不依赖行高假设
+          step:
+            rows.length > 1
+              ? rows[1].offsetTop - rows[0].offsetTop
+              : row.offsetHeight,
+          moved: false,
+        };
+        // capture 必须设在行元素而非 #tabs 容器：pointer capture 会把后续兼容
+        // 鼠标事件（含合成 click）的 target 重定向到 capture 元素——若设在容器上，
+        // click.target 变成 #tabs，closest("[data-tab]") 找不到行，点击切关会失效
+        row.setPointerCapture(e.pointerId);
+      });
+      $("tabs").addEventListener("pointermove", (e) => {
+        if (!lvDrag) {
+          return;
+        }
+        const dy = e.clientY - lvDrag.startY;
+        if (!lvDrag.moved) {
+          if (Math.abs(dy) < 5) {
+            return; // 5px 阈值内仍视为点击
+          }
+          lvDrag.moved = true;
+          lvDrag.row.classList.add("dragging");
+          $("tabs").classList.add("drag-active");
+        }
+        // 被拖行贴指针实时跟随
+        lvDrag.row.style.transform = `translateY(${dy}px)`;
+        // 拖过半行即换位：其他行通过 CSS transition 平滑让位
+        lvDrag.to = Math.max(
+          0,
+          Math.min(
+            levels.length - 1,
+            lvDrag.from + Math.round(dy / lvDrag.step),
+          ),
+        );
+        lvDrag.rows.forEach((r, i) => {
+          if (i === lvDrag.from) {
+            return;
+          }
+          let shift = 0;
+          if (lvDrag.from < i && i <= lvDrag.to) {
+            shift = -lvDrag.step;
+          } else if (lvDrag.to <= i && i < lvDrag.from) {
+            shift = lvDrag.step;
+          }
+          r.style.transform = shift ? `translateY(${shift}px)` : "";
+        });
+      });
+      const lvDragEnd = () => {
+        if (!lvDrag) {
+          return;
+        }
+        const d = lvDrag;
+        lvDrag = null;
+        $("tabs").classList.remove("drag-active");
+        if (!d.moved) {
+          return; // 未超阈值：放行紧随的 click 走原切关逻辑
+        }
+        lvDragJustEnded = true;
+        setTimeout(() => {
+          lvDragJustEnded = false; // 兜底：松手点在列表外时 click 不经过 #tabs
+        }, 0);
+        // FLIP 落位：先记住松手时被拖行的视觉位置
+        const fromTop = d.row.getBoundingClientRect().top;
+        if (d.from !== d.to) {
+          // 数组重排（关卡对象引用不变，只换位置）；当前关跟随它指向的关卡走
+          const curLevel = levels[cur];
+          const [movedLv] = levels.splice(d.from, 1);
+          levels.splice(d.to, 0, movedLv);
+          cur = levels.indexOf(curLevel);
+        }
+        render(); // 重建列表：让位行的过渡终点恰是新布局位置，无跳变
+        // 被拖行从松手位置平滑滑入新家（先无过渡摆到旧视觉位，再过渡归零）
+        const newRow = $("tabs").querySelector(`[data-tab="${d.to}"]`);
+        if (newRow) {
+          const delta = fromTop - newRow.getBoundingClientRect().top;
+          if (Math.abs(delta) > 1) {
+            newRow.style.transition = "none";
+            newRow.style.transform = `translateY(${delta}px)`;
+            newRow.getBoundingClientRect(); // 强制 reflow，让上面两行先生效
+            newRow.style.transition = "";
+            newRow.style.transform = "";
+          }
+        }
+        if (d.from !== d.to) {
+          toast("已调整关卡顺序，保存到云端后生效");
+        }
+      };
+      $("tabs").addEventListener("pointerup", lvDragEnd);
+      $("tabs").addEventListener("pointercancel", lvDragEnd);
       $("tabs").addEventListener("click", async (e) => {
+        if (lvDragJustEnded) {
+          lvDragJustEnded = false;
+          return; // 刚完成一次拖拽排序：这次 click 是拖拽的副产物
+        }
         const frz = e.target.closest("[data-frz]");
         if (frz) {
           const i = +frz.dataset.frz;
