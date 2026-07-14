@@ -41,11 +41,13 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #666;
       }
-      /* 操作按钮在右栏顶部独占一行（左对齐），下方卡片顺次下移 */
+      /* 操作按钮在右栏顶部独占一行（左对齐），下方卡片顺次下移；
+         最窄档放不下时换行兜底，不向右溢出面板 */
       .header .btns {
         display: flex;
         gap: 8px;
         align-items: center;
+        flex-wrap: wrap;
       }
       /* ===== 游戏按钮缩小版：黑灰底 / 白粗边 / 方角 / 按下缩放 ===== */
       .header .btns button,
@@ -717,8 +719,8 @@
          必须放在样式表末尾：与上方基础规则同特异性，靠书写顺序取胜 */
       @media (max-width: 1600px) {
         .header .btns button {
-          font-size: 15px;
-          padding: 6px 10px;
+          font-size: 14px;
+          padding: 6px 8px;
           letter-spacing: 0;
         }
         .modes button {
@@ -784,6 +786,7 @@
                 <button id="btnHelp" class="gray">使用说明</button>
               </div>
             </div>
+            <button id="btnBackGame" class="gray">返回游戏</button>
           </div>
         </div>
         <div class="panel">
@@ -2002,6 +2005,10 @@
         selCorr = -1
       }
       $('btnImport').onclick = () => openModal('import')
+      // 返回游戏主页（草稿已自动保存在本地，下次进入可恢复）
+      $('btnBackGame').onclick = () => {
+        location.href = '/'
+      }
       $('btnClear').onclick = async () => {
         if (
           await gameConfirm('清空全部关卡，回到一张空白画布？', {

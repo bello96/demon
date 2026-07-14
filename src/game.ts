@@ -34,6 +34,8 @@ class Game {
   private levels: LevelConfig[] = BUILTIN_LEVELS
   private level = 1
   private levelCleared = 0
+  /** 选关面板中当前选中（高亮）的关卡：单击卡片选中，「进入游戏」按钮确认进入 */
+  private selectedLevel = 1
 
   constructor() {
     initLocalization()
@@ -172,16 +174,29 @@ class Game {
         lock.textContent = '🔒'
         btn.appendChild(lock)
       }
-      if (n === this.level) {
+      if (n === this.selectedLevel) {
         btn.classList.add('current')
       }
-      btn.addEventListener('click', () => this.startGame(n))
+      // 单击选中高亮，「进入游戏」按钮确认；双击卡片直接进入
+      btn.addEventListener('click', () => this.selectLevel(n))
+      btn.addEventListener('dblclick', () => this.startGame(n))
       grid.appendChild(btn)
     }
   }
 
+  /** 选关面板单击卡片：仅切换选中高亮，不进入游戏 */
+  private selectLevel(n: number): void {
+    if (!isLevelUnlocked(n, this.levelCleared)) {
+      return
+    }
+    this.selectedLevel = n
+    this.renderLevelGrid()
+  }
+
   /** 打开选关面板：主菜单「开始游戏」与游戏内「返回选关」的共同入口 */
   private showLevelSelect(): void {
+    // 默认选中当前进度关
+    this.selectedLevel = this.level
     this.renderLevelGrid()
     document.getElementById('menu')!.classList.add('hidden')
     document.getElementById('level-panel')!.classList.remove('hidden')
@@ -333,6 +348,9 @@ class Game {
 
     document.getElementById('btn-start')?.addEventListener('click', () => this.showLevelSelect())
     document.getElementById('level-back-btn')?.addEventListener('click', () => this.backToMainMenu())
+    document
+      .getElementById('level-enter-btn')
+      ?.addEventListener('click', () => this.startGame(this.selectedLevel))
 
     document.getElementById('btn-resume')?.addEventListener('click', () => this.togglePauseMenu())
     document.getElementById('btn-restart')?.addEventListener('click', () => this.restart())

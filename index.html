@@ -229,10 +229,17 @@
         background: #555;
         border: 1px solid #777;
       }
+      #level-enter-btn,
       #level-back-btn {
         margin-top: 30px;
         font-size: 24px;
         padding: 12px 36px;
+      }
+      /* 进入游戏 = 主操作：橙色强调，与选中卡片同色呼应 */
+      #level-enter-btn {
+        margin-right: 18px;
+        border-color: #ffaa00;
+        color: #ffaa00;
       }
       /* 关卡卡片：120×120 地图缩略图 + 左上角序号 */
       .level-card {
@@ -420,7 +427,7 @@
         <div id="menu-content">
           <h1 id="title-text">方块噩梦</h1>
           <p id="instructions-text">
-            WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒
+            WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒 | M 放大地图
           </p>
           <p
             id="hint-text"
@@ -464,6 +471,7 @@
       <div id="level-panel" class="hidden">
         <div id="level-select-title">选择关卡</div>
         <div id="level-grid"></div>
+        <button id="level-enter-btn">进入游戏</button>
         <button id="level-back-btn">返回主菜单</button>
       </div>
 

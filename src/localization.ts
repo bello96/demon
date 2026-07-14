@@ -15,6 +15,7 @@ interface TranslationStrings {
   gotKey: string
   gotRadar: string
   selectLevel: string
+  enterGame: string
   levelLabel: string
   lockedTip: string
   nextLevel: string
@@ -29,7 +30,7 @@ interface TranslationStrings {
 const translations: Record<string, TranslationStrings> = {
   zh: {
     title: '方块噩梦',
-    instructions: 'WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒',
+    instructions: 'WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒 | M 放大地图',
     hint: '快点找到逃生的门，避免被幽灵抓到',
     start: '开始游戏',
     died: '你死了',
@@ -43,6 +44,7 @@ const translations: Record<string, TranslationStrings> = {
     gotKey: '[已获得钥匙，赶快找到逃生的门吧] ',
     gotRadar: '[已获得雷达，可在小地图查看幽灵位置] ',
     selectLevel: '选择关卡',
+    enterGame: '进入游戏',
     levelLabel: '第 {n} 关',
     lockedTip: '未解锁',
     nextLevel: '进入下一关',
@@ -55,7 +57,7 @@ const translations: Record<string, TranslationStrings> = {
   },
   en: {
     title: 'Blocky Horror',
-    instructions: 'WASD Move | SPACE Jump | SHIFT Run | E Hide/Interact | F Flashlight',
+    instructions: 'WASD Move | SPACE Jump | SHIFT Run | E Hide/Interact | F Flashlight | M Map Zoom',
     hint: 'Find the exit door quickly, avoid the ghost.',
     start: 'Start Game',
     died: 'You Died',
@@ -69,6 +71,7 @@ const translations: Record<string, TranslationStrings> = {
     gotKey: '[Key obtained, find the exit!] ',
     gotRadar: '[Radar obtained, ghost visible on minimap] ',
     selectLevel: 'Select Level',
+    enterGame: 'Enter Game',
     levelLabel: 'Level {n}',
     lockedTip: 'Locked',
     nextLevel: 'Next Level',
@@ -109,6 +112,7 @@ function updateDOM(): void {
     'interaction-msg': 'interact',
     'game-hint-text': 'hint',
     'level-select-title': 'selectLevel',
+    'level-enter-btn': 'enterGame',
     'level-back-btn': 'backToMain',
     'next-level-btn': 'nextLevel',
     'win-menu-btn': 'backToSelect',
