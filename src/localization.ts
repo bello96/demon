@@ -47,7 +47,7 @@ const translations: Record<string, TranslationStrings> = {
     enterGame: '进入游戏',
     levelLabel: '第 {n} 关',
     lockedTip: '未解锁',
-    nextLevel: '进入下一关',
+    nextLevel: '下一关',
     backToSelect: '返回选关',
     backToMain: '返回主菜单',
     allCleared: '全部通关！',
