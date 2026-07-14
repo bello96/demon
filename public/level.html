@@ -90,6 +90,29 @@
         background: #2c2c2c;
         color: #fff;
       }
+      /* 窄视口（左右栏被压向最小宽）：按钮与面板标题缩小防换行 */
+      @media (max-width: 1600px) {
+        .header .btns button {
+          font-size: 15px;
+          padding: 6px 10px;
+          letter-spacing: 0;
+        }
+        .modes button {
+          font-size: 14px;
+          letter-spacing: 0;
+          padding: 7px 2px;
+          white-space: nowrap;
+        }
+        .panel h2 {
+          font-size: 16px;
+          letter-spacing: 1px;
+        }
+        /* 左栏最窄（190）：标题再收一档保持单行 */
+        .side.left .panel h2 {
+          font-size: 14px;
+          letter-spacing: 0;
+        }
+      }
       .more-wrap {
         position: relative;
       }
@@ -136,19 +159,20 @@
         color: #fff;
         border-color: #999;
       }
-      /* 布局高度与画布对齐（画布 = max(800, 100vh-22) + 边框 2）：两侧栏卡片可到底 */
+      /* 布局：三栏随视口伸缩（1280×800 ~ 1920×1080 无滚动条）。
+         高度由 syncCanvasSize() 与画布外框同步；小于最小档时 min-width 撑出滚动条
+         （配合 justify-content: center，超宽屏内容居中、两侧留白且不会裁切左栏） */
       .layout {
         display: flex;
         gap: 14px;
-        align-items: flex-start;
-        height: max(calc(100vh - 20px), 802px);
+        justify-content: center;
+        min-width: fit-content;
       }
       /* 两侧栏：独立卡片纵向排列，撑满布局高度 */
       .side {
         display: flex;
         flex-direction: column;
         gap: 10px;
-        flex-shrink: 0;
         height: 100%;
       }
       /* 面板卡片：游戏菜单同款黑底粗边方角 */
@@ -159,12 +183,16 @@
         padding: 12px;
         width: 272px;
       }
-      /* 左右栏定宽；卡片宽度随栏拉伸 */
+      /* 左栏窄屏可压到 190；右栏基准 526、宽屏最多长到 640、窄屏可压到 430；
+         卡片宽度随栏拉伸 */
       .side.left {
-        width: 216px;
+        flex: 0 1 216px;
+        min-width: 190px;
       }
       .side.right {
-        width: 526px;
+        flex: 1 1 526px;
+        min-width: 430px;
+        max-width: 640px;
       }
       .side .panel {
         width: auto;
@@ -279,13 +307,19 @@
         color: #ffd257;
         border-left: 4px solid #a80;
       }
+      /* 地图外框：游戏面板同款粗边。边框画在外层 div 上，
+         画布自身无边框——鼠标坐标换算（getBoundingClientRect）不受边框干扰 */
+      .cv-frame {
+        flex-shrink: 0;
+        border: 4px solid #555;
+        background: #000;
+      }
       canvas {
         background: #000;
-        border: 1px solid #555;
-        border-radius: 0;
+        border: none;
         cursor: crosshair;
         display: block;
-        /* 显示尺寸由 syncCanvasSize() 接管：跟随视口高度自适应、最小 800px，
+        /* 显示尺寸由 syncCanvasSize() 接管：随视口宽高自适应（560~1050 见其注释），
        内部分辨率同步 ×dpr 重设，放大按矢量重画不糊 */
       }
       .ctl {
@@ -707,7 +741,9 @@
         </div>
       </div>
 
-      <canvas id="cv" width="848" height="848"></canvas>
+      <div class="cv-frame">
+        <canvas id="cv" width="848" height="848"></canvas>
+      </div>
 
       <div class="side right">
         <div class="header">
@@ -900,12 +936,19 @@
       let spaceDown = false
       let panDrag = null // {mx,my,px,py} 空格平移拖拽起点
 
-      /** 画布尺寸自适应：显示宽高跟随视口高度、最小 800px（小屏宁可滚动不再缩小）；
-       *  内部分辨率同步为显示尺寸 × dpr——大屏放大时按矢量重画，格线文字不糊 */
+      /** 画布尺寸自适应：正方形边长取「可用高 / 可用宽」较小者——
+       *  1280×800 ~ 1920×1080 视口内不出滚动条；更小的屏钳到 560 交给滚动条，
+       *  更大的屏钳到 1050 四周留白（布局高度同步 = 画布 + 外框边框 8）。
+       *  可用高 = 视口高 - body 上下留白 20 - 外框 8；
+       *  可用宽 = 视口宽 - body 左右留白 28 - 两侧 gap 28 - 外框 8
+       *           - 左栏最小 190 - 右栏最小 430（见 .side.left/.side.right）。
+       *  内部分辨率同步为显示尺寸 × dpr——放大按矢量重画，格线文字不糊 */
       function syncCanvasSize() {
-        const css = Math.max(800, window.innerHeight - 22)
+        const doc = document.documentElement
+        const css = Math.max(560, Math.min(1050, doc.clientHeight - 28, doc.clientWidth - 684))
         cv.style.width = css + 'px'
         cv.style.height = css + 'px'
+        document.querySelector('.layout').style.height = css + 8 + 'px'
         const px = Math.round(css * (window.devicePixelRatio || 1))
         if (cv.width !== px) {
           cv.width = px
