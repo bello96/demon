@@ -46,38 +46,41 @@ pnpm run deploy         # vite build + wrangler pages deploy dist，发布到 Cl
 
 ```
 horror-maze-adventure/
-├── index.html                 # 游戏页入口 HTML，包含所有 UI 层 DOM + 内联样式
-├── vite.config.ts             # Vite 构建配置（仅 target: esnext）
+├── index.html                 # 游戏页入口 HTML，包含所有 UI 层 DOM + 内联样式（游戏风像素 UI）
+├── vite.config.ts             # Vite 配置：/level 无后缀重写（等效线上）+ /api 代理到线上生产
 ├── tsconfig.json              # TS 配置（strict + ESNext + bundler）
 ├── wrangler.toml               # Cloudflare Pages 配置 + KV 绑定（LEVELS_KV，binding 名固定）
 ├── package.json
 ├── README.md
 ├── CLAUDE.md                  # ← 本文件
 ├── docs/
-│   └── DEPLOY.md                # 部署指引：一次性配置 / 日常发布 / 本地联调 / 部署后验证清单
+│   ├── DEPLOY.md                # 部署指引：一次性配置 / 日常发布 / 本地联调 / 部署后验证清单
+│   └── superpowers/             # 关卡系统设计文档与实施计划（specs/plans）
 ├── public/
-│   └── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；线上路径 /level，
-│                                   Pages 原生无后缀路由，本地 dev 由 vite 中间件等效重写）
+│   ├── level.html                # 关卡编辑器页（自包含单文件，云端加载/保存；线上路径 /level，
+│   │                               Pages 原生无后缀路由，本地 dev 由 vite 中间件等效重写；
+│   │                               进门口令门禁 + 游戏页同款像素风 UI + 1280×800~1920×1080 自适应）
+│   └── level-default.json        # 初版硬编码地图存档（关卡系统之前的默认地图，仅留档）
 ├── functions/                   # Cloudflare Pages Functions（部署时自动生效）
 │   └── api/
-│       └── levels.ts               # GET 公开读关卡 ／ PUT 口令写入 KV（服务端复用 src/levels.ts 的校验）
+│       └── levels.ts               # GET 公开读关卡 ／ POST 口令预校验 ／ PUT 口令写入 KV
+│                                     （服务端复用 src/levels.ts 的校验）
 ├── tests/                        # vitest 单测：levels / progress / level_service
 └── src/
     ├── game.ts                # 主循环 / 场景组装 / UI 事件绑定 / 关卡生命周期与选关面板
-    ├── player.ts              # 玩家控制、相机、碰撞、交互、手电筒
+    ├── player.ts              # 玩家控制、相机、碰撞、交互、手电筒、道具状态（钥匙/雷达/鞋子）
     ├── ghost.ts               # 幽灵 AI（巡逻 / 追击状态机 + A* 寻路 + Bresenham 视线）
-    ├── world.ts               # 程序化豪宅生成、网格碰撞、交互物分布
-    ├── minimap.ts             # 2D 小地图 Canvas 绘制
+    ├── world.ts               # 关卡驱动的豪宅生成、网格碰撞、交互物分布
+    ├── minimap.ts             # 2D 小地图 Canvas 绘制 + 选关卡片缩略图（drawLevelThumbnail）
     ├── sound_generator.ts     # 基于 Web Audio API 的程序化音效
     ├── localization.ts        # 中/英 文本词典（根据 navigator.language 自动选择）
-    ├── materials（utils.ts） # 共享材质、像素化 Canvas 纹理、图片纹理加载
-    ├── types.ts               # Room / RoomLayout / Interactable / LightSwitch 接口
-    ├── utils.ts               # 见上方 materials
+    ├── types.ts               # Room / RoomLayout / MansionOptions / Interactable / LightSwitch
+    ├── utils.ts               # 共享材质 materials、像素化 Canvas 纹理、图片纹理加载
     ├── levels.ts                # LevelConfig 接口 + parseLevelsData 校验 + getLevelConfig（游戏端与 Functions 端共用同一份）
     ├── levels_data.json         # 内置兜底 6 关关卡数据（自小程序移植）
     ├── progress.ts               # 关卡进度纯函数：migrateProgress（迁移钳制）/ isLevelUnlocked（解锁判定）
     ├── level_service.ts          # 云端关卡拉取：3 秒超时 + 校验失败 / 网络错误一律回退内置关卡
-    ├── constants.ts               # 共享数值常量（如 LIT_AMBIENT / LIT_FOG_FAR）
+    ├── constants.ts               # 共享数值常量：LIT_AMBIENT / LIT_FOG_NEAR / LIT_FOG_FAR / DARK_FOG_NEAR
     └── static/                # 墙 / 地面贴图
 ```
 
@@ -90,39 +93,60 @@ horror-maze-adventure/
 ```
 Game (game.ts)
   ├─ THREE.Scene / PerspectiveCamera / WebGLRenderer
-  ├─ World (world.ts)           — 生成网格、墙体、地板、天花板、家具、交互物
-  │    └─ interactables[]       — cabinet / switch / key / radar / door
-  ├─ Player (player.ts)         — 持有 camera + flashlight (SpotLight)
-  ├─ Ghost (ghost.ts)           — 持有 mesh + 位置音效
+  ├─ levels: LevelConfig[]      — 云端拉取（level_service）失败回退内置（BUILTIN_LEVELS）
+  ├─ World (world.ts)           — 按当前关卡配置生成网格、墙体、家具、交互物
+  │    └─ interactables[]       — cabinet / switch / key / radar / shoes / door
+  ├─ Player (player.ts)         — 持有 camera + flashlight (SpotLight)；道具态 hasKey/hasRadar/hasShoes
+  ├─ Ghost (ghost.ts)           — 持有 mesh + 位置音效；速度由关卡配置注入
   └─ SoundGenerator             — 心跳 / 开关 / 拾取 / 幽灵呼吸
 ```
 
-### 5.2 地图生成管线（`World.generateMansion`）
+### 5.2 关卡 Schema 与数据流
 
-1. **网格初始化**：`MAP_WIDTH × MAP_DEPTH = 80×80`，全部置 1（墙）
-2. **房间挖凿**：按 `roomLayout[]` 把房间区域置 0
-3. **走廊连接**：相邻房间中心用 L 形走廊连通
-4. **可行走节点收集**：`walkableNodes[]`
-5. **墙体分类**（本分支重点）：
-   - `room` 墙：所有邻居都是房间内 → 贴 `roomWall` 材质
-   - `corridor` 墙：邻居都是走廊或完全封闭 → 贴 `stone` 砖纹
-   - `corner` 墙：同时邻房间和走廊 → 单独用**多材质 BoxGeometry**，每个面按朝向贴不同材质，视觉上形成 90° 转角切换
+- **单一校验源**：`src/levels.ts` 的 `parseLevelsData`（游戏端与 `functions/api/levels.ts` 共用），
+  任何一处非法整包拒绝返回 null。字段：`rooms`（必填）/ `corridorRects` / `darkAmbient` /
+  `darkFogFar` / `ghostSpeed`（2.0~6.0）/ `lightsOn` / `ghostEnabled` / `minimapEnabled`
+  （默认 true；false 时隐藏小地图、M 键失效、雷达不投放）/ `frozen`（冻结停用，后续关顺位前移，
+  至少须保留一个未冻结关卡）
+- **数据流**：编辑器（/level，口令 PUT）→ KV → 游戏启动 `loadLevels`（3 秒超时，失败回退内置 6 关）；
+  游戏端与内置数据都会过滤 `frozen` 关
+- **进度**：`localStorage`（levelCleared / levelReached），`migrateProgress` 在关卡数变化时钳制
+
+### 5.3 地图生成管线（`World.generateMansion`）
+
+1. **网格初始化**：`MAP_WIDTH × MAP_DEPTH = 100×100`，全部置 1（墙），与编辑器/小程序坐标系对齐
+2. **房间挖凿**：按关卡配置 `rooms[]` 置 0；重叠/贴边的房间自动打通拼成不规则大房间
+3. **走廊挖凿**：按 `corridorRects[]` 原样挖空（手画走廊）；与 1 号房不连通的孤岛房间自动补 L 形直廊兜底
+4. **可行走节点收集**：`walkableNodes[]`（仅主连通域）
+5. **墙体分类**：`room` 墙 / `corridor` 墙 / `corner` 墙（多材质 BoxGeometry 按朝向贴图）
 6. **构建 InstancedMesh**：地板、天花板、走廊墙、房间墙分别批量实例化
-7. **物品分配**：剩余房间打乱后按顺序分配 door / switch / key / radar / cabinet
+7. **物品分配**：房间洗牌后轮转分配 door / switch / key / radar / **shoes** / cabinet
+   （出生房垫底；房间不够绕回复用；`minimapEnabled=false` 时跳过 radar）
 8. **门与开关贴墙**：`randomOnWall` 会验证相邻格必须是墙体，保证贴墙不穿墙
-9. **bed 装饰**：在 `features.includes('bed')` 的非特殊房间随机放一张压扁的床（仅阻挡移动，不遮挡视线）
+9. **柜子避让出生格**：绝不压在玩家出生格上（防开局卡死）
 
-### 5.3 幽灵 AI（`Ghost.update`）
+### 5.4 幽灵 AI（`Ghost.update`）
 
-- **状态**：`patrol` ↔ `chase`
-- **视觉**：Bresenham 栅格视线（`hasLineOfSight`）+ 点积判定朝向（cos > 0.3）
+- **状态**：`patrol` ↔ `chase`；**追击速度 = 配置巡逻速度 × 1.5**
+- **发现玩家四条件**（全部满足才进入 chase）：未躲藏 + 距离 < 20 米 + 前方视野锥内
+  （朝向点积 > 0.3 ≈ 145° 锥角）+ Bresenham 栅格视线无墙体/高家具遮挡
 - **寻路**：A\* + 二叉小堆，500 ms 重规划一次；最多 2000 次迭代后返回最近节点
-- **放弃追击**：
-  - 玩家进入隐藏（`isHidden`）
-  - 追击目标到达时玩家已不在视野
-  - 追击时路径无法推进累计超时 `CHASE_STUCK_TIMEOUT_MS = 30 s`（例如玩家站箱顶）
+- **放弃追击**：玩家进入隐藏（`isHidden`）；追击目标到达时玩家已不在视野；
+  追击路径无法推进累计超时 `CHASE_STUCK_TIMEOUT_MS = 30 s`（例如玩家站箱顶）
 
-### 5.4 碰撞与视线模型
+### 5.5 数值体系（速度与视距）
+
+- **玩家**：步行 `baseSpeed = 4` 米/秒；Shift 疾跑 ×1.5 = 6；拾到**鞋子**再 ×1.5（步行 6 / 疾跑 9），
+  死亡重开或切关重置
+- **幽灵**：巡逻 2.0~6.0 可配（默认 3），追击 ×1.5 → 3~9；配置 < 2.7 追不上步行玩家（教学关），
+  4.0 以上无鞋必被追上（鞋子成为生存必需）
+- **雾（视距）**：开灯 `near/far = 120/200`（120 米内完全清澈，任何房间一眼到底）；
+  关灯 `near = 2`、far = 关卡配置 `darkFogFar`（8~30）。相机远裁剪面 220 > 雾 far，
+  改雾距时须保证这一不变量
+- **出生规则**：玩家出生点 = `walkableNodes` 中位元素（确定性）；初始朝向固定 -Z；
+  幽灵出生在离玩家直线最远的可走格
+
+### 5.6 碰撞与视线模型
 
 **`World.checkCollision`**（移动碰撞）
 
@@ -141,9 +165,24 @@ Game (game.ts)
 - 首次调用时按 `MAP_WIDTH × MAP_DEPTH` 像素生成一张灰色墙体位图
 - `regenerate` 时清空，下一帧懒重建
 
-### 5.5 重开流程（`Game.restart`）
+### 5.7 重开流程（`Game.buildLevel` / `restart`）
 
-- 不刷新页面，完全走内存重建：`World.regenerate()` → dispose GPU 资源 → `generateMansion()` → `player.reset()` + `ghost.reset()` → `spawn()`
+- 不刷新页面，完全走内存重建：`World.regenerate(cfg.rooms, opts)` → dispose GPU 资源 →
+  `generateMansion()` → `player.reset()` + `ghost.reset()` → `spawn()` → `applyLevelConfig(cfg)`
+  （幽灵速度/开关、环境光雾、小地图开关一并应用）
+
+### 5.8 游戏 UI 与编辑器（像素风统一）
+
+- **游戏页流程**：主菜单「开始游戏」→ 选关卡片面板（地图缩略图卡片，单击选中、
+  「进入游戏」确认、双击直进、锁定关灰显）→ 游玩；小地图仅游玩中显示，M 键放大
+  （`minimapEnabled=false` 的关卡整体禁用）
+- **编辑器 /level**：进门口令门禁（POST /api/levels 预校验，localStorage 记住口令，
+  离线可进本地草稿模式）；左右栏与全部弹框为游戏页同款像素风（`gameAlert`/`gameConfirm`
+  替代原生弹框）；画布 560~1050 随视口自适应（1280×800~1920×1080 无滚动条，布局
+  min-width 由 `syncCanvasSize` 显式同步——勿改回 min-content，列表 nowrap 文本会传导成页面宽）；
+  重叠房间的边框段画暗虚线；关卡可冻结/解冻；本地草稿自动保存、与云端冲突时弹框二选一
+- **本地 /api**：`pnpm dev` 下由 vite 代理到线上生产（demon.dengjiabei.cn）——
+  本地编辑器「保存到云端」写的就是生产数据
 
 ---
 
@@ -154,21 +193,21 @@ Game (game.ts)
 
 2. **`box.exe.stackdump` 偶尔残留在工作区根目录**（Cygwin bash 崩溃产物）。
 
-3. **本节以上「5. 架构核心」仍是关卡系统改造前的描述**（固定 10 房间、80×80 网格、`roomLayout[]` 硬编码等）。
-   关卡系统实际设计（100×100 网格、`corridorRects` 手画走廊、云端 Schema 与选关/进度/编辑器数据流）
-   以 `docs/superpowers/specs/2026-07-13-level-system-design.md` 为准；关卡系统入口见「4. 目录结构」新增的
-   `public/level.html`（编辑器）/ `functions/api/levels.ts`（API）/ `src/level_service.ts`（游戏侧云端加载）。
-
-4. **本机 workerd 需 VC++ 14.40+**：Windows 本地跑 `pnpm dev:cf` 依赖的 workerd 原生二进制要求
+3. **本机 workerd 需 VC++ 14.40+**：Windows 本地跑 `pnpm dev:cf` 依赖的 workerd 原生二进制要求
    Microsoft Visual C++ 2015-2022 Redistributable (x64) ≥ 14.40，版本过旧会在启动时崩溃（`0xc0000005`）。
    不影响 Cloudflare 云端部署与线上运行，详见 `docs/DEPLOY.md`。
+
+4. **存量关卡难度已随速度体系变化**：玩家步行 6 → 4 之后，按旧速度调的关卡
+   （ghostSpeed 2.6~2.8）体感变难（追击 3.9~4.2 > 步行 4），必要时在编辑器下调或依赖鞋子平衡。
 
 ### 🧹 代码质量建议
 
 - `World.generateMansion` 超过 400 行，可拆分：`buildGrid` / `classifyWalls` / `buildMeshes` / `placeInteractables`
 - 大量 `!` 非空断言，可用更早的 guard 替代
-- 魔法数字（心跳阈值 15、幽灵速度 2.8、橱柜 8 方向弹出偏移）集中到 `constants.ts`
-- 建议引入 ESLint + Prettier（全局 CLAUDE.md 已强制要求）
+- 剩余魔法数字（心跳阈值 15、幽灵感知半径 20、橱柜 8 方向弹出偏移）可继续集中到 `constants.ts`
+  （环境光/雾距已完成集中）
+- 建议引入 ESLint + Prettier（全局 CLAUDE.md 已强制要求；`public/level.html` 已经历一次
+  IDE Prettier 全文格式化，风格为双引号+分号）
 
 ---
 
@@ -185,15 +224,18 @@ Game (game.ts)
   - 贡献者署名统一：`贡献者：Claude Opus 4.6`（不要 `Co-Authored-By: ...`）
 - **UI 实现**：无设计稿时**不要猜布局**，先索取截图
 - **编辑完成后**必须运行 `pnpm typecheck`，确保无 TS 错误再交付
+- **不要自作主张提交/上线**：完成修改后只做 typecheck / 单测 / 本地验证并汇报；
+  `git commit`、`pnpm run deploy`、`git push` 三件事都必须等用户明确指令（说其一只做其一）
 
 ---
 
 ## 9. 部署（Cloudflare Pages）
 
 `package.json` 已配置 `pnpm run deploy`（= `vite build` + `wrangler pages deploy dist`，项目名取
-`wrangler.toml` 的 `name = "demon"`）。关卡系统还依赖 KV 命名空间绑定、`LEVEL_ADMIN_TOKEN`
-环境变量、编辑器域名分流等一次性配置；完整步骤、日常发布流程、本地联调注意事项与部署后验证
-清单见 [`docs/DEPLOY.md`](./docs/DEPLOY.md)。
+`wrangler.toml` 的 `name = "demon"`，生产分支 `main`）。关卡系统还依赖 KV 命名空间绑定与
+`LEVEL_ADMIN_TOKEN` 环境变量等一次性配置（编辑器走主站 `/level` 路径，无独立域名分流）；
+完整步骤、日常发布流程、本地联调注意事项与部署后验证清单见 [`docs/DEPLOY.md`](./docs/DEPLOY.md)。
+部署后边缘节点传播约需 1 分钟，期间新旧 HTML/bundle 混合可能报 module MIME 错误，稍候强刷即可。
 
 ## 10. 调试技巧
 
