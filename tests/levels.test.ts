@@ -3,7 +3,6 @@ import {
   BUILTIN_LEVELS,
   getLevelConfig,
   parseLevelsData,
-  parseThemePresets,
   sanitizeTheme,
 } from '../src/levels'
 
@@ -77,6 +76,36 @@ describe('parseLevelsData', () => {
     expect(out![1].frozen).toBe(true)
   })
 
+  it('id 合法透传；非法 / 非字符串 / 重复只丢弃 id 本身，不拒包', () => {
+    const out = parseLevelsData({
+      levels: [
+        { ...validLevel, id: 'lv_abc-123' },
+        { ...validLevel, id: '带空格 非法!' },
+        { ...validLevel, id: 'lv_abc-123' },
+        { ...validLevel, id: 42 },
+        { ...validLevel, id: 'x'.repeat(33) },
+        { ...validLevel },
+      ],
+    })
+    expect(out).not.toBeNull()
+    expect(out!).toHaveLength(6)
+    expect(out![0].id).toBe('lv_abc-123')
+    expect(out![1].id).toBeUndefined()
+    expect(out![2].id).toBeUndefined()
+    expect(out![3].id).toBeUndefined()
+    expect(out![4].id).toBeUndefined()
+    expect(out![5].id).toBeUndefined()
+  })
+
+  it('id 边界：32 字符恰好合法、空串非法', () => {
+    const id32 = 'a'.repeat(32)
+    const out = parseLevelsData({
+      levels: [{ ...validLevel, id: id32 }, { ...validLevel, id: '' }],
+    })
+    expect(out![0].id).toBe(id32)
+    expect(out![1].id).toBeUndefined()
+  })
+
   it('minimapEnabled 缺省 true、写 false 保留', () => {
     const out = parseLevelsData({
       levels: [validLevel, { ...validLevel, minimapEnabled: false }],
@@ -148,34 +177,41 @@ describe('theme 主题校验（宽松：非法面丢弃，不拒整包）', () =
     const out = parseLevelsData({ levels: [{ ...validLevel, theme: 42 }] })
     expect(out![0].theme).toBeUndefined()
   })
-})
 
-describe('parseThemePresets 方案库校验', () => {
-  const surfaces = { roomFloor: { type: 'color', value: '#aabbcc' } }
-
-  it('合法条目保留，名称去空白截 12 字', () => {
-    const out = parseThemePresets([{ name: '  白色病院超长名字超过十二个字了  ', surfaces }])
-    expect(out).toHaveLength(1)
-    expect(out[0].name).toBe('白色病院超长名字超过十二')
-    expect(out[0].surfaces).toEqual(surfaces)
+  it('image 面：合法 data:image base64 保留；坏前缀 / 超长丢弃', () => {
+    const okUrl = 'data:image/png;base64,' + 'A'.repeat(1000)
+    const out = parseLevelsData({
+      levels: [
+        {
+          ...validLevel,
+          theme: {
+            roomFloor: { type: 'image', value: okUrl },
+            roomWall: { type: 'image', value: 'data:text/html;base64,PGI+' },
+            ceiling: { type: 'image', value: 'data:image/png;base64,' + 'A'.repeat(800_000) },
+          },
+        },
+      ],
+    })
+    expect(out).not.toBeNull()
+    expect(out![0].theme).toEqual({ roomFloor: { type: 'image', value: okUrl } })
   })
 
-  it('非法条目（缺名 / surfaces 全非法 / 非对象）静默丢弃', () => {
-    const out = parseThemePresets([
-      null,
-      { surfaces },
-      { name: 'ok', surfaces: { roomFloor: { type: 'color', value: 'bad' } } },
-      { name: 'good', surfaces },
-    ])
-    expect(out).toHaveLength(1)
-    expect(out[0].name).toBe('good')
-  })
-
-  it('非数组 → 空数组；超过 24 套截断', () => {
-    expect(parseThemePresets(undefined)).toEqual([])
-    expect(parseThemePresets('x')).toEqual([])
-    const many = Array.from({ length: 30 }, (_, i) => ({ name: `t${i}`, surfaces }))
-    expect(parseThemePresets(many)).toHaveLength(24)
+  it('image 边界：总长恰好 720000 合法、720001 丢弃', () => {
+    const head = 'data:image/png;base64,'
+    const atLimit = head + 'A'.repeat(720_000 - head.length)
+    const overLimit = head + 'A'.repeat(720_001 - head.length)
+    const out = parseLevelsData({
+      levels: [
+        {
+          ...validLevel,
+          theme: {
+            roomFloor: { type: 'image', value: atLimit },
+            ceiling: { type: 'image', value: overLimit },
+          },
+        },
+      ],
+    })
+    expect(out![0].theme).toEqual({ roomFloor: { type: 'image', value: atLimit } })
   })
 })
 

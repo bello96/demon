@@ -1,4 +1,4 @@
-import { parseLevelsData, parseThemePresets } from '../../src/levels'
+import { parseLevelsData } from '../../src/levels'
 
 interface Env {
   LEVELS_KV: KVNamespace
@@ -52,9 +52,8 @@ async function handlePut(ctx: EventContext<Env, string, unknown>): Promise<Respo
   if (parsed === null) {
     return json({ error: 'invalid', detail: '关卡数据校验失败（结构 / 坐标范围 / 数值区间 / 至少一个未冻结关卡）' }, 400)
   }
-  // 主题方案库（编辑器模板）：宽松校验后随关卡一并存储，非法条目静默丢弃
-  const themePresets = parseThemePresets((body as { themePresets?: unknown }).themePresets)
-  await ctx.env.LEVELS_KV.put('levels', JSON.stringify({ levels: parsed, themePresets }))
+  // 方案库（themePresets）已废弃：不再解析存储，旧 KV 数据里的该字段随下次保存自然清除
+  await ctx.env.LEVELS_KV.put('levels', JSON.stringify({ levels: parsed }))
   return json({ ok: true, count: parsed.length }, 200)
 }
 

@@ -11,9 +11,10 @@ export interface Room extends RoomLayout {
   id: number
 }
 
-/** 主题单面取值：preset=内置材质名（THEME_PRESETS 白名单）/ color=#rrggbb（程序化像素噪点纹理） */
+/** 主题单面取值：preset=内置材质名（THEME_PRESETS 白名单）/ color=#rrggbb（程序化像素噪点纹理）
+    / image=data:image base64（编辑器上传，原文件 ≤500KB） */
 export interface ThemeSurface {
-  type: 'preset' | 'color'
+  type: 'preset' | 'color' | 'image'
   value: string
 }
 

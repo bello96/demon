@@ -120,9 +120,11 @@
       .h2-flex {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        /* 红方块 + 标题文字贴左（gap 补回 ::before 尾空格在 flex 下被折叠的间隙），按钮独自靠右 */
+        gap: 6px;
       }
       .theme-btn {
+        margin-left: auto;
         background: #1d1d1d;
         border: 2px solid #666;
         border-radius: 0;
@@ -137,97 +139,119 @@
         color: #ffaa00;
       }
       .theme-modal {
-        width: 640px;
+        width: 800px;
         max-width: 94vw;
       }
       .theme-sec {
         color: #888;
         font-size: 13px;
         letter-spacing: 1px;
-        margin: 12px 0 6px;
+        margin: 12px 0 8px;
       }
-      .theme-preset-row {
+      /* 五张方案大卡片横排：4 张内置只读 + 1 张自定义可编辑 */
+      .theme-cards {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
+        align-items: stretch;
       }
       .theme-card {
         cursor: pointer;
         border: 2px solid #555;
         background: #151515;
-        padding: 6px 8px;
-        min-width: 104px;
+        padding: 9px 8px;
+        flex: 1;
+        min-width: 0;
       }
       .theme-card:hover {
         border-color: #aaa;
       }
       .theme-card.cur {
         border-color: #ffaa00;
+        background: #1c1503;
       }
       .theme-card .tc-name {
         color: #ccc;
-        font-size: 13px;
-        margin-bottom: 5px;
-        display: flex;
-        justify-content: space-between;
-        gap: 6px;
+        font-size: 14px;
+        letter-spacing: 1px;
+        text-align: center;
+        margin-bottom: 9px;
+        white-space: nowrap;
       }
-      .theme-card .tc-del {
-        color: #f66;
+      .theme-card.cur .tc-name {
+        color: #ffaa00;
       }
-      .theme-card .tc-strip {
-        display: flex;
-        height: 14px;
-        border: 1px solid #333;
-      }
-      .theme-card .tc-strip i {
-        flex: 1;
-      }
-      .theme-row {
+      /* 卡内表面配置行：表面名 + 色块（自定义卡另有图/清除小钮） */
+      .tc-row {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
+        gap: 4px;
+        margin-bottom: 7px;
+        font-size: 11px;
+        color: #999;
       }
-      .theme-row .tr-label {
-        width: 76px;
+      .tc-row:last-child {
+        margin-bottom: 0;
+      }
+      .tc-row .tc-label {
+        flex: 1;
+        white-space: nowrap;
+      }
+      .tc-chip {
+        width: 24px;
+        height: 17px;
         flex: none;
-        color: #bbb;
-        font-size: 14px;
+        border: 1px solid #000;
+        outline: 1px solid #444;
+        background-size: cover;
+        background-position: center;
       }
-      .theme-row select {
-        background: #1d1d1d;
-        color: #ddd;
-        border: 2px solid #555;
-        padding: 4px 6px;
-        font-family: inherit;
-      }
-      .theme-row input[type="color"] {
-        width: 44px;
-        height: 28px;
-        padding: 0;
-        border: 2px solid #555;
-        background: #1d1d1d;
+      /* 自定义卡：色块可点调色；空面画斜线示意「未配置 = 默认材质」 */
+      .tc-chip.editable {
         cursor: pointer;
       }
-      .theme-row .tr-chip {
-        width: 22px;
-        height: 22px;
+      .tc-chip.editable:hover {
+        outline-color: #ffaa00;
+      }
+      .tc-chip.empty {
+        background:
+          linear-gradient(
+            45deg,
+            transparent 46%,
+            #555 46%,
+            #555 54%,
+            transparent 54%
+          )
+          #101010;
+      }
+      .tc-mini {
         flex: none;
-        border: 2px solid #555;
+        width: 19px;
+        height: 19px;
+        line-height: 17px;
+        text-align: center;
+        font-size: 11px;
+        color: #8ab;
+        border: 1px solid #456;
+        background: #101418;
+        cursor: pointer;
       }
-      .theme-save-row {
+      .tc-mini:hover {
+        color: #fff;
+        border-color: #7ec8ff;
+      }
+      .tc-mini.del {
+        color: #c05050;
+        border-color: #533;
+      }
+      .tc-mini.del:hover {
+        color: #ff6a6a;
+        border-color: #a00;
+      }
+      /* 底部操作行：「使用」应用选中卡片到当前关 */
+      .theme-foot {
+        margin-top: 14px;
         display: flex;
-        gap: 8px;
-        margin-top: 12px;
-      }
-      .theme-save-row input {
-        flex: 1;
-        background: #101010;
-        border: 2px solid #555;
-        color: #ddd;
-        padding: 6px 8px;
-        font-family: inherit;
+        justify-content: flex-end;
       }
       .menu {
         position: absolute;
@@ -588,6 +612,29 @@
       .ctl.off {
         opacity: 0.35;
       }
+      /* 冻结关只读：勾选、模式切换、主题按钮的禁用态统一灰显 */
+      .ck input:disabled,
+      .modes button:disabled,
+      .theme-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .modes button:disabled:hover {
+        background: #444;
+        transform: none;
+      }
+      .theme-btn:disabled:hover {
+        border-color: #666;
+        color: #aaa;
+      }
+      /* 参数面板标题旁的冻结标记 */
+      .frozen-tag {
+        color: #7ec8ff;
+        font-size: 12px;
+        letter-spacing: 0;
+        text-shadow: none;
+        white-space: nowrap;
+      }
       .list {
         max-height: 340px;
         overflow-y: auto;
@@ -636,6 +683,19 @@
       }
       .list .row .x.frz:hover {
         color: #7ec8ff;
+      }
+      /* 解冻：文字按钮（冻结行唯一操作入口，比图标醒目） */
+      .list .row .x.unfrz {
+        color: #7ec8ff;
+        font-size: 12px;
+        font-weight: normal;
+        border: 1px solid #446a88;
+        padding: 1px 6px;
+        white-space: nowrap;
+      }
+      .list .row .x.unfrz:hover {
+        color: #fff;
+        border-color: #7ec8ff;
       }
       /* 冻结的关卡：整行灰显（数据保留，游戏跳过） */
       #tabs .row.frozen {
@@ -1013,6 +1073,9 @@
         <div class="panel">
           <h2 class="h2-flex">
             关卡参数
+            <span id="frozenTag" class="frozen-tag" style="display: none"
+              >❄ 已冻结（只读）</span
+            >
             <button id="btnTheme" class="theme-btn" title="配置本关表面材质主题">
               🎨 主题
             </button>
@@ -1138,8 +1201,9 @@
       </div>
     </div>
 
-    <!-- 关卡主题弹框：方案模板（内置 + 自定义库）一键应用，五个表面逐项配置；
-         关卡存主题快照、方案库随「保存到云端」一起上云（KV 顶层 themePresets） -->
+    <!-- 关卡主题弹框：五张方案卡片（4 张内置只读 + 1 张自定义可编辑），
+         选中卡片后点「使用」应用到当前关并关闭；自定义每面可调纯色或上传
+         图片纹理（原文件 ≤500KB，base64 随关卡数据上云），每关自定义互相独立 -->
     <div class="modal-mask" id="themeMask">
       <div class="modal theme-modal">
         <div class="modal-head">
@@ -1148,18 +1212,20 @@
             <button id="themeClose" class="gray">关闭</button>
           </div>
         </div>
-        <div class="theme-sec">方案模板（点击应用到当前关）</div>
-        <div id="themePresetRow" class="theme-preset-row"></div>
-        <div class="theme-sec">表面配置（默认 = 游戏原版材质）</div>
-        <div id="themeSurfaces"></div>
-        <div class="theme-save-row">
-          <input
-            id="themeSaveName"
-            maxlength="12"
-            placeholder="输入名称，把当前关配置存为方案模板"
-          />
-          <button id="btnThemeSaveAs" class="gray">另存为方案</button>
+        <div class="theme-sec">
+          选中一张方案卡片，点「使用」应用到本关（默认 = 游戏原版材质）
         </div>
+        <div id="themeCards" class="theme-cards"></div>
+        <div class="theme-foot">
+          <button id="themeUse">使 用</button>
+        </div>
+        <input
+          type="file"
+          id="themeImgFile"
+          accept="image/*"
+          style="display: none"
+        />
+        <input type="color" id="themeColorPick" style="display: none" />
       </div>
     </div>
 
@@ -1204,8 +1270,14 @@
         CELL = 8,
         MIN_ROOM = 6;
 
+      /** 关卡唯一 id：不随排序/冻结变化的稳定标识，随数据上云（时间戳36 + 随机段） */
+      const genId = () =>
+        "lv_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      /** id 合法格式（与 src/levels.ts 同规则）：非法/重复的在加载时丢弃补发 */
+      const LEVEL_ID_RE = /^[A-Za-z0-9_-]{1,32}$/;
       /** 空白关卡（默认参数取第 1 关难度档：开局关灯、有幽灵） */
       const blankLevel = () => ({
+        id: genId(),
         rooms: [],
         corrRects: [],
         darkAmbient: 0.2,
@@ -1230,6 +1302,8 @@
       const cv = $("cv"),
         ctx = cv.getContext("2d");
       const L = () => levels[cur];
+      /** 当前关是否已冻结：冻结 = 全面只读（参数/主题/画布编辑全禁），仅可查看与解冻 */
+      const curFrozen = () => !!(levels[cur] && levels[cur].frozen);
 
       function toast(msg) {
         const el = $("toast");
@@ -1716,6 +1790,18 @@
         ctx.font = "bold 11px sans-serif";
         ctx.fillText("m", RULER + VIEW + 8, RULER - 8);
 
+        // 冻结关水印：画布只读提示（顶部居中，半透明蓝不遮内容）
+        if (curFrozen()) {
+          ctx.fillStyle = "rgba(126, 200, 255, 0.9)";
+          ctx.font = "bold 14px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "❄ 已冻结：只读查看，解冻后可编辑",
+            RULER + VIEW / 2,
+            RULER + 24,
+          );
+        }
+
         renderPanels();
       }
 
@@ -1726,16 +1812,14 @@
         let liveNo = 0;
         $("tabs").innerHTML = levels
           .map((tl, i) => {
-            const label = tl.frozen
-              ? "❄ 已冻结（停用中）"
-              : `第 ${++liveNo} 关`;
-            const frzBtn = `<span class="x frz" data-frz="${i}" title="${
-              tl.frozen
-                ? "解冻：恢复此关参与游戏"
-                : "冻结：暂时停用此关（数据保留，游戏跳过）"
-            }">${tl.frozen ? "▶" : "❄"}</span>`;
+            const label = tl.frozen ? "❄ 已冻结" : `第 ${++liveNo} 关`;
+            // 冻结行：唯一操作是文字「解冻」按钮；未冻结行：❄ 冻结 + ✕ 删除
+            const frzBtn = tl.frozen
+              ? `<span class="x unfrz" data-frz="${i}" title="解冻：恢复此关参与游戏">解冻</span>`
+              : `<span class="x frz" data-frz="${i}" title="冻结：暂时停用此关（数据保留，游戏跳过）">❄</span>`;
+            // 冻结关不可删除（归档保护）：想删先解冻
             const delBtn =
-              levels.length > 1
+              levels.length > 1 && !tl.frozen
                 ? `<span class="x" data-del="${i}" title="删除此关">✕</span>`
                 : "";
             return `<div class="row ${i === cur ? "sel" : ""}${tl.frozen ? " frozen" : ""}" data-tab="${i}">
@@ -1743,24 +1827,34 @@
      </div>`;
           })
           .join("");
-        // 参数
+        // 参数（冻结关全面只读：勾选/滑杆/主题/模式切换全部禁用，解冻后恢复）
+        const fz = lv.frozen === true;
+        $("frozenTag").style.display = fz ? "" : "none";
         $("ckLights").checked = lv.lightsOn === true;
         $("ckGhost").checked = lv.ghostEnabled !== false;
         $("ckMinimap").checked = lv.minimapEnabled !== false;
+        $("ckLights").disabled = fz;
+        $("ckGhost").disabled = fz;
+        $("ckMinimap").disabled = fz;
         $("ambient").value = lv.darkAmbient;
         $("vAmb").textContent = lv.darkAmbient.toFixed(2);
         $("fog").value = lv.darkFogFar;
         $("vFog").textContent = lv.darkFogFar;
         $("ghost").value = lv.ghostSpeed;
         $("vGhost").textContent = lv.ghostSpeed.toFixed(2);
-        $("ghost").disabled = lv.ghostEnabled === false;
-        // 房间列表
+        $("ambient").disabled = fz;
+        $("fog").disabled = fz;
+        $("ghost").disabled = fz || lv.ghostEnabled === false;
+        $("btnTheme").disabled = fz;
+        $("modeRoom").disabled = fz;
+        $("modeCorr").disabled = fz;
+        // 房间列表（冻结关不出删除 ✕，行点选仅用于查看高亮）
         $("roomList").innerHTML =
           lv.rooms
             .map(
               (r, i) =>
                 `<div class="row ${i === sel && mode === "room" ? "sel" : ""}" data-room="${i}">
-       <span title="房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delroom="${i}">✕</span>
+       <span title="房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">房间${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span>${fz ? "" : `<span class="x" data-delroom="${i}">✕</span>`}
      </div>`,
             )
             .join("") ||
@@ -1771,7 +1865,7 @@
             .map(
               (r, i) =>
                 `<div class="row ${i === selCorr && mode === "corr" ? "sel" : ""}" data-corr="${i}">
-       <span title="走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span><span class="x" data-delcorr="${i}">✕</span>
+       <span title="走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})">走廊${i + 1}·坐标[${r.x},${r.z}]·尺寸(${r.w}×${r.d})</span>${fz ? "" : `<span class="x" data-delcorr="${i}">✕</span>`}
      </div>`,
             )
             .join("") ||
@@ -1818,6 +1912,11 @@
         if (spaceDown) {
           panDrag = { mx: e.clientX, my: e.clientY, px: panX, py: panY };
           cv.style.cursor = "grabbing";
+          return;
+        }
+        // 冻结关画布只读：拦下画/选/拖（空格平移、Ctrl+滚轮缩放的查看操作不受限）
+        if (curFrozen()) {
+          toast("此关已冻结：解冻后才能编辑");
           return;
         }
         const { gx, gz } = cellOf(e);
@@ -1982,6 +2081,7 @@
         if (
           (e.key === "Delete" || e.key === "Backspace") &&
           !anyLayerOpen() &&
+          !curFrozen() &&
           document.activeElement.tagName !== "TEXTAREA"
         ) {
           const s = getSel();
@@ -2240,14 +2340,17 @@
         const del = e.target.closest("[data-del]");
         if (del) {
           const i = +del.dataset.del;
+          // 冻结关不可删除（✕ 已不渲染，这里防御旁路点击）
+          if (levels[i].frozen) {
+            toast("已冻结的关卡不可删除：请先解冻");
+            return;
+          }
           // 删除守卫：删掉最后一个启用中的关卡会只剩冻结关，游戏没得玩
-          if (!levels[i].frozen && liveCountExcept(i) === 0) {
+          if (liveCountExcept(i) === 0) {
             toast("不能删除最后一个启用中的关卡（可先解冻其他关卡）");
             return;
           }
-          const name = levels[i].frozen
-            ? "这个已冻结的关卡"
-            : `第 ${liveNoOf(i)} 关`;
+          const name = `第 ${liveNoOf(i)} 关`;
           if (
             await gameConfirm(`确定删除${name}？`, {
               title: "删除关卡",
@@ -2293,6 +2396,7 @@
       $("roomList").addEventListener("click", (e) => {
         const del = e.target.closest("[data-delroom]");
         if (del) {
+          if (curFrozen()) return; // 冻结关只读（✕ 已不渲染，防御旁路）
           L().rooms.splice(+del.dataset.delroom, 1);
           sel = -1;
           render();
@@ -2309,6 +2413,7 @@
       $("corrList").addEventListener("click", (e) => {
         const del = e.target.closest("[data-delcorr]");
         if (del) {
+          if (curFrozen()) return; // 冻结关只读（✕ 已不渲染，防御旁路）
           L().corrRects.splice(+del.dataset.delcorr, 1);
           selCorr = -1;
           render();
@@ -2361,6 +2466,8 @@
         const out = {
           levels: levels.map((lv) => {
             const o = {
+              // id 随数据上云（服务端 parse 透传存储）；老草稿万一缺失则当场补发
+              id: lv.id || (lv.id = genId()),
               rooms: lv.rooms.map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d })),
               doorCount: 1,
               darkAmbient: lv.darkAmbient,
@@ -2385,8 +2492,6 @@
             return o;
           }),
         };
-        // 主题方案库（编辑器模板）：非空才写顶层字段
-        if (themePresets.length) out.themePresets = themePresets;
         return JSON.stringify(out, null, 2);
       }
       /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
@@ -2403,7 +2508,7 @@
           $("errBody").innerHTML = bad
             .map(
               ([i, issues]) =>
-                `<h3>${levels[i].frozen ? `❄ 已冻结的关卡（列表第 ${i + 1} 行）` : `第 ${liveNoOf(i)} 关`}</h3>` +
+                `<h3>${levels[i].frozen ? `❄ 第 ${i + 1} 行 · 已冻结关卡（解冻后可修改）` : `第 ${liveNoOf(i)} 关`}</h3>` +
                 issues
                   .filter(([k]) => k !== "ok")
                   .map(([k, m]) => `<div class="${k}">${m}</div>`)
@@ -2505,10 +2610,6 @@
           if (!Array.isArray(arr) || arr.length === 0)
             throw new Error("缺少 levels 数组");
           loadLevelsData(arr);
-          // 导入 JSON 若带主题方案库则一并吸收（宽松清洗）
-          if (data && Array.isArray(data.themePresets)) {
-            themePresets = sanitizePresets(data.themePresets);
-          }
           closeModal();
           toast(`已导入 ${levels.length} 个关卡`);
           render();
@@ -2544,7 +2645,7 @@
         a.click();
         URL.revokeObjectURL(a.href);
       };
-      // ================= 关卡主题（一期：预设 / 颜色两种取值，与 src/levels.ts 同规则） =================
+      // ================= 关卡主题（preset / color / image 三种取值，与 src/levels.ts 同规则） =================
       const THEME_KEYS = [
         "roomFloor",
         "corridorFloor",
@@ -2611,9 +2712,8 @@
           },
         },
       ];
-      /** 用户自定义方案库（KV 顶层 themePresets）：随保存上云、随加载吸收 */
-      let themePresets = [];
-      /** 主题单面校验：preset 限白名单、color 限 #rrggbb；非法返回 undefined 回退默认 */
+      /** 主题单面校验（与 src/levels.ts 同规则）：preset 限白名单、color 限 #rrggbb、
+          image 限 data:image base64 且 ≤720K 字符；非法返回 undefined 回退默认 */
       function sanitizeSurface(s) {
         if (!s || typeof s !== "object") return undefined;
         if (s.type === "preset" && THEME_PRESET_NAMES.includes(s.value)) {
@@ -2625,6 +2725,16 @@
           /^#[0-9a-fA-F]{6}$/.test(s.value)
         ) {
           return { type: "color", value: s.value.toLowerCase() };
+        }
+        if (
+          s.type === "image" &&
+          typeof s.value === "string" &&
+          s.value.length <= 720000 &&
+          /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(
+            s.value,
+          )
+        ) {
+          return { type: "image", value: s.value };
         }
         return undefined;
       }
@@ -2641,21 +2751,6 @@
           }
         }
         return any ? out : undefined;
-      }
-      /** 方案库宽松校验：非法条目丢弃、名称截 12 字、最多 24 套 */
-      function sanitizePresets(raw) {
-        if (!Array.isArray(raw)) return [];
-        const out = [];
-        for (const item of raw) {
-          if (out.length >= 24) break;
-          if (!item || typeof item !== "object" || typeof item.name !== "string")
-            continue;
-          const name = item.name.trim().slice(0, 12);
-          const surfaces = sanitizeTheme(item.surfaces);
-          if (!name || !surfaces) continue;
-          out.push({ name, surfaces });
-        }
-        return out;
       }
       /** 数值防御：非有限数回退 fallback，有限数夹进 [min,max]（导入任意 JSON 的进货闸） */
       function numIn(v, min, max, fallback) {
@@ -2682,6 +2777,18 @@
           w: Math.max(1, Math.min(GRID, Math.round(+r.w))),
           d: Math.max(1, Math.min(GRID, Math.round(+r.d))),
         });
+        // id 吸收：合法且未重复的保留，其余当场补发（与 src/levels.ts 同规则；
+        // 补发用 while 防撞，同批数据内保证唯一）
+        const seenIds = new Set();
+        const takeId = (v) => {
+          let id =
+            typeof v === "string" && LEVEL_ID_RE.test(v) && !seenIds.has(v)
+              ? v
+              : genId();
+          while (seenIds.has(id)) id = genId();
+          seenIds.add(id);
+          return id;
+        };
         levels = arr.map((raw) => {
           const lv = raw && typeof raw === "object" ? raw : {};
           const rooms = (Array.isArray(lv.rooms) ? lv.rooms : [])
@@ -2695,6 +2802,7 @@
             .flatMap(normalizeCorr)
             .flatMap((c) => clipCorridor(c, rooms));
           return {
+            id: takeId(lv.id),
             rooms,
             corrRects,
             darkAmbient: numIn(lv.darkAmbient, 0.05, 0.3, 0.2),
@@ -2713,181 +2821,175 @@
       }
       $("btnImport").onclick = () => openModal("import");
 
-      // ================= 关卡主题弹框（方案模板一键应用 + 五表面逐项配置） =================
-      const escapeHtml = (s) =>
-        s.replace(
-          /[&<>"']/g,
-          (c) =>
-            ({
-              "&": "&amp;",
-              "<": "&lt;",
-              ">": "&gt;",
-              '"': "&quot;",
-              "'": "&#39;",
-            })[c],
+      // ================= 关卡主题弹框（五张方案卡：4 内置只读 + 1 自定义可编辑） =================
+      /** 弹框内选中的卡片：0..3 = 内置方案下标；"custom" = 自定义卡 */
+      let themeSel = 0;
+      /** 自定义卡片编辑态（每关各自回显；点「使用」才写入关卡） */
+      let customDraft = {};
+      /** 正在调色 / 传图的表面键（隐藏 input 的 change 回填目标） */
+      let themePickKey = null;
+      /** 面取值 → 色块 style：纯色 / 图片缩略 / 老数据 preset 用代表色示意；空面返回 null */
+      function surfaceChipStyle(s, defC) {
+        if (!s) return null;
+        if (s.type === "color") return "background:" + s.value;
+        if (s.type === "image")
+          return "background-image:url(" + s.value + ")";
+        return (
+          "background:" + ((PRESET_INFO[s.value] || {}).color || defC)
         );
-      /** 面 k 当前生效的预览色：颜色取值本身 / 预设代表色 / 默认材质代表色 */
-      function themeEffColor(k, defColor) {
-        const t = levels[cur] && levels[cur].theme;
-        const s = t && t[k];
-        if (!s) return defColor;
-        if (s.type === "color") return s.value;
-        return (PRESET_INFO[s.value] || {}).color || defColor;
       }
       function themeEquals(a, b) {
         return JSON.stringify(a || null) === JSON.stringify(b || null);
       }
-      /** 方案卡片的五色条：按 SURFACE_INFO 顺序取各面预览色 */
-      function themeStrip(surfaces) {
-        return SURFACE_INFO.map(([k, , defC]) => {
-          const s = (surfaces || {})[k];
-          let c = defC;
-          if (s) {
-            c =
-              s.type === "color"
-                ? s.value
-                : (PRESET_INFO[s.value] || {}).color || defC;
-          }
-          return `<i style="background:${c}"></i>`;
-        }).join("");
-      }
-      /** 把方案应用到当前关：空 surfaces（经典默认）= 清除主题回到原版材质 */
-      function applyThemeSurfaces(surfaces) {
-        const lv = levels[cur];
-        if (!lv) return;
-        if (!surfaces || !Object.keys(surfaces).length) {
-          delete lv.theme;
-        } else {
-          lv.theme = JSON.parse(JSON.stringify(surfaces));
-        }
-        renderThemeUI();
-      }
-      function renderThemeUI() {
-        $("themeTitle").textContent =
-          "🎨 关卡主题（列表第 " + (cur + 1) + " 行）";
-        const curTheme = levels[cur] && levels[cur].theme;
-        const cards = [];
-        BUILTIN_THEMES.forEach((p, i) => {
-          const active = themeEquals(
-            curTheme,
+      /** 打开弹框：按当前关主题回显——与哪张内置卡一致就选哪张（自定义卡为空）；
+          不一致的存量主题（含图片 / 老 preset 数据）整体进自定义卡回显 */
+      function openThemeModal() {
+        const t = levels[cur] && levels[cur].theme;
+        const bi = BUILTIN_THEMES.findIndex((p) =>
+          themeEquals(
+            t,
             Object.keys(p.surfaces).length ? p.surfaces : undefined,
-          );
-          cards.push(
-            `<div class="theme-card${active ? " cur" : ""}" data-bi="${i}">` +
-              `<div class="tc-name">${p.name}</div>` +
-              `<div class="tc-strip">${themeStrip(p.surfaces)}</div></div>`,
-          );
-        });
-        themePresets.forEach((p, i) => {
-          const active = themeEquals(curTheme, p.surfaces);
-          cards.push(
-            `<div class="theme-card${active ? " cur" : ""}" data-ui="${i}">` +
-              `<div class="tc-name"><span>${escapeHtml(p.name)}</span>` +
-              `<span class="tc-del" data-del="${i}" title="从方案库删除">✕</span></div>` +
-              `<div class="tc-strip">${themeStrip(p.surfaces)}</div></div>`,
-          );
-        });
-        $("themePresetRow").innerHTML = cards.join("");
-        $("themeSurfaces").innerHTML = SURFACE_INFO.map(([k, label, defC]) => {
-          const s = curTheme && curTheme[k];
-          const mode = !s
-            ? "default"
-            : s.type === "preset"
-              ? "preset:" + s.value
-              : "color";
-          const colorVal = s && s.type === "color" ? s.value : "#888888";
-          const opts = ['<option value="default">默认</option>']
-            .concat(
-              THEME_PRESET_NAMES.map(
-                (n) =>
-                  `<option value="preset:${n}">${PRESET_INFO[n].label}</option>`,
-              ),
-            )
-            .concat(['<option value="color">自定义颜色</option>'])
-            .join("");
-          return (
-            `<div class="theme-row" data-k="${k}">` +
-            `<span class="tr-label">${label}</span>` +
-            `<select class="tr-sel" data-v="${mode}">${opts}</select>` +
-            `<input type="color" class="tr-color" value="${colorVal}"` +
-            `${mode === "color" ? "" : ' style="display:none"'} />` +
-            `<span class="tr-chip" style="background:${themeEffColor(k, defC)}"></span>` +
-            `</div>`
-          );
-        }).join("");
-        // select 的选中态用 value 赋值（拼 selected 属性容易与转义纠缠）
-        $("themeSurfaces")
-          .querySelectorAll(".tr-sel")
-          .forEach((sel) => (sel.value = sel.dataset.v));
-      }
-      $("btnTheme").onclick = () => {
+          ),
+        );
+        if (bi !== -1) {
+          themeSel = bi;
+          customDraft = {};
+        } else {
+          themeSel = "custom";
+          customDraft = JSON.parse(JSON.stringify(t));
+        }
+        themePickKey = null;
         renderThemeUI();
         $("themeMask").classList.add("open");
-      };
+      }
+      function renderThemeUI() {
+        // 标题用游戏内生效序号（冻结关不占号）；冻结关主题按钮已禁用，这里只是兜底
+        $("themeTitle").textContent = curFrozen()
+          ? "🎨 关卡主题（已冻结关卡）"
+          : "🎨 关卡主题（第 " + liveNoOf(cur) + " 关）";
+        // 4 张内置卡：五行表面色块只读展示（经典默认 = 各面默认材质代表色）
+        const cards = BUILTIN_THEMES.map((p, i) => {
+          const rows = SURFACE_INFO.map(([k, label, defC]) => {
+            const st =
+              surfaceChipStyle(p.surfaces[k], defC) || "background:" + defC;
+            return `<div class="tc-row"><span class="tc-label">${label}</span><span class="tc-chip" style="${st}"></span></div>`;
+          }).join("");
+          return `<div class="theme-card${themeSel === i ? " cur" : ""}" data-card="${i}"><div class="tc-name">${p.name}</div>${rows}</div>`;
+        });
+        // 自定义卡：色块可点调色，「图」上传纹理、「✕」清回默认；空面画斜线
+        const rows = SURFACE_INFO.map(([k, label, defC]) => {
+          const s = customDraft[k];
+          const st = surfaceChipStyle(s, defC);
+          const chip = `<span class="tc-chip editable${st ? "" : " empty"}"${st ? ` style="${st}"` : ""} data-pick="${k}" title="${s && s.type === "image" ? "已设图片纹理，点击可改为纯色" : "选择颜色"}"></span>`;
+          return (
+            `<div class="tc-row"><span class="tc-label">${label}</span>${chip}` +
+            `<span class="tc-mini" data-img="${k}" title="上传图片纹理（≤500KB）">图</span>` +
+            `<span class="tc-mini del" data-clear="${k}" title="清除本面，恢复默认材质">✕</span></div>`
+          );
+        }).join("");
+        cards.push(
+          `<div class="theme-card${themeSel === "custom" ? " cur" : ""}" data-card="custom"><div class="tc-name">自定义</div>${rows}</div>`,
+        );
+        $("themeCards").innerHTML = cards.join("");
+      }
+      $("btnTheme").onclick = openThemeModal;
       $("themeClose").onclick = () => $("themeMask").classList.remove("open");
       $("themeMask").onclick = (e) => {
         if (e.target === $("themeMask"))
           $("themeMask").classList.remove("open");
       };
-      $("themePresetRow").addEventListener("click", (e) => {
-        const del = e.target.closest("[data-del]");
-        if (del) {
-          themePresets.splice(+del.dataset.del, 1);
+      $("themeCards").addEventListener("click", (e) => {
+        // 自定义卡行内控件优先：调色 / 传图 / 清除（都会把选中态拉到自定义卡）
+        const pick = e.target.closest("[data-pick]");
+        if (pick) {
+          themeSel = "custom";
+          themePickKey = pick.dataset.pick;
+          const s = customDraft[themePickKey];
+          $("themeColorPick").value =
+            s && s.type === "color" ? s.value : "#888888";
+          renderThemeUI();
+          $("themeColorPick").click(); // 用户手势内同步调起原生取色器
+          return;
+        }
+        const img = e.target.closest("[data-img]");
+        if (img) {
+          themeSel = "custom";
+          themePickKey = img.dataset.img;
+          renderThemeUI();
+          $("themeImgFile").click();
+          return;
+        }
+        const clear = e.target.closest("[data-clear]");
+        if (clear) {
+          themeSel = "custom";
+          delete customDraft[clear.dataset.clear];
           renderThemeUI();
           return;
         }
-        const card = e.target.closest(".theme-card");
-        if (!card) return;
-        if (card.dataset.bi !== undefined) {
-          applyThemeSurfaces(BUILTIN_THEMES[+card.dataset.bi].surfaces);
-        } else if (card.dataset.ui !== undefined) {
-          applyThemeSurfaces(themePresets[+card.dataset.ui].surfaces);
+        const card = e.target.closest("[data-card]");
+        if (card) {
+          themeSel =
+            card.dataset.card === "custom" ? "custom" : +card.dataset.card;
+          renderThemeUI();
         }
       });
-      // 用 change 而非 input：拖拽取色时不重建 DOM，避免原生取色器被打断
-      $("themeSurfaces").addEventListener("change", (e) => {
-        const row = e.target.closest(".theme-row");
+      // 用 change 而非 input：拖拽取色不重建 DOM，避免原生取色器被打断
+      $("themeColorPick").addEventListener("change", (e) => {
+        if (!themePickKey) return;
+        customDraft[themePickKey] = {
+          type: "color",
+          value: e.target.value.toLowerCase(),
+        };
+        themePickKey = null;
+        renderThemeUI();
+      });
+      // 图片上传：类型 + 500KB 大小校验，FileReader 转 data URL 存入草稿
+      $("themeImgFile").addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        e.target.value = ""; // 清掉选择，同一文件可重复选
+        if (!f || !themePickKey) return;
+        if (!/^image\//.test(f.type)) {
+          toast("请选择图片文件");
+          return;
+        }
+        if (f.size > 500 * 1024) {
+          toast("图片超过 500KB 限制，请压缩后再上传");
+          return;
+        }
+        const key = themePickKey;
+        themePickKey = null;
+        const fr = new FileReader();
+        fr.onload = () => {
+          customDraft[key] = { type: "image", value: String(fr.result) };
+          renderThemeUI();
+        };
+        fr.readAsDataURL(f);
+      });
+      // 「使用」：把选中卡片写入当前关并关闭弹框（自定义全空 = 恢复默认材质）
+      $("themeUse").onclick = () => {
         const lv = levels[cur];
-        if (!row || !lv) return;
-        const k = row.dataset.k;
-        const sel = row.querySelector(".tr-sel").value;
-        if (!lv.theme) lv.theme = {};
-        if (sel === "default") {
-          delete lv.theme[k];
-        } else if (sel === "color") {
-          lv.theme[k] = {
-            type: "color",
-            value: row.querySelector(".tr-color").value.toLowerCase(),
-          };
+        if (!lv) return;
+        if (themeSel === "custom") {
+          const t = {};
+          let any = false;
+          for (const k of THEME_KEYS) {
+            const s = sanitizeSurface(customDraft[k]);
+            if (s) {
+              t[k] = s;
+              any = true;
+            }
+          }
+          if (any) lv.theme = t;
+          else delete lv.theme;
         } else {
-          lv.theme[k] = { type: "preset", value: sel.slice(7) };
+          const surfaces = BUILTIN_THEMES[themeSel].surfaces;
+          if (Object.keys(surfaces).length)
+            lv.theme = JSON.parse(JSON.stringify(surfaces));
+          else delete lv.theme;
         }
-        if (!Object.keys(lv.theme).length) delete lv.theme;
-        renderThemeUI();
-      });
-      $("btnThemeSaveAs").onclick = () => {
-        const lv = levels[cur];
-        const t = lv && lv.theme;
-        if (!t || !Object.keys(t).length) {
-          toast("当前关未配置主题：先选模板或逐面配置，再另存");
-          return;
-        }
-        const name = $("themeSaveName").value.trim().slice(0, 12);
-        if (!name) {
-          toast("请先输入方案名称");
-          return;
-        }
-        if (themePresets.length >= 24) {
-          toast("方案库已满（24 套）：请先删除旧方案");
-          return;
-        }
-        themePresets.push({
-          name,
-          surfaces: JSON.parse(JSON.stringify(t)),
-        });
-        $("themeSaveName").value = "";
-        renderThemeUI();
-        toast("已存为方案「" + name + "」，随下次保存一起上云");
+        $("themeMask").classList.remove("open");
+        toast("主题已应用到本关（保存到云端后全网生效）");
+        render();
       };
       // 返回游戏主页：有未上云的改动时先弹框三选一（保存并退出 / 不保存退出 / 取消）
       $("btnBackGame").onclick = async () => {
@@ -2915,12 +3017,19 @@
         // choice === false（取消/Esc）：留在编辑器
       };
       $("btnClear").onclick = async () => {
+        // 清空是全局重置：冻结关也会一并清掉，确认文案里点明
+        const frozenCount = levels.filter((l) => l.frozen).length;
         if (
-          await gameConfirm("清空全部关卡，回到一张空白画布？", {
-            title: "清空画布",
-            okText: "清 空",
-            tone: "danger",
-          })
+          await gameConfirm(
+            frozenCount
+              ? `清空全部关卡（含 ${frozenCount} 个已冻结关卡），回到一张空白画布？`
+              : "清空全部关卡，回到一张空白画布？",
+            {
+              title: "清空画布",
+              okText: "清 空",
+              tone: "danger",
+            },
+          )
         ) {
           levels = [blankLevel()];
           cur = 0;
@@ -3195,11 +3304,9 @@
       $("btnCloudSave").onclick = () => cloudSave();
 
       // ================= 未保存检测（云端快照比对，替代旧本地草稿机制） =================
-      /** 云端一致性快照：关卡与主题方案库都随保存上云，一起参与比对 */
+      /** 云端一致性快照：编辑后与之不一致 = 有未上云的改动 */
       function snapshot() {
-        return (
-          JSON.stringify(levels) + " " + JSON.stringify(themePresets)
-        );
+        return JSON.stringify(levels);
       }
       /** 与云端一致时的内容快照；编辑后与当前内容不一致 = 有未上云的改动 */
       let cloudSnapshot = snapshot();
@@ -3221,8 +3328,6 @@
             if (data && Array.isArray(data.levels) && data.levels.length) {
               loadLevelsData(data.levels);
             }
-            // 主题方案库随云端数据一并吸收（旧数据无此字段 = 空库）
-            themePresets = sanitizePresets(data ? data.themePresets : []);
             cloudOk = true; // 请求成功但云端为空也算正常：空白画布从头配
           }
         } catch {}

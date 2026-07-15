@@ -197,12 +197,19 @@ export class World {
     }
 
     // 5. 解析关卡主题为五个表面材质：preset 用共享单例（dispose 白名单成员，不会被误清），
-    // color 现做像素噪点材质——挂上网格后由 disposeWorldResources 在下次重建时自动回收
+    // color 现做像素噪点材质、image 从 data URL 现载贴图——都挂上网格后由
+    // disposeWorldResources 在下次重建时自动回收（材质连同 map 一起）
     const themeMat = (spec: ThemeSurface | undefined, fallback: THREE.Material): THREE.Material => {
       if (!spec) { return fallback }
       if (spec.type === 'preset') {
         const m = (materials as Record<string, THREE.Material | undefined>)[spec.value]
         return m ?? fallback
+      }
+      if (spec.type === 'image') {
+        // data URL 同步返回纹理、异步解码，图片就绪前该面短暂显示材质底色
+        const tex = new THREE.TextureLoader().load(spec.value)
+        tex.colorSpace = THREE.SRGBColorSpace
+        return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 })
       }
       return new THREE.MeshStandardMaterial({
         map: createPixelTexture(spec.value, 0.15, true),

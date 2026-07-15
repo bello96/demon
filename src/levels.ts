@@ -12,8 +12,15 @@ const THEME_KEYS: ReadonlyArray<keyof LevelTheme> = [
   'ceiling',
 ]
 const THEME_COLOR_RE = /^#[0-9a-fA-F]{6}$/
+/** 关卡 id 合法格式：字母数字下划线连字符、1~32 位（编辑器 genId 产物必然满足） */
+const LEVEL_ID_RE = /^[A-Za-z0-9_-]{1,32}$/
+/** 图片主题：data URL 格式白名单（常见位图类型 + base64 字符集） */
+const THEME_IMAGE_RE = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/
+/** 图片主题 data URL 长度上限：500KB 文件 base64 后约 683K 字符，留少量余量 */
+const THEME_IMAGE_MAX_LEN = 720_000
 
-/** 主题单面校验：preset 限白名单、color 限 #rrggbb；非法返回 undefined（该面回退默认材质） */
+/** 主题单面校验：preset 限白名单、color 限 #rrggbb、image 限 data:image base64 且长度受限；
+    非法返回 undefined（该面回退默认材质） */
 function sanitizeSurface(raw: unknown): ThemeSurface | undefined {
   if (typeof raw !== 'object' || raw === null) {
     return undefined
@@ -28,6 +35,14 @@ function sanitizeSurface(raw: unknown): ThemeSurface | undefined {
   }
   if (s.type === 'color' && typeof s.value === 'string' && THEME_COLOR_RE.test(s.value)) {
     return { type: 'color', value: s.value.toLowerCase() }
+  }
+  if (
+    s.type === 'image' &&
+    typeof s.value === 'string' &&
+    s.value.length <= THEME_IMAGE_MAX_LEN &&
+    THEME_IMAGE_RE.test(s.value)
+  ) {
+    return { type: 'image', value: s.value }
   }
   return undefined
 }
@@ -50,44 +65,10 @@ export function sanitizeTheme(raw: unknown): LevelTheme | undefined {
   return any ? out : undefined
 }
 
-/** 编辑器主题方案库条目（KV 顶层 themePresets）：关卡存快照，方案库只是编辑器的填表模板 */
-export interface ThemePreset {
-  name: string
-  surfaces: LevelTheme
-}
-
-/** 方案库宽松校验：非法条目丢弃、名称去空白截 12 字、最多 24 套；永远返回数组 */
-export function parseThemePresets(raw: unknown): ThemePreset[] {
-  if (!Array.isArray(raw)) {
-    return []
-  }
-  const out: ThemePreset[] = []
-  for (const item of raw) {
-    if (out.length >= 24) {
-      break
-    }
-    if (typeof item !== 'object' || item === null) {
-      continue
-    }
-    const p = item as { name?: unknown; surfaces?: unknown }
-    if (typeof p.name !== 'string') {
-      continue
-    }
-    const name = p.name.trim().slice(0, 12)
-    if (!name) {
-      continue
-    }
-    const surfaces = sanitizeTheme(p.surfaces)
-    if (!surfaces) {
-      continue
-    }
-    out.push({ name, surfaces })
-  }
-  return out
-}
-
 /** 单个关卡的完整难度配置：地图布局 + 环境氛围 + 幽灵参数（与小程序版格式一致） */
 export interface LevelConfig {
+  /** 关卡唯一 id（编辑器发放，如 lv_xxxxxx）：不随排序/冻结变化的稳定标识；旧数据缺省，编辑器加载时补发 */
+  id?: string
   /** 房间布局（100×100 网格内；重叠/贴边 = 拼接成不规则大房间） */
   rooms: RoomLayout[]
   /** 手画走廊矩形（关卡编辑器产物）：原样挖空、宽度任意；房间贴边/重叠即连通，无需走廊 */
@@ -158,12 +139,15 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
     )
   }
   const out: LevelConfig[] = []
+  // 已收录的关卡 id：重复时后者丢弃 id（编辑器加载后会补发新 id），保证包内唯一
+  const seenIds = new Set<string>()
   for (const lv of arr) {
     // 关卡元素可能是 null / 原始值：先确认是对象再读属性，整包拒绝而不是抛异常
     if (typeof lv !== 'object' || lv === null) {
       return null
     }
     const l = lv as {
+      id?: unknown
       rooms?: unknown[]
       corridorRects?: unknown[]
       darkAmbient?: unknown
@@ -203,7 +187,14 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
     if (l.frozen !== undefined && typeof l.frozen !== 'boolean') {
       return null
     }
+    // id 宽松清洗：编辑器管理字段，非法/重复只丢弃该 id 本身，绝不因它拒掉整包
+    let id: string | undefined
+    if (typeof l.id === 'string' && LEVEL_ID_RE.test(l.id) && !seenIds.has(l.id)) {
+      id = l.id
+      seenIds.add(l.id)
+    }
     out.push({
+      id,
       rooms: (l.rooms as RoomLayout[]).map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d })),
       corridorRects: l.corridorRects
         ? (l.corridorRects as RoomLayout[]).map((r) => ({ x: r.x, z: r.z, w: r.w, d: r.d }))

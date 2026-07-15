@@ -107,7 +107,8 @@ Game (game.ts)
   任何一处非法整包拒绝返回 null。字段：`rooms`（必填）/ `corridorRects` / `darkAmbient` /
   `darkFogFar` / `ghostSpeed`（2.0~6.0）/ `lightsOn` / `ghostEnabled` / `minimapEnabled`
   （默认 true；false 时隐藏小地图、M 键失效、雷达不投放）/ `frozen`（冻结停用，后续关顺位前移，
-  至少须保留一个未冻结关卡）
+  至少须保留一个未冻结关卡）/ `id`（可选唯一标识，编辑器发放形如 `lv_xxx`；
+  非法/重复宽松丢弃不拒包，编辑器加载时补发）
 - **数据流**：编辑器（/level，口令 PUT）→ KV → 游戏启动 `loadLevels`（3 秒超时，失败回退内置 6 关）；
   游戏端与内置数据都会过滤 `frozen` 关
 - **进度**：`localStorage`（levelCleared / levelReached），`migrateProgress` 在关卡数变化时钳制
@@ -180,7 +181,8 @@ Game (game.ts)
   离线可进本地草稿模式）；左右栏与全部弹框为游戏页同款像素风（`gameAlert`/`gameConfirm`
   替代原生弹框）；画布 560~1050 随视口自适应（1280×800~1920×1080 无滚动条，布局
   min-width 由 `syncCanvasSize` 显式同步——勿改回 min-content，列表 nowrap 文本会传导成页面宽）；
-  重叠房间的边框段画暗虚线；关卡可冻结/解冻；本地草稿自动保存、与云端冲突时弹框二选一
+  重叠房间的边框段画暗虚线；关卡可冻结/解冻（冻结关列表行只剩「解冻」按钮、不可删除，
+  参数/主题/画布全面只读，仅可平移缩放查看）；本地草稿自动保存、与云端冲突时弹框二选一
 - **本地 /api**：`pnpm dev` 下由 vite 代理到线上生产（demon.dengjiabei.cn）——
   本地编辑器「保存到云端」写的就是生产数据
 
