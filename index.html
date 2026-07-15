@@ -325,6 +325,31 @@
         display: none !important;
       }
 
+      /* 已获得道具的短徽章（完整拾取说明 5 秒后收成此形态）；
+         配色与道具本体一致：钥匙金 / 雷达绿 / 鞋子蓝 */
+      .item-badge {
+        display: inline-block;
+        border: 2px solid #ffaa00;
+        color: #ffaa00;
+        /* 文字与边框的水平内边距 8 → 14（+6px），不再贴边 */
+        padding: 0 14px;
+        margin-right: 8px;
+        font-size: 18px;
+        line-height: 26px;
+      }
+      .item-badge.badge-key {
+        border-color: #ffd700;
+        color: #ffd700;
+      }
+      .item-badge.badge-radar {
+        border-color: #00ff00;
+        color: #00ff00;
+      }
+      .item-badge.badge-shoes {
+        border-color: #1e90ff;
+        color: #1e90ff;
+      }
+
       #vignette {
         position: absolute;
         top: 0;
@@ -336,27 +361,6 @@
         z-index: 5;
       }
 
-      #cabinet-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: black;
-        z-index: 15;
-        display: none;
-        pointer-events: none;
-      }
-      #cabinet-slit {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 100%;
-        height: 40px;
-        transform: translate(-50%, -50%);
-        background: transparent;
-        box-shadow: 0 0 0 100vh black; /* The trick to make everything else black */
-      }
       #interaction-msg {
         position: absolute;
         bottom: 100px;
@@ -371,11 +375,14 @@
         position: absolute;
         top: 20px;
         right: 20px;
-        width: 200px;
-        height: 200px;
+        /* 缩略图显示尺寸（200 缩小 10% → 180）：只缩显示比例，画的仍是完整 100×100 地图 */
+        width: 180px;
+        height: 180px;
         background: rgba(0, 0, 0, 0.5);
         border: 2px solid #555;
         z-index: 100;
+        /* 整体 90% 不透明：地图连同内容都轻微透出身后 3D 场景（M 放大态同样生效） */
+        opacity: 0.9;
         /* 默认隐藏：只在游玩中显示（enterPlay 显示 / showMenu 隐藏） */
         display: none;
       }
@@ -415,7 +422,8 @@
   </head>
   <body>
     <div id="vignette"></div>
-    <div id="cabinet-overlay"><div id="cabinet-slit"></div></div>
+    <!-- 柜内视角已改为 3D 箱内壁盒（player.ts 的 hideBox）：破洞固定开在箱壁上，
+         360° 环视看到不同壁面的孔，不再使用 2D 全屏遮罩 -->
 
     <canvas id="minimap"></canvas>
     <div id="ui-layer">
@@ -535,10 +543,10 @@
           display: none;
         "
       >
+        <div id="info-level"></div>
         <div id="game-hint-text" style="color: #ff4444; margin-bottom: 10px">
           快点找到逃生的门，避免被幽灵抓到
         </div>
-        <div id="info-level"></div>
         <div id="info-switch"></div>
         <div id="info-items"></div>
       </div>

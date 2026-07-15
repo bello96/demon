@@ -1,10 +1,15 @@
 import * as THREE from 'three'
-import { materials } from './utils'
-import type { Room, RoomLayout, Interactable, LightSwitch, MansionOptions } from './types'
+import { createPixelTexture, materials } from './utils'
+import { t } from './localization'
+import type { Room, RoomLayout, Interactable, LightSwitch, MansionOptions, ThemeSurface } from './types'
 
 export class World {
   readonly BLOCK_SIZE = 1
-  readonly WALL_HEIGHT = 4
+  // 净层高（米）：地板顶面 0.5 → 天花板底面 WALL_HEIGHT+0.5，碰撞判定按此推导。
+  // 墙体由 WALL_LAYERS 层方块堆成，每层 y 向拉伸 WALL_HEIGHT/WALL_LAYERS（=1.125，
+  // 贴图纵向微拉伸可接受）——原 4 米体感偏矮，按需求提到 4.5 米
+  readonly WALL_HEIGHT = 4.5
+  readonly WALL_LAYERS = 4
   readonly MAP_WIDTH = 100
   readonly MAP_DEPTH = 100
 
@@ -191,8 +196,28 @@ export class World {
       }
     }
 
-    // 5. Assign each room a floor material (走廊保持 planks 不变)
-    const roomFloorChoices: THREE.Material[] = [materials.floor1]
+    // 5. 解析关卡主题为五个表面材质：preset 用共享单例（dispose 白名单成员，不会被误清），
+    // color 现做像素噪点材质——挂上网格后由 disposeWorldResources 在下次重建时自动回收
+    const themeMat = (spec: ThemeSurface | undefined, fallback: THREE.Material): THREE.Material => {
+      if (!spec) { return fallback }
+      if (spec.type === 'preset') {
+        const m = (materials as Record<string, THREE.Material | undefined>)[spec.value]
+        return m ?? fallback
+      }
+      return new THREE.MeshStandardMaterial({
+        map: createPixelTexture(spec.value, 0.15, true),
+        roughness: 0.85,
+      })
+    }
+    const theme = opts.theme
+    const roomFloorM = themeMat(theme?.roomFloor, materials.floor1)
+    const corridorFloorM = themeMat(theme?.corridorFloor, materials.planks)
+    const roomWallM = themeMat(theme?.roomWall, materials.roomWall)
+    const corridorWallM = themeMat(theme?.corridorWall, materials.stone)
+    const ceilingM = themeMat(theme?.ceiling, materials.ceiling)
+
+    // Assign each room a floor material（房间地板可扩展为多选随机，当前全房统一主题地板）
+    const roomFloorChoices: THREE.Material[] = [roomFloorM]
     const roomFloorMat = new Map<number, THREE.Material>()
     for (const r of rooms) {
       roomFloorMat.set(r.id, roomFloorChoices[Math.floor(Math.random() * roomFloorChoices.length)])
@@ -220,7 +245,7 @@ export class World {
     const isCornerWallPerCell: boolean[] = new Array(totalCells).fill(false)
     const cornerCells: Array<[number, number]> = []
     const floorMatCounts = new Map<THREE.Material, number>()
-    floorMatCounts.set(materials.planks, 0)
+    floorMatCounts.set(corridorFloorM, 0)
     for (const mat of roomFloorChoices) { floorMatCounts.set(mat, 0) }
 
     let corridorWallCount = 0
@@ -231,7 +256,7 @@ export class World {
         const cellIdx = x * this.MAP_DEPTH + z
 
         const roomId = cellRoomId[cellIdx]
-        const floorMat: THREE.Material = roomId === -1 ? materials.planks : roomFloorMat.get(roomId)!
+        const floorMat: THREE.Material = roomId === -1 ? corridorFloorM : roomFloorMat.get(roomId)!
         floorMatPerCell[cellIdx] = floorMat
         floorMatCounts.set(floorMat, (floorMatCounts.get(floorMat) ?? 0) + 1)
 
@@ -261,9 +286,9 @@ export class World {
             cornerCells.push([x, z])
           } else if (hasRoomNeighbor) {
             isRoomWallPerCell[cellIdx] = true
-            roomWallCount += this.WALL_HEIGHT
+            roomWallCount += this.WALL_LAYERS
           } else {
-            corridorWallCount += this.WALL_HEIGHT
+            corridorWallCount += this.WALL_LAYERS
           }
         }
       }
@@ -271,6 +296,13 @@ export class World {
 
     // 8. Build 3D world with InstancedMesh + per-corner multi-material Mesh
     const matrix = new THREE.Matrix4()
+    // 墙块专用矩阵与复用对象：墙块带 y 向拉伸（与地板/天花板的 matrix 分开，
+    // 避免 setPosition 残留 compose 写入的 scale 分量）
+    const layerScale = this.WALL_HEIGHT / this.WALL_LAYERS
+    const matrixWall = new THREE.Matrix4()
+    const wallPos = new THREE.Vector3()
+    const wallQuat = new THREE.Quaternion()
+    const wallScale = new THREE.Vector3(1, layerScale, 1)
 
     const floorMeshes = new Map<THREE.Material, THREE.InstancedMesh>()
     const floorIdxMap = new Map<THREE.Material, number>()
@@ -282,14 +314,14 @@ export class World {
       floorIdxMap.set(mat, 0)
     }
 
-    const ceilingMesh = new THREE.InstancedMesh(this.geometry, materials.ceiling, totalCells)
+    const ceilingMesh = new THREE.InstancedMesh(this.geometry, ceilingM, totalCells)
     ceilingMesh.receiveShadow = true
 
-    const corridorWallMesh = new THREE.InstancedMesh(this.geometry, materials.stone, corridorWallCount)
+    const corridorWallMesh = new THREE.InstancedMesh(this.geometry, corridorWallM, corridorWallCount)
     corridorWallMesh.castShadow = true
     corridorWallMesh.receiveShadow = true
 
-    const roomWallMesh = new THREE.InstancedMesh(this.geometry, materials.roomWall, roomWallCount)
+    const roomWallMesh = new THREE.InstancedMesh(this.geometry, roomWallM, roomWallCount)
     roomWallMesh.castShadow = true
     roomWallMesh.receiveShadow = true
 
@@ -315,12 +347,14 @@ export class World {
 
         if (this.grid[x][z] === 1 && !isCornerWallPerCell[cellIdx]) {
           const isRoomWall = isRoomWallPerCell[cellIdx]
-          for (let y = 1; y <= this.WALL_HEIGHT; y++) {
-            matrix.setPosition(wx, y, wz)
+          for (let y = 1; y <= this.WALL_LAYERS; y++) {
+            // 第 y 层拉伸块中心：墙体从 0.5 起、每层高 layerScale，无缝堆到 WALL_HEIGHT+0.5
+            wallPos.set(wx, 0.5 + (y - 0.5) * layerScale, wz)
+            matrixWall.compose(wallPos, wallQuat, wallScale)
             if (isRoomWall) {
-              roomWallMesh.setMatrixAt(roomWallIdx++, matrix)
+              roomWallMesh.setMatrixAt(roomWallIdx++, matrixWall)
             } else {
-              corridorWallMesh.setMatrixAt(corridorWallIdx++, matrix)
+              corridorWallMesh.setMatrixAt(corridorWallIdx++, matrixWall)
             }
           }
         }
@@ -341,17 +375,18 @@ export class World {
       const wz = z + offsetZ
 
       const cornerMaterials: THREE.Material[] = [
-        isRoomInterior(x + 1, z) ? materials.roomWall : materials.stone,
-        isRoomInterior(x - 1, z) ? materials.roomWall : materials.stone,
-        materials.stone,
-        materials.stone,
-        isRoomInterior(x, z + 1) ? materials.roomWall : materials.stone,
-        isRoomInterior(x, z - 1) ? materials.roomWall : materials.stone,
+        isRoomInterior(x + 1, z) ? roomWallM : corridorWallM,
+        isRoomInterior(x - 1, z) ? roomWallM : corridorWallM,
+        corridorWallM,
+        corridorWallM,
+        isRoomInterior(x, z + 1) ? roomWallM : corridorWallM,
+        isRoomInterior(x, z - 1) ? roomWallM : corridorWallM,
       ]
 
-      for (let y = 1; y <= this.WALL_HEIGHT; y++) {
+      for (let y = 1; y <= this.WALL_LAYERS; y++) {
         const cornerMesh = new THREE.Mesh(this.geometry, cornerMaterials)
-        cornerMesh.position.set(wx, y, wz)
+        cornerMesh.position.set(wx, 0.5 + (y - 0.5) * layerScale, wz)
+        cornerMesh.scale.y = layerScale
         cornerMesh.castShadow = true
         cornerMesh.receiveShadow = true
         this.worldGroup.add(cornerMesh)
@@ -523,7 +558,10 @@ export class World {
     // Key — random position in room
     {
       const kp = randomInRoom(keyRoom)
-      const keyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), materials.key)
+      const keyMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.3, 0.3),
+        this.makeItemMaterials(t('badgeKey'), '#ffd700'),
+      )
       keyMesh.position.set(kp.x, 0.5, kp.z)
       this.worldGroup.add(keyMesh)
       this.interactables.push({
@@ -536,7 +574,10 @@ export class World {
     // Radar — random position in room
     if (radarRoom) {
       const rp = randomInRoom(radarRoom)
-      const radarMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), materials.radar)
+      const radarMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.1, 0.4),
+        this.makeItemMaterials(t('badgeRadar'), '#00ff00'),
+      )
       radarMesh.position.set(rp.x, 0.5, rp.z)
       this.worldGroup.add(radarMesh)
       this.interactables.push({
@@ -546,23 +587,20 @@ export class World {
       })
     }
 
-    // Shoes — 一双并排的小皮靴：拾取后步行速度 ×1.5（player 侧生效）
+    // Shoes — 亮蓝悬浮方块（与钥匙/雷达同族的道具造型，比例居中便于区分）：
+    // 拾取后步行速度 ×1.5（player 侧生效）
     {
       const sp = randomInRoom(shoesRoom)
-      const shoesGroup = new THREE.Group()
-      shoesGroup.position.set(sp.x, 0.12, sp.z)
-      shoesGroup.rotation.y = Math.random() * Math.PI * 2
-      const shoeGeo = new THREE.BoxGeometry(0.16, 0.14, 0.4)
-      const left = new THREE.Mesh(shoeGeo, materials.shoes)
-      left.position.x = -0.11
-      const right = new THREE.Mesh(shoeGeo, materials.shoes)
-      right.position.x = 0.11
-      shoesGroup.add(left, right)
-      this.worldGroup.add(shoesGroup)
+      const shoesMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.2, 0.4),
+        this.makeItemMaterials(t('badgeShoes'), '#1e90ff'),
+      )
+      shoesMesh.position.set(sp.x, 0.5, sp.z)
+      this.worldGroup.add(shoesMesh)
       this.interactables.push({
         type: 'shoes',
-        pos: shoesGroup.position.clone(),
-        mesh: shoesGroup
+        pos: shoesMesh.position.clone(),
+        mesh: shoesMesh
       })
     }
 
@@ -588,12 +626,13 @@ export class World {
         continue
       }
       const isTall = i === 0 || Math.random() < 0.5
-      this.addFurniture(cx, 1, cz, materials.cabinet)
+      const lowerMesh = this.addFurniture(cx, 1, cz, materials.cabinet)
       if (isTall) {
-        this.addFurniture(cx, 2, cz, materials.cabinet)
+        const upperMesh = this.addFurniture(cx, 2, cz, materials.cabinet)
         this.interactables.push({
           type: 'cabinet',
-          pos: new THREE.Vector3(cx, 1, cz)
+          pos: new THREE.Vector3(cx, 1, cz),
+          meshes: [lowerMesh, upperMesh]
         })
       }
     }
@@ -615,6 +654,33 @@ export class World {
     this.spawnRoomId = -1
     this.wallMapCanvas = null
     this.generateMansion(roomLayout, opts)
+  }
+
+  /**
+   * 道具带字材质组：文字只印在顶面（玩家俯视道具时正对视线的"正面"），
+   * 四个侧面与底面用同色纯色材质——按需求侧边不带字。
+   * 底色即道具识别色，字用半透明黑在金/绿/蓝亮底上都清楚。
+   * 每次生成都是新材质+CanvasTexture，由 disposeWorldResources 白名单外机制自动回收。
+   */
+  private makeItemMaterials(text: string, baseColor: string): THREE.MeshStandardMaterial[] {
+    const size = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = baseColor
+    ctx.fillRect(0, 0, size, size)
+    ctx.font = 'bold 52px "Microsoft YaHei", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
+    ctx.fillText(text, size / 2, size / 2)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    const topMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.3 })
+    const sideMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.3 })
+    // BoxGeometry 面序 [+x, -x, +y(顶), -y, +z, -z]：仅顶面用带字材质
+    return [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]
   }
 
   /**

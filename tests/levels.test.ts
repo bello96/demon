@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { BUILTIN_LEVELS, getLevelConfig, parseLevelsData } from '../src/levels'
+import {
+  BUILTIN_LEVELS,
+  getLevelConfig,
+  parseLevelsData,
+  parseThemePresets,
+  sanitizeTheme,
+} from '../src/levels'
 
 // 一个各字段全部合法的最小单关样例，逐用例在它基础上改坏一处
 const validLevel = {
@@ -95,6 +101,81 @@ describe('parseLevelsData', () => {
     expect(parseLevelsData({ levels: [null] })).toBeNull()
     expect(parseLevelsData({ levels: [{ ...validLevel, rooms: [null] }] })).toBeNull()
     expect(parseLevelsData({ levels: [{ ...validLevel, corridorRects: [null] }] })).toBeNull()
+  })
+})
+
+describe('theme 主题校验（宽松：非法面丢弃，不拒整包）', () => {
+  it('合法 color / preset 面原样保留（color 统一小写）', () => {
+    const out = parseLevelsData({
+      levels: [
+        {
+          ...validLevel,
+          theme: {
+            roomFloor: { type: 'color', value: '#D8D8D2' },
+            corridorWall: { type: 'preset', value: 'stone' },
+          },
+        },
+      ],
+    })
+    expect(out![0].theme).toEqual({
+      roomFloor: { type: 'color', value: '#d8d8d2' },
+      corridorWall: { type: 'preset', value: 'stone' },
+    })
+  })
+
+  it('非法面丢弃、合法面保留，关卡本身不被拒', () => {
+    const out = parseLevelsData({
+      levels: [
+        {
+          ...validLevel,
+          theme: {
+            roomFloor: { type: 'color', value: 'red' },
+            roomWall: { type: 'preset', value: 'not-exist' },
+            ceiling: { type: 'color', value: '#112233' },
+            corridorFloor: { type: 'image', value: 'data:...' },
+          },
+        },
+      ],
+    })
+    expect(out).not.toBeNull()
+    expect(out![0].theme).toEqual({ ceiling: { type: 'color', value: '#112233' } })
+  })
+
+  it('theme 非对象 / 全部面非法 → undefined（等同未配置）', () => {
+    expect(sanitizeTheme('x')).toBeUndefined()
+    expect(sanitizeTheme(null)).toBeUndefined()
+    expect(sanitizeTheme({ roomFloor: { type: 'color', value: '#12' } })).toBeUndefined()
+    const out = parseLevelsData({ levels: [{ ...validLevel, theme: 42 }] })
+    expect(out![0].theme).toBeUndefined()
+  })
+})
+
+describe('parseThemePresets 方案库校验', () => {
+  const surfaces = { roomFloor: { type: 'color', value: '#aabbcc' } }
+
+  it('合法条目保留，名称去空白截 12 字', () => {
+    const out = parseThemePresets([{ name: '  白色病院超长名字超过十二个字了  ', surfaces }])
+    expect(out).toHaveLength(1)
+    expect(out[0].name).toBe('白色病院超长名字超过十二')
+    expect(out[0].surfaces).toEqual(surfaces)
+  })
+
+  it('非法条目（缺名 / surfaces 全非法 / 非对象）静默丢弃', () => {
+    const out = parseThemePresets([
+      null,
+      { surfaces },
+      { name: 'ok', surfaces: { roomFloor: { type: 'color', value: 'bad' } } },
+      { name: 'good', surfaces },
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0].name).toBe('good')
+  })
+
+  it('非数组 → 空数组；超过 24 套截断', () => {
+    expect(parseThemePresets(undefined)).toEqual([])
+    expect(parseThemePresets('x')).toEqual([])
+    const many = Array.from({ length: 30 }, (_, i) => ({ name: `t${i}`, surfaces }))
+    expect(parseThemePresets(many)).toHaveLength(24)
   })
 })
 

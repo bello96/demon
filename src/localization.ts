@@ -3,6 +3,10 @@ interface TranslationStrings {
   title: string
   instructions: string
   hint: string
+  hintNoGhost: string
+  badgeKey: string
+  badgeRadar: string
+  badgeShoes: string
   start: string
   died: string
   respawn: string
@@ -33,6 +37,10 @@ const translations: Record<string, TranslationStrings> = {
     title: '方块噩梦',
     instructions: 'WASD 移动 | SPACE 跳跃 | SHIFT 奔跑 | E 躲藏/交互 | F 手电筒 | M 放大地图',
     hint: '快点找到逃生的门，避免被幽灵抓到',
+    hintNoGhost: '快点找到逃生的门',
+    badgeKey: '钥匙',
+    badgeRadar: '雷达',
+    badgeShoes: '鞋子',
     start: '开始游戏',
     died: '你死了',
     respawn: '重生',
@@ -61,6 +69,10 @@ const translations: Record<string, TranslationStrings> = {
     title: 'Blocky Horror',
     instructions: 'WASD Move | SPACE Jump | SHIFT Run | E Hide/Interact | F Flashlight | M Map Zoom',
     hint: 'Find the exit door quickly, avoid the ghost.',
+    hintNoGhost: 'Find the exit door quickly.',
+    badgeKey: 'Key',
+    badgeRadar: 'Radar',
+    badgeShoes: 'Shoes',
     start: 'Start Game',
     died: 'You Died',
     respawn: 'Respawn',

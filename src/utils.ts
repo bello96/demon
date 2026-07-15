@@ -111,20 +111,8 @@ export const materials = {
     roughness: 0.7,
   }),
   glow: new THREE.MeshBasicMaterial({ color: 0xff0000 }),
-  key: new THREE.MeshStandardMaterial({
-    color: 0xffd700,
-    roughness: 0.3,
-    metalness: 0.8,
-  }),
-  radar: new THREE.MeshStandardMaterial({
-    color: 0x00ff00,
-    roughness: 0.5,
-    metalness: 0.5,
-  }),
-  shoes: new THREE.MeshStandardMaterial({
-    color: 0x8b4513,
-    roughness: 0.6,
-  }),
+  // 钥匙 / 雷达 / 鞋子三个道具改用 World.makeItemMaterial 生成带字贴图材质
+  //（金 #ffd700 / 绿 #00ff00 / 蓝 #1e90ff），不再需要这里的纯色单例
   door: new THREE.MeshStandardMaterial({
     map: createPixelTexture("#3e2723", 0.2, true, "planks"),
     roughness: 0.9,

@@ -27,10 +27,10 @@
         padding: 10px 14px;
         user-select: none;
       }
-      /* 暗色像素风滚动条（列表 / 弹框 / 文本框通用，与游戏选关面板一致） */
+      /* 暗色像素风滚动条（列表 / 弹框 / 文本框通用）：调细避免挤占列表宽度 */
       ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: 5px;
+        height: 5px;
       }
       ::-webkit-scrollbar-track {
         background: #1a1a1a;
@@ -107,6 +107,127 @@
       }
       .more-wrap {
         position: relative;
+      }
+      /* 「! 说明」+「返回游戏」两枚贴右对齐，其余操作按钮居左 */
+      #btnHelp {
+        margin-left: auto;
+      }
+      .help-bang {
+        color: #ffaa00;
+        font-weight: bold;
+      }
+      /* ===== 关卡主题（参数面板右上角按钮 + 配置弹框） ===== */
+      .h2-flex {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .theme-btn {
+        background: #1d1d1d;
+        border: 2px solid #666;
+        border-radius: 0;
+        color: #aaa;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+      .theme-btn:hover {
+        border-color: #ffaa00;
+        color: #ffaa00;
+      }
+      .theme-modal {
+        width: 640px;
+        max-width: 94vw;
+      }
+      .theme-sec {
+        color: #888;
+        font-size: 13px;
+        letter-spacing: 1px;
+        margin: 12px 0 6px;
+      }
+      .theme-preset-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .theme-card {
+        cursor: pointer;
+        border: 2px solid #555;
+        background: #151515;
+        padding: 6px 8px;
+        min-width: 104px;
+      }
+      .theme-card:hover {
+        border-color: #aaa;
+      }
+      .theme-card.cur {
+        border-color: #ffaa00;
+      }
+      .theme-card .tc-name {
+        color: #ccc;
+        font-size: 13px;
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .theme-card .tc-del {
+        color: #f66;
+      }
+      .theme-card .tc-strip {
+        display: flex;
+        height: 14px;
+        border: 1px solid #333;
+      }
+      .theme-card .tc-strip i {
+        flex: 1;
+      }
+      .theme-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .theme-row .tr-label {
+        width: 76px;
+        flex: none;
+        color: #bbb;
+        font-size: 14px;
+      }
+      .theme-row select {
+        background: #1d1d1d;
+        color: #ddd;
+        border: 2px solid #555;
+        padding: 4px 6px;
+        font-family: inherit;
+      }
+      .theme-row input[type="color"] {
+        width: 44px;
+        height: 28px;
+        padding: 0;
+        border: 2px solid #555;
+        background: #1d1d1d;
+        cursor: pointer;
+      }
+      .theme-row .tr-chip {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        border: 2px solid #555;
+      }
+      .theme-save-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .theme-save-row input {
+        flex: 1;
+        background: #101010;
+        border: 2px solid #555;
+        color: #ddd;
+        padding: 6px 8px;
+        font-family: inherit;
       }
       .menu {
         position: absolute;
@@ -873,22 +994,29 @@
         <div class="header">
           <div class="btns">
             <button id="btnCloudSave">☁ 保存</button>
-            <button id="btnCopy">复制</button>
             <button id="btnClear" class="gray">清空</button>
             <div class="more-wrap">
               <button id="btnMore" class="gray">更多 ▾</button>
               <div class="menu" id="moreMenu">
-                <button id="btnView" class="gray">查看当前 JSON</button>
-                <button id="btnDownload" class="gray">下载当前 JSON</button>
-                <button id="btnImport" class="gray">导入已有 JSON</button>
-                <button id="btnHelp" class="gray">使用说明</button>
+                <button id="btnView" class="gray">查看</button>
+                <button id="btnCopy" class="gray">复制</button>
+                <button id="btnDownload" class="gray">导出</button>
+                <button id="btnImport" class="gray">导入</button>
               </div>
             </div>
+            <button id="btnHelp" class="gray">
+              <span class="help-bang">!</span> 说明
+            </button>
             <button id="btnBackGame" class="gray">返回游戏</button>
           </div>
         </div>
         <div class="panel">
-          <h2>关卡参数</h2>
+          <h2 class="h2-flex">
+            关卡参数
+            <button id="btnTheme" class="theme-btn" title="配置本关表面材质主题">
+              🎨 主题
+            </button>
+          </h2>
           <div class="ctl-row">
             <label class="ck"
               ><input type="checkbox" id="ckLights" /> 房间灯光</label
@@ -1007,6 +1135,31 @@
           </div>
         </div>
         <textarea id="ioText"></textarea>
+      </div>
+    </div>
+
+    <!-- 关卡主题弹框：方案模板（内置 + 自定义库）一键应用，五个表面逐项配置；
+         关卡存主题快照、方案库随「保存到云端」一起上云（KV 顶层 themePresets） -->
+    <div class="modal-mask" id="themeMask">
+      <div class="modal theme-modal">
+        <div class="modal-head">
+          <b id="themeTitle">🎨 关卡主题</b>
+          <div class="modal-acts">
+            <button id="themeClose" class="gray">关闭</button>
+          </div>
+        </div>
+        <div class="theme-sec">方案模板（点击应用到当前关）</div>
+        <div id="themePresetRow" class="theme-preset-row"></div>
+        <div class="theme-sec">表面配置（默认 = 游戏原版材质）</div>
+        <div id="themeSurfaces"></div>
+        <div class="theme-save-row">
+          <input
+            id="themeSaveName"
+            maxlength="12"
+            placeholder="输入名称，把当前关配置存为方案模板"
+          />
+          <button id="btnThemeSaveAs" class="gray">另存为方案</button>
+        </div>
       </div>
     </div>
 
@@ -1801,6 +1954,7 @@
       function anyLayerOpen() {
         return (
           $("modalMask").classList.contains("open") ||
+          $("themeMask").classList.contains("open") ||
           $("helpMask").classList.contains("open") ||
           $("errMask").classList.contains("open")
         );
@@ -1839,6 +1993,10 @@
           }
         }
         if (e.key === "Escape") {
+          if ($("themeMask").classList.contains("open")) {
+            $("themeMask").classList.remove("open");
+            return;
+          }
           if ($("modalMask").classList.contains("open")) {
             closeModal();
             return;
@@ -2222,9 +2380,13 @@
                 w: r.w,
                 d: r.d,
               }));
+            // 主题快照随关卡上云（未配置不写字段，保持旧格式兼容）
+            if (lv.theme) o.theme = lv.theme;
             return o;
           }),
         };
+        // 主题方案库（编辑器模板）：非空才写顶层字段
+        if (themePresets.length) out.themePresets = themePresets;
         return JSON.stringify(out, null, 2);
       }
       /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
@@ -2343,6 +2505,10 @@
           if (!Array.isArray(arr) || arr.length === 0)
             throw new Error("缺少 levels 数组");
           loadLevelsData(arr);
+          // 导入 JSON 若带主题方案库则一并吸收（宽松清洗）
+          if (data && Array.isArray(data.themePresets)) {
+            themePresets = sanitizePresets(data.themePresets);
+          }
           closeModal();
           toast(`已导入 ${levels.length} 个关卡`);
           render();
@@ -2378,6 +2544,119 @@
         a.click();
         URL.revokeObjectURL(a.href);
       };
+      // ================= 关卡主题（一期：预设 / 颜色两种取值，与 src/levels.ts 同规则） =================
+      const THEME_KEYS = [
+        "roomFloor",
+        "corridorFloor",
+        "roomWall",
+        "corridorWall",
+        "ceiling",
+      ];
+      const THEME_PRESET_NAMES = [
+        "floor1",
+        "planks",
+        "stone",
+        "roomWall",
+        "ceiling",
+        "obsidian",
+      ];
+      /** 预设代表色与中文名（编辑器色块预览用；游戏端实际贴图见 src/utils.ts materials） */
+      const PRESET_INFO = {
+        floor1: { label: "石板地", color: "#8a8075" },
+        planks: { label: "木板", color: "#8f563b" },
+        stone: { label: "砖墙", color: "#7a6a5a" },
+        roomWall: { label: "瓷砖墙", color: "#9a948a" },
+        ceiling: { label: "灰石顶", color: "#4a4a4a" },
+        obsidian: { label: "黑曜石", color: "#1a0b2e" },
+      };
+      /** [键, 中文名, 默认代表色]——默认色对应游戏原版各表面材质 */
+      const SURFACE_INFO = [
+        ["roomFloor", "房间地板", "#8a8075"],
+        ["corridorFloor", "走廊地板", "#8f563b"],
+        ["roomWall", "房间墙壁", "#9a948a"],
+        ["corridorWall", "走廊墙壁", "#7a6a5a"],
+        ["ceiling", "天花板", "#4a4a4a"],
+      ];
+      /** 内置方案模板：经典默认 = 清空主题回到原版材质，其余全为配色方案 */
+      const BUILTIN_THEMES = [
+        { name: "经典默认", surfaces: {} },
+        {
+          name: "白色病院",
+          surfaces: {
+            roomFloor: { type: "color", value: "#c9c9c2" },
+            corridorFloor: { type: "color", value: "#b8b8b0" },
+            roomWall: { type: "color", value: "#e2e2dc" },
+            corridorWall: { type: "color", value: "#d5d5cd" },
+            ceiling: { type: "color", value: "#eeeee8" },
+          },
+        },
+        {
+          name: "地牢石窟",
+          surfaces: {
+            roomFloor: { type: "color", value: "#3a4148" },
+            corridorFloor: { type: "color", value: "#2e343a" },
+            roomWall: { type: "color", value: "#46505a" },
+            corridorWall: { type: "color", value: "#39424c" },
+            ceiling: { type: "color", value: "#262c32" },
+          },
+        },
+        {
+          name: "木质山屋",
+          surfaces: {
+            roomFloor: { type: "color", value: "#6b4a2f" },
+            corridorFloor: { type: "color", value: "#5a3e27" },
+            roomWall: { type: "color", value: "#7d5a3a" },
+            corridorWall: { type: "color", value: "#6b4d31" },
+            ceiling: { type: "color", value: "#4a3520" },
+          },
+        },
+      ];
+      /** 用户自定义方案库（KV 顶层 themePresets）：随保存上云、随加载吸收 */
+      let themePresets = [];
+      /** 主题单面校验：preset 限白名单、color 限 #rrggbb；非法返回 undefined 回退默认 */
+      function sanitizeSurface(s) {
+        if (!s || typeof s !== "object") return undefined;
+        if (s.type === "preset" && THEME_PRESET_NAMES.includes(s.value)) {
+          return { type: "preset", value: s.value };
+        }
+        if (
+          s.type === "color" &&
+          typeof s.value === "string" &&
+          /^#[0-9a-fA-F]{6}$/.test(s.value)
+        ) {
+          return { type: "color", value: s.value.toLowerCase() };
+        }
+        return undefined;
+      }
+      /** 主题宽松校验：逐面取合法项、非法面丢弃；全空返回 undefined（等同未配置） */
+      function sanitizeTheme(raw) {
+        if (!raw || typeof raw !== "object") return undefined;
+        const out = {};
+        let any = false;
+        for (const k of THEME_KEYS) {
+          const s = sanitizeSurface(raw[k]);
+          if (s) {
+            out[k] = s;
+            any = true;
+          }
+        }
+        return any ? out : undefined;
+      }
+      /** 方案库宽松校验：非法条目丢弃、名称截 12 字、最多 24 套 */
+      function sanitizePresets(raw) {
+        if (!Array.isArray(raw)) return [];
+        const out = [];
+        for (const item of raw) {
+          if (out.length >= 24) break;
+          if (!item || typeof item !== "object" || typeof item.name !== "string")
+            continue;
+          const name = item.name.trim().slice(0, 12);
+          const surfaces = sanitizeTheme(item.surfaces);
+          if (!name || !surfaces) continue;
+          out.push({ name, surfaces });
+        }
+        return out;
+      }
       /** 数值防御：非有限数回退 fallback，有限数夹进 [min,max]（导入任意 JSON 的进货闸） */
       function numIn(v, min, max, fallback) {
         const n = +v;
@@ -2425,6 +2704,7 @@
             ghostEnabled: lv.ghostEnabled !== false,
             minimapEnabled: lv.minimapEnabled !== false,
             frozen: lv.frozen === true,
+            theme: sanitizeTheme(lv.theme),
           };
         });
         cur = 0;
@@ -2432,6 +2712,183 @@
         selCorr = -1;
       }
       $("btnImport").onclick = () => openModal("import");
+
+      // ================= 关卡主题弹框（方案模板一键应用 + 五表面逐项配置） =================
+      const escapeHtml = (s) =>
+        s.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      /** 面 k 当前生效的预览色：颜色取值本身 / 预设代表色 / 默认材质代表色 */
+      function themeEffColor(k, defColor) {
+        const t = levels[cur] && levels[cur].theme;
+        const s = t && t[k];
+        if (!s) return defColor;
+        if (s.type === "color") return s.value;
+        return (PRESET_INFO[s.value] || {}).color || defColor;
+      }
+      function themeEquals(a, b) {
+        return JSON.stringify(a || null) === JSON.stringify(b || null);
+      }
+      /** 方案卡片的五色条：按 SURFACE_INFO 顺序取各面预览色 */
+      function themeStrip(surfaces) {
+        return SURFACE_INFO.map(([k, , defC]) => {
+          const s = (surfaces || {})[k];
+          let c = defC;
+          if (s) {
+            c =
+              s.type === "color"
+                ? s.value
+                : (PRESET_INFO[s.value] || {}).color || defC;
+          }
+          return `<i style="background:${c}"></i>`;
+        }).join("");
+      }
+      /** 把方案应用到当前关：空 surfaces（经典默认）= 清除主题回到原版材质 */
+      function applyThemeSurfaces(surfaces) {
+        const lv = levels[cur];
+        if (!lv) return;
+        if (!surfaces || !Object.keys(surfaces).length) {
+          delete lv.theme;
+        } else {
+          lv.theme = JSON.parse(JSON.stringify(surfaces));
+        }
+        renderThemeUI();
+      }
+      function renderThemeUI() {
+        $("themeTitle").textContent =
+          "🎨 关卡主题（列表第 " + (cur + 1) + " 行）";
+        const curTheme = levels[cur] && levels[cur].theme;
+        const cards = [];
+        BUILTIN_THEMES.forEach((p, i) => {
+          const active = themeEquals(
+            curTheme,
+            Object.keys(p.surfaces).length ? p.surfaces : undefined,
+          );
+          cards.push(
+            `<div class="theme-card${active ? " cur" : ""}" data-bi="${i}">` +
+              `<div class="tc-name">${p.name}</div>` +
+              `<div class="tc-strip">${themeStrip(p.surfaces)}</div></div>`,
+          );
+        });
+        themePresets.forEach((p, i) => {
+          const active = themeEquals(curTheme, p.surfaces);
+          cards.push(
+            `<div class="theme-card${active ? " cur" : ""}" data-ui="${i}">` +
+              `<div class="tc-name"><span>${escapeHtml(p.name)}</span>` +
+              `<span class="tc-del" data-del="${i}" title="从方案库删除">✕</span></div>` +
+              `<div class="tc-strip">${themeStrip(p.surfaces)}</div></div>`,
+          );
+        });
+        $("themePresetRow").innerHTML = cards.join("");
+        $("themeSurfaces").innerHTML = SURFACE_INFO.map(([k, label, defC]) => {
+          const s = curTheme && curTheme[k];
+          const mode = !s
+            ? "default"
+            : s.type === "preset"
+              ? "preset:" + s.value
+              : "color";
+          const colorVal = s && s.type === "color" ? s.value : "#888888";
+          const opts = ['<option value="default">默认</option>']
+            .concat(
+              THEME_PRESET_NAMES.map(
+                (n) =>
+                  `<option value="preset:${n}">${PRESET_INFO[n].label}</option>`,
+              ),
+            )
+            .concat(['<option value="color">自定义颜色</option>'])
+            .join("");
+          return (
+            `<div class="theme-row" data-k="${k}">` +
+            `<span class="tr-label">${label}</span>` +
+            `<select class="tr-sel" data-v="${mode}">${opts}</select>` +
+            `<input type="color" class="tr-color" value="${colorVal}"` +
+            `${mode === "color" ? "" : ' style="display:none"'} />` +
+            `<span class="tr-chip" style="background:${themeEffColor(k, defC)}"></span>` +
+            `</div>`
+          );
+        }).join("");
+        // select 的选中态用 value 赋值（拼 selected 属性容易与转义纠缠）
+        $("themeSurfaces")
+          .querySelectorAll(".tr-sel")
+          .forEach((sel) => (sel.value = sel.dataset.v));
+      }
+      $("btnTheme").onclick = () => {
+        renderThemeUI();
+        $("themeMask").classList.add("open");
+      };
+      $("themeClose").onclick = () => $("themeMask").classList.remove("open");
+      $("themeMask").onclick = (e) => {
+        if (e.target === $("themeMask"))
+          $("themeMask").classList.remove("open");
+      };
+      $("themePresetRow").addEventListener("click", (e) => {
+        const del = e.target.closest("[data-del]");
+        if (del) {
+          themePresets.splice(+del.dataset.del, 1);
+          renderThemeUI();
+          return;
+        }
+        const card = e.target.closest(".theme-card");
+        if (!card) return;
+        if (card.dataset.bi !== undefined) {
+          applyThemeSurfaces(BUILTIN_THEMES[+card.dataset.bi].surfaces);
+        } else if (card.dataset.ui !== undefined) {
+          applyThemeSurfaces(themePresets[+card.dataset.ui].surfaces);
+        }
+      });
+      // 用 change 而非 input：拖拽取色时不重建 DOM，避免原生取色器被打断
+      $("themeSurfaces").addEventListener("change", (e) => {
+        const row = e.target.closest(".theme-row");
+        const lv = levels[cur];
+        if (!row || !lv) return;
+        const k = row.dataset.k;
+        const sel = row.querySelector(".tr-sel").value;
+        if (!lv.theme) lv.theme = {};
+        if (sel === "default") {
+          delete lv.theme[k];
+        } else if (sel === "color") {
+          lv.theme[k] = {
+            type: "color",
+            value: row.querySelector(".tr-color").value.toLowerCase(),
+          };
+        } else {
+          lv.theme[k] = { type: "preset", value: sel.slice(7) };
+        }
+        if (!Object.keys(lv.theme).length) delete lv.theme;
+        renderThemeUI();
+      });
+      $("btnThemeSaveAs").onclick = () => {
+        const lv = levels[cur];
+        const t = lv && lv.theme;
+        if (!t || !Object.keys(t).length) {
+          toast("当前关未配置主题：先选模板或逐面配置，再另存");
+          return;
+        }
+        const name = $("themeSaveName").value.trim().slice(0, 12);
+        if (!name) {
+          toast("请先输入方案名称");
+          return;
+        }
+        if (themePresets.length >= 24) {
+          toast("方案库已满（24 套）：请先删除旧方案");
+          return;
+        }
+        themePresets.push({
+          name,
+          surfaces: JSON.parse(JSON.stringify(t)),
+        });
+        $("themeSaveName").value = "";
+        renderThemeUI();
+        toast("已存为方案「" + name + "」，随下次保存一起上云");
+      };
       // 返回游戏主页：有未上云的改动时先弹框三选一（保存并退出 / 不保存退出 / 取消）
       $("btnBackGame").onclick = async () => {
         if (!isDirty()) {
@@ -2705,7 +3162,7 @@
           }
           if (res.ok) {
             // 画布内容即云端内容：刷新快照，退出时不再提醒
-            cloudSnapshot = JSON.stringify(levels);
+            cloudSnapshot = snapshot();
             if (!opts.silent) {
               gameAlert("已保存，全网生效（边缘节点最长约 1 分钟同步）", {
                 title: "保存成功",
@@ -2738,12 +3195,18 @@
       $("btnCloudSave").onclick = () => cloudSave();
 
       // ================= 未保存检测（云端快照比对，替代旧本地草稿机制） =================
-      /** 与云端一致时的画布快照；编辑后与当前 levels 不一致 = 有未上云的改动 */
-      let cloudSnapshot = JSON.stringify(levels);
+      /** 云端一致性快照：关卡与主题方案库都随保存上云，一起参与比对 */
+      function snapshot() {
+        return (
+          JSON.stringify(levels) + " " + JSON.stringify(themePresets)
+        );
+      }
+      /** 与云端一致时的内容快照；编辑后与当前内容不一致 = 有未上云的改动 */
+      let cloudSnapshot = snapshot();
       /** 「不保存直接退出 / 保存成功后退出」置 true，跳过 beforeunload 原生拦截 */
       let bypassUnload = false;
       function isDirty() {
-        return JSON.stringify(levels) !== cloudSnapshot;
+        return snapshot() !== cloudSnapshot;
       }
       async function init() {
         setModeUI();
@@ -2758,6 +3221,8 @@
             if (data && Array.isArray(data.levels) && data.levels.length) {
               loadLevelsData(data.levels);
             }
+            // 主题方案库随云端数据一并吸收（旧数据无此字段 = 空库）
+            themePresets = sanitizePresets(data ? data.themePresets : []);
             cloudOk = true; // 请求成功但云端为空也算正常：空白画布从头配
           }
         } catch {}
@@ -2767,7 +3232,7 @@
             { title: "加载失败", tone: "danger" },
           );
         }
-        cloudSnapshot = JSON.stringify(levels);
+        cloudSnapshot = snapshot();
         render();
       }
 

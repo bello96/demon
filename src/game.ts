@@ -38,6 +38,9 @@ class Game {
   private selectedLevel = 1
   /** 本关是否允许显示小地图（关卡配置 minimapEnabled）：false 时 M 键也失效 */
   private minimapAllowed = true
+  /** 红字提示 5 秒淡出的两级定时器（进入游玩时重置） */
+  private hintFadeTimer: number | null = null
+  private hintHideTimer: number | null = null
 
   constructor() {
     initLocalization()
@@ -116,8 +119,9 @@ class Game {
     this.world.regenerate(cfg.rooms, {
       doorCount: cfg.doorCount,
       corridorRects: cfg.corridorRects,
-      // 小地图被关卡关闭时，依赖它显示的雷达同步不投放
-      radarEnabled: cfg.minimapEnabled
+      // 雷达 = 在小地图标出幽灵位置：小地图被关闭、或本关根本没有幽灵时都不投放
+      radarEnabled: cfg.minimapEnabled && cfg.ghostEnabled,
+      theme: cfg.theme
     })
     this.updateSwitchInfo()
     this.player.reset()
@@ -156,6 +160,18 @@ class Game {
     const infoLevel = document.getElementById('info-level')
     if (infoLevel) {
       infoLevel.innerText = t('levelLabel', { n: this.level })
+    }
+
+    // 无幽灵关不吓唬人：红字提示只说找门
+    const hintEl = document.getElementById('game-hint-text')
+    if (hintEl) {
+      hintEl.innerText = cfg.ghostEnabled ? t('hint') : t('hintNoGhost')
+    }
+
+    // 开关行只在灯灭时显示（找开关才有意义）；游玩中开/关灯由 Player.interact 同步显隐
+    const infoSwitch = document.getElementById('info-switch')
+    if (infoSwitch) {
+      infoSwitch.style.display = cfg.lightsOn && this.world.lightSwitch ? 'none' : ''
     }
   }
 
@@ -259,6 +275,23 @@ class Game {
     const interactionMsg = document.getElementById('interaction-msg')
     if (interactionMsg) {
       interactionMsg.style.display = 'none'
+    }
+
+    // 红字提示：每次进入游玩重新显示，5 秒后淡出收起（暂停恢复走 togglePauseMenu，不会反复闪现）
+    const hintEl = document.getElementById('game-hint-text')
+    if (hintEl) {
+      if (this.hintFadeTimer !== null) { clearTimeout(this.hintFadeTimer) }
+      if (this.hintHideTimer !== null) { clearTimeout(this.hintHideTimer) }
+      hintEl.style.display = ''
+      hintEl.style.transition = 'none'
+      hintEl.style.opacity = '1'
+      this.hintFadeTimer = window.setTimeout(() => {
+        hintEl.style.transition = 'opacity 0.8s ease'
+        hintEl.style.opacity = '0'
+      }, 5000)
+      this.hintHideTimer = window.setTimeout(() => {
+        hintEl.style.display = 'none'
+      }, 5900)
     }
     this.stopHeartbeatUI()
 

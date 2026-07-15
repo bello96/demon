@@ -11,6 +11,21 @@ export interface Room extends RoomLayout {
   id: number
 }
 
+/** 主题单面取值：preset=内置材质名（THEME_PRESETS 白名单）/ color=#rrggbb（程序化像素噪点纹理） */
+export interface ThemeSurface {
+  type: 'preset' | 'color'
+  value: string
+}
+
+/** 关卡五个表面的主题配置（每面可选，缺省=游戏默认材质）；存于 LevelConfig.theme */
+export interface LevelTheme {
+  roomFloor?: ThemeSurface
+  corridorFloor?: ThemeSurface
+  roomWall?: ThemeSurface
+  corridorWall?: ThemeSurface
+  ceiling?: ThemeSurface
+}
+
 /** 世界生成的关卡选项（关卡编辑器产物） */
 export interface MansionOptions {
   /** 逃生门数量：当前产品恒为 1，保留扩展位 */
@@ -23,6 +38,8 @@ export interface MansionOptions {
   corridorRects?: RoomLayout[]
   /** 是否投放雷达（默认 true）：关卡关闭小地图时雷达无处显示，同步不投放 */
   radarEnabled?: boolean
+  /** 关卡表面主题（可选）：五个表面各自的预设/颜色取值，见 LevelTheme */
+  theme?: LevelTheme
 }
 
 export interface LightSwitch {
@@ -40,5 +57,8 @@ export interface Interactable {
   obj?: LightSwitch
   // 拾取后隐藏的展示物：鞋子是一双两只（Group），故放宽到 Object3D
   mesh?: THREE.Object3D
+  // 可躲双层柜的两个方块 mesh：玩家躲入时临时隐藏（箱内视觉由 Player.hideBox 全权承担），
+  // 出箱恢复；幽灵视线/碰撞走的是栅格集合，不受渲染层隐藏影响
+  meshes?: THREE.Mesh[]
   collected?: boolean
 }

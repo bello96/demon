@@ -1,5 +1,90 @@
-import type { RoomLayout } from './types'
+import type { LevelTheme, RoomLayout, ThemeSurface } from './types'
 import rawLevelsData from './levels_data.json'
+
+/** 主题 preset 可选的内置材质名（materials 单例中适合贴大面的项） */
+export const THEME_PRESETS = ['floor1', 'planks', 'stone', 'roomWall', 'ceiling', 'obsidian'] as const
+
+const THEME_KEYS: ReadonlyArray<keyof LevelTheme> = [
+  'roomFloor',
+  'corridorFloor',
+  'roomWall',
+  'corridorWall',
+  'ceiling',
+]
+const THEME_COLOR_RE = /^#[0-9a-fA-F]{6}$/
+
+/** 主题单面校验：preset 限白名单、color 限 #rrggbb；非法返回 undefined（该面回退默认材质） */
+function sanitizeSurface(raw: unknown): ThemeSurface | undefined {
+  if (typeof raw !== 'object' || raw === null) {
+    return undefined
+  }
+  const s = raw as { type?: unknown; value?: unknown }
+  if (
+    s.type === 'preset' &&
+    typeof s.value === 'string' &&
+    (THEME_PRESETS as readonly string[]).includes(s.value)
+  ) {
+    return { type: 'preset', value: s.value }
+  }
+  if (s.type === 'color' && typeof s.value === 'string' && THEME_COLOR_RE.test(s.value)) {
+    return { type: 'color', value: s.value.toLowerCase() }
+  }
+  return undefined
+}
+
+/** 主题宽松校验：逐面取合法项、非法面丢弃；全空返回 undefined。绝不因主题拒掉整包关卡 */
+export function sanitizeTheme(raw: unknown): LevelTheme | undefined {
+  if (typeof raw !== 'object' || raw === null) {
+    return undefined
+  }
+  const src = raw as Record<string, unknown>
+  const out: LevelTheme = {}
+  let any = false
+  for (const k of THEME_KEYS) {
+    const s = sanitizeSurface(src[k])
+    if (s) {
+      out[k] = s
+      any = true
+    }
+  }
+  return any ? out : undefined
+}
+
+/** 编辑器主题方案库条目（KV 顶层 themePresets）：关卡存快照，方案库只是编辑器的填表模板 */
+export interface ThemePreset {
+  name: string
+  surfaces: LevelTheme
+}
+
+/** 方案库宽松校验：非法条目丢弃、名称去空白截 12 字、最多 24 套；永远返回数组 */
+export function parseThemePresets(raw: unknown): ThemePreset[] {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+  const out: ThemePreset[] = []
+  for (const item of raw) {
+    if (out.length >= 24) {
+      break
+    }
+    if (typeof item !== 'object' || item === null) {
+      continue
+    }
+    const p = item as { name?: unknown; surfaces?: unknown }
+    if (typeof p.name !== 'string') {
+      continue
+    }
+    const name = p.name.trim().slice(0, 12)
+    if (!name) {
+      continue
+    }
+    const surfaces = sanitizeTheme(p.surfaces)
+    if (!surfaces) {
+      continue
+    }
+    out.push({ name, surfaces })
+  }
+  return out
+}
 
 /** 单个关卡的完整难度配置：地图布局 + 环境氛围 + 幽灵参数（与小程序版格式一致） */
 export interface LevelConfig {
@@ -23,6 +108,8 @@ export interface LevelConfig {
   minimapEnabled: boolean
   /** 是否冻结（默认 false）：true=暂时停用，游戏端跳过此关、后续关卡顺位前移；数据保留可随时解冻 */
   frozen: boolean
+  /** 表面主题（可选）：五个表面各自的预设/颜色取值；缺省=全部默认材质 */
+  theme?: LevelTheme
 }
 
 // 内置 JSON 被改坏（数值非法）时的应急单关：保证游戏能开、不黑屏，控制台有报错提示
@@ -86,6 +173,7 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostEnabled?: unknown
       minimapEnabled?: unknown
       frozen?: unknown
+      theme?: unknown
     }
     if (!Array.isArray(l.rooms) || l.rooms.length === 0 || !l.rooms.every(rectOk)) {
       return null
@@ -128,6 +216,8 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       ghostEnabled: l.ghostEnabled !== false,
       minimapEnabled: l.minimapEnabled !== false,
       frozen: l.frozen === true,
+      // 主题按面宽松校验：非法面回退默认，不因主题拒掉整包
+      theme: sanitizeTheme(l.theme),
     })
   }
   // 全部冻结 = 游戏无关可玩：与空数组同罪，整体拒绝（保证过滤冻结关后必有存货）
