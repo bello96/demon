@@ -2965,22 +2965,31 @@
         };
         fr.readAsDataURL(f);
       });
-      // 「使用」：把选中卡片写入当前关并关闭弹框（自定义全空 = 恢复默认材质）
+      // 「使用」：把选中卡片写入当前关并关闭弹框。
+      // 自定义必须五面配全（颜色或图片）才能使用——空面若静默回退默认，
+      // 应用结果会等同「经典默认」，重开弹框回显不到自定义卡，看起来像没生效
       $("themeUse").onclick = () => {
         const lv = levels[cur];
         if (!lv) return;
         if (themeSel === "custom") {
-          const t = {};
-          let any = false;
-          for (const k of THEME_KEYS) {
-            const s = sanitizeSurface(customDraft[k]);
-            if (s) {
-              t[k] = s;
-              any = true;
-            }
+          const missing = SURFACE_INFO.filter(
+            ([k]) => !sanitizeSurface(customDraft[k]),
+          ).map(([, label]) => label);
+          if (missing.length) {
+            toast(
+              "自定义主题还有 " +
+                missing.length +
+                " 个表面未配置（" +
+                missing.join("、") +
+                "）：每个表面都需选择颜色或上传图片后才能使用",
+            );
+            return;
           }
-          if (any) lv.theme = t;
-          else delete lv.theme;
+          const t = {};
+          for (const k of THEME_KEYS) {
+            t[k] = sanitizeSurface(customDraft[k]);
+          }
+          lv.theme = t;
         } else {
           const surfaces = BUILTIN_THEMES[themeSel].surfaces;
           if (Object.keys(surfaces).length)
