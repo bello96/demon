@@ -267,6 +267,10 @@ class Game {
     if (minimap) {
       minimap.style.display = this.minimapAllowed ? 'block' : 'none'
     }
+    const staminaBar = document.getElementById('stamina-bar')
+    if (staminaBar) {
+      staminaBar.style.display = 'block'
+    }
 
     const cabinetOverlay = document.getElementById('cabinet-overlay')
     if (cabinetOverlay) {
@@ -320,7 +324,19 @@ class Game {
     if (minimap) {
       minimap.style.display = 'none'
     }
+    const staminaBar = document.getElementById('stamina-bar')
+    if (staminaBar) {
+      staminaBar.style.display = 'none'
+    }
     this.showLevelSelect()
+  }
+
+  /** 一次性提示音（胜利/被抓）：即抛型 THREE.Audio，播完由 GC 回收 */
+  private playOneShot(buffer: AudioBuffer, volume: number): void {
+    const sound = new THREE.Audio(this.listener)
+    sound.setBuffer(buffer)
+    sound.setVolume(volume)
+    sound.play()
   }
 
   /** 停心跳音效与 UI（多处复用） */
@@ -497,6 +513,7 @@ class Game {
       this.isPlaying = false
       this.shouldLockPointer = false
       document.exitPointerLock()
+      this.playOneShot(this.soundGen.getWinBuffer(), 0.7)
 
       this.levelCleared = Math.max(this.levelCleared, this.level)
       localStorage.setItem('levelCleared', String(this.levelCleared))
@@ -549,6 +566,7 @@ class Game {
       this.isGameOver = true
       this.shouldLockPointer = false
       document.exitPointerLock()
+      this.playOneShot(this.soundGen.getCaughtBuffer(), 0.8)
       document.getElementById('game-over')!.classList.remove('hidden')
     }
 

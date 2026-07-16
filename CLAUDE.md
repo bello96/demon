@@ -33,7 +33,7 @@ pnpm dev            # 启动本地开发服务器（Vite，默认 http://localho
 pnpm build          # 构建到 dist/
 pnpm preview        # 预览生产构建
 pnpm typecheck      # tsc --noEmit（含 functions/ 子项目），只做类型检查
-pnpm test           # vitest run，跑 levels / progress / level_service 单测
+pnpm test           # vitest run，跑 levels / progress / level_service / stamina 单测
 pnpm dev:cf         # vite build + wrangler pages dev dist，本地模拟 Functions + KV（默认 http://localhost:8788）
 pnpm run deploy         # vite build + wrangler pages deploy dist，发布到 Cloudflare Pages
 ```
@@ -65,7 +65,7 @@ horror-maze-adventure/
 │   └── api/
 │       └── levels.ts               # GET 公开读关卡 ／ POST 口令预校验 ／ PUT 口令写入 KV
 │                                     （服务端复用 src/levels.ts 的校验）
-├── tests/                        # vitest 单测：levels / progress / level_service
+├── tests/                        # vitest 单测：levels / progress / level_service / stamina
 └── src/
     ├── game.ts                # 主循环 / 场景组装 / UI 事件绑定 / 关卡生命周期与选关面板
     ├── player.ts              # 玩家控制、相机、碰撞、交互、手电筒、道具状态（钥匙/雷达/鞋子）
@@ -79,6 +79,7 @@ horror-maze-adventure/
     ├── levels.ts                # LevelConfig 接口 + parseLevelsData 校验 + getLevelConfig（游戏端与 Functions 端共用同一份）
     ├── levels_data.json         # 内置兜底 6 关关卡数据（自小程序移植）
     ├── progress.ts               # 关卡进度纯函数：migrateProgress（迁移钳制）/ isLevelUnlocked（解锁判定）
+    ├── stamina.ts                # 体力纯函数：tickStamina（疾跑 10s 耗尽 / 松开 60s 回满）/ canSprint
     ├── level_service.ts          # 云端关卡拉取：3 秒超时 + 校验失败 / 网络错误一律回退内置关卡
     ├── constants.ts               # 共享数值常量：LIT_AMBIENT / LIT_FOG_NEAR / LIT_FOG_FAR / DARK_FOG_NEAR
     └── static/                # 墙 / 地面贴图
@@ -139,6 +140,10 @@ Game (game.ts)
 
 - **玩家**：步行 `baseSpeed = 4` 米/秒；Shift 疾跑 ×1.5 = 6；拾到**鞋子**再 ×1.5（步行 6 / 疾跑 9），
   死亡重开或切关重置
+- **体力**（`src/stamina.ts` 纯函数，UI 为屏幕正下方长条）：0~1，进关满值；
+  疾跑消耗的前提是 **Shift + 方向键同时按住**，持续疾跑 10 秒耗尽，耗尽强制回落步行；
+  松开 Shift 才恢复（1 分钟回满），**按住 Shift 期间（含静止）永不恢复**——消耗/冻结/恢复
+  三态互斥，无同帧进出水；躲藏中不消耗，暂停/结算时主循环停转自然冻结
 - **幽灵**：巡逻 2.0~6.0 可配（默认 3），追击 ×1.5 → 3~9；配置 < 2.7 追不上步行玩家（教学关），
   4.0 以上无鞋必被追上（鞋子成为生存必需）
 - **雾（视距）**：开灯 `near/far = 120/200`（120 米内完全清澈，任何房间一眼到底）；

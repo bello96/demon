@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { t } from './localization'
 import { DARK_FOG_NEAR, LIT_AMBIENT, LIT_FOG_FAR, LIT_FOG_NEAR } from './constants'
+import { canSprint, tickStamina } from './stamina'
 import type { World } from './world'
 import type { SoundGenerator } from './sound_generator'
 
@@ -40,6 +41,9 @@ export class Player {
   hasRadar = false
   hasShoes = false
   hasWon = false
+
+  /** 体力 0~1：Shift 疾跑消耗（10 秒耗尽），松开恢复（1 分钟回满），耗尽强制回落步行 */
+  stamina = 1
 
   keys: Record<string, boolean> = {}
   flashlight: THREE.SpotLight
@@ -208,6 +212,7 @@ export class Player {
     this.hasRadar = false
     this.hasShoes = false
     this.hasWon = false
+    this.stamina = 1
     this.keys = {}
     this.hideBox.visible = false
     // 躲藏中切关/重开的兜底：恢复柜块可见性（旧世界随 regenerate 销毁时无害）
@@ -217,6 +222,7 @@ export class Player {
     }
     this.camera.rotation.set(0, 0, 0, 'YXZ')
     this.updateUI()
+    this.updateStaminaBar()
   }
 
   private loadMouseSensitivity(): number {
@@ -393,8 +399,22 @@ export class Player {
     }
   }
 
+  /** 体力条渲染：宽度按百分比，颜色随余量分档（≥60% 绿 / ≥30% 黄 / 不足 30% 红） */
+  private updateStaminaBar(): void {
+    const fill = document.getElementById('stamina-fill')
+    if (!fill) { return }
+    fill.style.width = (this.stamina * 100).toFixed(1) + '%'
+    fill.style.background =
+      this.stamina >= 0.6 ? '#2fbf3f' : this.stamina >= 0.3 ? '#e0b428' : '#d23c2a'
+  }
+
   update(dt: number): void {
+    const sprintHeld = !!this.keys['ShiftLeft']
+
     if (this.isHidden) {
+      // 躲藏中视为无移动输入（不消耗体力）；按住 Shift 期间照旧不恢复
+      this.stamina = tickStamina(this.stamina, dt, sprintHeld, false)
+      this.updateStaminaBar()
       // 箱内相机与站立完全同高（pos.y + height*0.9 ≈ 2.575）：进出箱视线高度零跳变。
       // 视点高于柜体（2.5）没关系——观察通道是箱内壁盒开在 y>2.5 条带上的破洞，
       // 视线经洞口水平掠过柜块顶面，不依赖旧的"视点藏进柜块内隐形透视"技巧
@@ -402,9 +422,6 @@ export class Player {
       this.camera.position.y += this.height * 0.9
       return
     }
-
-    const speed =
-      this.baseSpeed * (this.hasShoes ? 1.5 : 1) * (this.keys['ShiftLeft'] ? 1.5 : 1)
 
     this._forward.set(0, 0, -1).applyAxisAngle(this._yAxis, this.yaw)
     this._right.set(1, 0, 0).applyAxisAngle(this._yAxis, this.yaw)
@@ -415,7 +432,17 @@ export class Player {
     if (this.keys['KeyA']) { this._dir.sub(this._right) }
     if (this.keys['KeyD']) { this._dir.add(this._right) }
 
-    if (this._dir.lengthSq() > 0) { this._dir.normalize() }
+    const moving = this._dir.lengthSq() > 0
+    if (moving) { this._dir.normalize() }
+
+    // 体力先于速度结算：消耗（Shift+移动）/冻结（Shift+静止）/恢复（松开）三态互斥
+    this.stamina = tickStamina(this.stamina, dt, sprintHeld, moving)
+    this.updateStaminaBar()
+
+    const speed =
+      this.baseSpeed *
+      (this.hasShoes ? 1.5 : 1) *
+      (canSprint(this.stamina, sprintHeld) ? 1.5 : 1)
 
     this.vel.x = this._dir.x * speed
     this.vel.z = this._dir.z * speed
