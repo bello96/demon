@@ -379,7 +379,8 @@
         transform: translateX(-50%);
         width: 320px;
         height: 14px;
-        background: rgba(0, 0, 0, 0.55);
+        /* 空白处（底槽）40% 不透明，轻透出身后 3D 场景 */
+        background: rgba(0, 0, 0, 0.4);
         border: 2px solid #555;
         /* 默认隐藏：只在游玩中显示（enterPlay 显示 / showMenu 隐藏） */
         display: none;
@@ -388,6 +389,8 @@
         width: 100%;
         height: 100%;
         background: #2fbf3f;
+        /* 有能量的填充条 60% 不透明（颜色分档由 player.updateStaminaBar 驱动） */
+        opacity: 0.6;
       }
 
       #minimap {
@@ -400,8 +403,8 @@
         background: rgba(0, 0, 0, 0.5);
         border: 2px solid #555;
         z-index: 100;
-        /* 整体 90% 不透明：地图连同内容都轻微透出身后 3D 场景（M 放大态同样生效） */
-        opacity: 0.9;
+        /* 整体 80% 不透明：地图连同内容都轻微透出身后 3D 场景（M 放大态同样生效） */
+        opacity: 0.8;
         /* 默认隐藏：只在游玩中显示（enterPlay 显示 / showMenu 隐藏） */
         display: none;
       }

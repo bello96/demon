@@ -1,7 +1,21 @@
 import * as THREE from 'three'
 import { createPixelTexture, materials } from './utils'
-import { t } from './localization'
 import type { Room, RoomLayout, Interactable, LightSwitch, MansionOptions, ThemeSurface } from './types'
+import keyIconUrl from './static/key-icon.svg'
+import radarIconUrl from './static/radar-icon.svg'
+import shoesIconUrl from './static/shoes-icon.svg'
+
+// 道具 icon 图片缓存：SVG 首次解码是异步的，之后 regenerate 复用同一 Image 直接同步可画
+const itemIconCache = new Map<string, HTMLImageElement>()
+function getItemIcon(url: string): HTMLImageElement {
+  let img = itemIconCache.get(url)
+  if (!img) {
+    img = new Image()
+    img.src = url
+    itemIconCache.set(url, img)
+  }
+  return img
+}
 
 export class World {
   readonly BLOCK_SIZE = 1
@@ -567,7 +581,7 @@ export class World {
       const kp = randomInRoom(keyRoom)
       const keyMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.3, 0.3, 0.3),
-        this.makeItemMaterials(t('badgeKey'), '#ffd700'),
+        this.makeItemMaterials(keyIconUrl, '#ffd700'),
       )
       keyMesh.position.set(kp.x, 0.5, kp.z)
       this.worldGroup.add(keyMesh)
@@ -583,7 +597,7 @@ export class World {
       const rp = randomInRoom(radarRoom)
       const radarMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.4, 0.1, 0.4),
-        this.makeItemMaterials(t('badgeRadar'), '#00ff00'),
+        this.makeItemMaterials(radarIconUrl, '#00ff00'),
       )
       radarMesh.position.set(rp.x, 0.5, rp.z)
       this.worldGroup.add(radarMesh)
@@ -600,7 +614,7 @@ export class World {
       const sp = randomInRoom(shoesRoom)
       const shoesMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.4, 0.2, 0.4),
-        this.makeItemMaterials(t('badgeShoes'), '#1e90ff'),
+        this.makeItemMaterials(shoesIconUrl, '#1e90ff'),
       )
       shoesMesh.position.set(sp.x, 0.5, sp.z)
       this.worldGroup.add(shoesMesh)
@@ -664,29 +678,37 @@ export class World {
   }
 
   /**
-   * 道具带字材质组：文字只印在顶面（玩家俯视道具时正对视线的"正面"），
-   * 四个侧面与底面用同色纯色材质——按需求侧边不带字。
-   * 底色即道具识别色，字用半透明黑在金/绿/蓝亮底上都清楚。
+   * 道具带 icon 材质组：图标只印在顶面（玩家俯视道具时正对视线的"正面"），
+   * 四个侧面与底面用同色纯色材质——按需求侧边不带图。
+   * 底色即道具识别色，深灰单色 SVG 图标在金/绿/蓝亮底上都清楚。
+   * SVG 首次解码异步：就绪前顶面短暂只显底色，onload 补画后 needsUpdate 刷新；
    * 每次生成都是新材质+CanvasTexture，由 disposeWorldResources 白名单外机制自动回收。
    */
-  private makeItemMaterials(text: string, baseColor: string): THREE.MeshStandardMaterial[] {
+  private makeItemMaterials(iconUrl: string, baseColor: string): THREE.MeshStandardMaterial[] {
     const size = 128
+    const pad = 18
     const canvas = document.createElement('canvas')
     canvas.width = size
     canvas.height = size
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = baseColor
     ctx.fillRect(0, 0, size, size)
-    ctx.font = 'bold 52px "Microsoft YaHei", sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-    ctx.fillText(text, size / 2, size / 2)
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
+    const img = getItemIcon(iconUrl)
+    const draw = (): void => {
+      ctx.drawImage(img, pad, pad, size - pad * 2, size - pad * 2)
+      tex.needsUpdate = true
+    }
+    if (img.complete && img.naturalWidth > 0) {
+      draw()
+    } else {
+      // 旧世界已销毁时补画到废弃 canvas 上无害（材质不再被渲染）
+      img.addEventListener('load', draw, { once: true })
+    }
     const topMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.3 })
     const sideMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.3 })
-    // BoxGeometry 面序 [+x, -x, +y(顶), -y, +z, -z]：仅顶面用带字材质
+    // BoxGeometry 面序 [+x, -x, +y(顶), -y, +z, -z]：仅顶面用带图材质
     return [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]
   }
 
