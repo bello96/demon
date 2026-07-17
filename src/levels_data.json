@@ -12,7 +12,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2,
       "lightsOn": false,
       "ghostEnabled": true
     },
@@ -34,7 +34,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2.5,
       "lightsOn": false,
       "ghostEnabled": true,
       "corridorRects": [
@@ -70,7 +70,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2.5,
       "lightsOn": false,
       "ghostEnabled": true,
       "corridorRects": [
@@ -100,7 +100,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2.5,
       "lightsOn": false,
       "ghostEnabled": true,
       "corridorRects": [
@@ -136,7 +136,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2.5,
       "lightsOn": false,
       "ghostEnabled": true,
       "corridorRects": [
@@ -190,7 +190,7 @@
       "doorCount": 1,
       "darkAmbient": 0.2,
       "darkFogFar": 20,
-      "ghostSpeed": 2.6,
+      "ghostSpeed": 2.5,
       "lightsOn": false,
       "ghostEnabled": true,
       "corridorRects": [

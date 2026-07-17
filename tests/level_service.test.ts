@@ -34,14 +34,14 @@ describe('loadLevels', () => {
     const data = {
       levels: [
         { ...remoteData.levels[0], frozen: true },
-        { ...remoteData.levels[0], ghostSpeed: 2.2 },
+        { ...remoteData.levels[0], ghostSpeed: 2.5 },
       ],
     }
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(data))))
     const out = await loadLevels()
     expect(out.source).toBe('remote')
     expect(out.levels).toHaveLength(1)
-    expect(out.levels[0].ghostSpeed).toBe(2.2)
+    expect(out.levels[0].ghostSpeed).toBe(2.5)
   })
 
   it('云端 404 → 回退内置', async () => {

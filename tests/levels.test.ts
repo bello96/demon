@@ -12,7 +12,7 @@ const validLevel = {
   doorCount: 1,
   darkAmbient: 0.2,
   darkFogFar: 20,
-  ghostSpeed: 2.6,
+  ghostSpeed: 2.5,
   lightsOn: false,
   ghostEnabled: true,
 }
@@ -23,7 +23,7 @@ describe('parseLevelsData', () => {
     expect(out).not.toBeNull()
     expect(out!).toHaveLength(1)
     expect(out![0].rooms).toEqual([{ x: 10, z: 10, w: 30, d: 30 }])
-    expect(out![0].ghostSpeed).toBe(2.6)
+    expect(out![0].ghostSpeed).toBe(2.5)
   })
 
   it('doorCount 恒为 1（JSON 里写多少都忽略）', () => {
@@ -62,6 +62,20 @@ describe('parseLevelsData', () => {
     ['frozen 非布尔', { ...validLevel, frozen: 1 }],
   ])('%s → 整包拒绝返回 null', (_name, lv) => {
     expect(parseLevelsData({ levels: [lv] })).toBeNull()
+  })
+
+  it('ghostSpeed 吸附到 0.5 步进并钳到 [2,6]（速度规格：巡逻 2~6、最小变动 0.5）', () => {
+    const snap = (v: number): number =>
+      parseLevelsData({ levels: [{ ...validLevel, ghostSpeed: v }] })![0].ghostSpeed
+    // 旧编辑器 0.05 步进的历史产物宽容归位（不拒包）
+    expect(snap(3.75)).toBe(4)
+    expect(snap(4.2)).toBe(4)
+    expect(snap(4.7)).toBe(4.5)
+    expect(snap(2.6)).toBe(2.5)
+    // 低于下限吸到 2（结构合法不拒包）；合规值原样保留
+    expect(snap(1.5)).toBe(2)
+    expect(snap(2.5)).toBe(2.5)
+    expect(snap(6)).toBe(6)
   })
 
   it('顶层结构非法 → null', () => {

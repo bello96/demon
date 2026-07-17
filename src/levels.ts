@@ -79,7 +79,11 @@ export interface LevelConfig {
   darkAmbient: number
   /** 关灯时可视距离（米）：雾可逐关变浓 */
   darkFogFar: number
-  /** 幽灵巡逻速度（2.0~6.0）：追击时 ×1.5；玩家步行 4 / 疾跑 6，拾鞋后 6 / 9 */
+  /**
+   * 幽灵巡逻速度：规格 2~6、步进 0.5（追击恒 ×1.5 → 3~9）；
+   * 玩家步行 4 / 疾跑 6 / 鞋+疾跑 9，追击封顶 9 平速不反超，留出逃生余地。
+   * 解析时对历史数据宽容吸附（钳 [2,6] + 归 0.5 倍数），显著非法（≤0 / >6）仍拒包
+   */
   ghostSpeed: number
   /** 开局房间灯是否已打开（默认 false=摸黑找开关；开着时玩家仍可去把它关掉） */
   lightsOn: boolean
@@ -202,7 +206,8 @@ export function parseLevelsData(data: unknown): LevelConfig[] | null {
       doorCount: 1,
       darkAmbient: l.darkAmbient,
       darkFogFar: l.darkFogFar,
-      ghostSpeed: l.ghostSpeed,
+      // 速度规格：2~6、步进 0.5。旧编辑器（0.05 步进）与手改数据吸附归位而非拒包
+      ghostSpeed: Math.min(6, Math.max(2, Math.round(l.ghostSpeed * 2) / 2)),
       lightsOn: l.lightsOn === true,
       ghostEnabled: l.ghostEnabled !== false,
       minimapEnabled: l.minimapEnabled !== false,

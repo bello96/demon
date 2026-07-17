@@ -73,6 +73,23 @@ const CHASE_STUCK_TIMEOUT_MS = 10000
 // 让幽灵真正离开原地；玩家跳下箱子（grid 变化）或进入隐藏会立刻解除。
 const POST_STUCK_CHASE_BLOCK_MS = 6000
 
+// 朝向平滑速率（1/s）：每帧插值因子 1-exp(-rate·dt)，帧率无关。
+// 12 时 90° 转角约 0.19 秒完成 90%——快到不拖沓，又不会像 lookAt 一帧瞬跳
+const TURN_RATE = 12
+
+// 路径前瞻窗口（格）：每帧从最远候选往回找第一个可直线走到的路径点，
+// 直接以它为目标——斜线取代网格 4 邻接的"楼梯"折线。窗口限制单帧检查成本
+const PATH_LOOKAHEAD = 6
+
+// 抓捕臂展（米，水平）：幽灵站在箱子相邻格中心（水平 1.0）也要摸得着箱顶，
+// 故取 1.15；隔一格厚的墙/家具时中心距 ≥1.25，不会隔物误抓
+const CATCH_RADIUS = 1.15
+
+// 抓捕高度窗（米）：玩家脚位高出幽灵中心不超过此值才够得着。
+// 幽灵头顶约 3.3 米——单层箱顶（脚高 1.5，Δy 0.5）看得到摸得着、合理被抓；
+// 双层柜顶（脚高 2.5，Δy 1.5）高于臂展，绝对安全
+const CATCH_MAX_RISE = 1.0
+
 // ---------- Ghost ----------
 export class Ghost {
   mesh: THREE.Group
@@ -96,7 +113,6 @@ export class Ghost {
   // Pre-allocated vectors
   private readonly _toPlayer = new THREE.Vector3()
   private readonly _ghostDir = new THREE.Vector3()
-  private readonly _moveDir = new THREE.Vector3()
 
   constructor(
     private scene: THREE.Scene,
@@ -219,6 +235,66 @@ export class Ghost {
       const e2 = 2 * err
       if (e2 > -dz) { err -= dz; x0 += sx }
       if (e2 < dx) { err += dx; z0 += sz }
+    }
+    return true
+  }
+
+  /** 网格格子对幽灵是否不可走：越界 / 墙 / 任意家具（与 findPath 邻居筛选同标准） */
+  private isBlockedGrid(gx: number, gz: number): boolean {
+    if (gx < 0 || gx >= this.world.MAP_WIDTH || gz < 0 || gz >= this.world.MAP_DEPTH) {
+      return true
+    }
+    if (this.world.grid[gx][gz] === 1) {
+      return true
+    }
+    return this.world.hasFurnitureAt(gx - this.world.MAP_WIDTH / 2, gz - this.world.MAP_DEPTH / 2)
+  }
+
+  /**
+   * 网格直线可行走检查（路径前瞻拉直用）。与视线版 hasLineOfSight 两点不同：
+   * ① 家具一律算阻挡（对齐 findPath 的可走标准——矮家具挡路但不挡视线）；
+   * ② 对角步进时两个正交过渡格都必须可走（幽灵有体积，不能斜穿墙角对角缝）。
+   * 起点格是幽灵自己所在、终点格是 A* 产出的合法路径点，均无需再查。
+   */
+  private hasWalkableLine(from: THREE.Vector3, to: THREE.Vector3): boolean {
+    const offsetX = -this.world.MAP_WIDTH / 2
+    const offsetZ = -this.world.MAP_DEPTH / 2
+
+    let x0 = Math.round(from.x - offsetX)
+    let z0 = Math.round(from.z - offsetZ)
+    const x1 = Math.round(to.x - offsetX)
+    const z1 = Math.round(to.z - offsetZ)
+
+    const dx = Math.abs(x1 - x0)
+    const dz = Math.abs(z1 - z0)
+    const sx = x0 < x1 ? 1 : -1
+    const sz = z0 < z1 ? 1 : -1
+    let err = dx - dz
+
+    while (x0 !== x1 || z0 !== z1) {
+      const e2 = 2 * err
+      const stepX = e2 > -dz
+      const stepZ = e2 < dx
+      if (stepX && stepZ) {
+        // 对角步进：两侧过渡格任一不可走即拒绝（防斜穿墙角）
+        if (this.isBlockedGrid(x0 + sx, z0) || this.isBlockedGrid(x0, z0 + sz)) {
+          return false
+        }
+      }
+      if (stepX) {
+        err -= dz
+        x0 += sx
+      }
+      if (stepZ) {
+        err += dx
+        z0 += sz
+      }
+      if (x0 === x1 && z0 === z1) {
+        break
+      }
+      if (this.isBlockedGrid(x0, z0)) {
+        return false
+      }
     }
     return true
   }
@@ -397,24 +473,65 @@ export class Ghost {
       this.chaseStuckSince = 0
     }
 
-    // 4. Move along path
+    // 4. Move along path —— 三件套对齐玩家连续移动的丝滑观感：
+    //    ① 前瞻跳点：能直线走到的后续路径点直接作为目标，斜线取代网格楼梯折线；
+    //    ② 位移预算循环：单帧位移跨路径点连续消费，到点处不再有零位移冻结帧，
+    //       高速/低帧率下也不会过冲折返；
+    //    ③ 朝向指数平滑：最短弧插值替代 lookAt 瞬跳，直角拐弯连续转过去。
     if (this.path.length > 0 && this.pathIndex < this.path.length) {
-      const nextPoint = this.path[this.pathIndex]
-      this._moveDir.subVectors(nextPoint, this.mesh.position)
-      this._moveDir.y = 0
-      const d = this._moveDir.length()
+      // ① 从最远候选往回扫，跳到第一个可直线走到的路径点
+      const lookLimit = Math.min(this.path.length - 1, this.pathIndex + PATH_LOOKAHEAD)
+      for (let k = lookLimit; k > this.pathIndex; k--) {
+        if (this.hasWalkableLine(this.mesh.position, this.path[k])) {
+          this.pathIndex = k
+          break
+        }
+      }
 
-      if (d < 0.1) {
-        this.pathIndex++
-      } else {
-        this._moveDir.normalize()
-        this.mesh.lookAt(nextPoint.x, this.mesh.position.y, nextPoint.z)
-        const moveSpeed = this.state === 'chase' ? this.speed * 1.5 : this.speed
-        this.mesh.position.addScaledVector(this._moveDir, moveSpeed * dt)
+      // ② 位移预算：要么消费完本帧额度，要么把路径走完
+      let budget = (this.state === 'chase' ? this.speed * 1.5 : this.speed) * dt
+      let dirX = 0
+      let dirZ = 0
+      while (budget > 1e-6 && this.pathIndex < this.path.length) {
+        const nextPoint = this.path[this.pathIndex]
+        const dx = nextPoint.x - this.mesh.position.x
+        const dz = nextPoint.z - this.mesh.position.z
+        const d = Math.sqrt(dx * dx + dz * dz)
+        if (d > 1e-6) {
+          dirX = dx
+          dirZ = dz
+        }
+        if (d <= budget) {
+          this.mesh.position.x = nextPoint.x
+          this.mesh.position.z = nextPoint.z
+          budget -= d
+          this.pathIndex++
+        } else {
+          this.mesh.position.x += (dx / d) * budget
+          this.mesh.position.z += (dz / d) * budget
+          budget = 0
+        }
+      }
+
+      // ③ 朝向平滑转向本帧移动方向（幽灵脸面朝本地 +Z，目标 yaw = atan2(x, z)）
+      if (dirX !== 0 || dirZ !== 0) {
+        const targetYaw = Math.atan2(dirX, dirZ)
+        let delta = targetYaw - this.mesh.rotation.y
+        delta = ((((delta + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI
+        this.mesh.rotation.y += delta * (1 - Math.exp(-TURN_RATE * dt))
       }
     }
 
-    return !this.player.isHidden && dist < 1.0
+    // 抓捕判定：水平臂展 + 高度窗，取本帧移动后的位置（追上当帧即抓）。
+    // 原 3D 球形距离 <1.0 会让"幽灵站单层箱旁（水平 1.0、Δy 0.5）"因
+    // 1.118>1 抓不到，单层箱顶沦为挂机点
+    const cdx = this.player.pos.x - this.mesh.position.x
+    const cdz = this.player.pos.z - this.mesh.position.z
+    return (
+      !this.player.isHidden &&
+      cdx * cdx + cdz * cdz < CATCH_RADIUS * CATCH_RADIUS &&
+      this.player.pos.y - this.mesh.position.y < CATCH_MAX_RISE
+    )
   }
 
   private abandonChase(): void {

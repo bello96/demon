@@ -33,7 +33,7 @@ pnpm dev            # 启动本地开发服务器（Vite，默认 http://localho
 pnpm build          # 构建到 dist/
 pnpm preview        # 预览生产构建
 pnpm typecheck      # tsc --noEmit（含 functions/ 子项目），只做类型检查
-pnpm test           # vitest run，跑 levels / progress / level_service / stamina 单测
+pnpm test           # vitest run，跑 levels / progress / level_service / stamina / ghost 单测
 pnpm dev:cf         # vite build + wrangler pages dev dist，本地模拟 Functions + KV（默认 http://localhost:8788）
 pnpm run deploy         # vite build + wrangler pages deploy dist，发布到 Cloudflare Pages
 ```
@@ -49,6 +49,7 @@ horror-maze-adventure/
 ├── index.html                 # 游戏页入口 HTML，包含所有 UI 层 DOM + 内联样式（游戏风像素 UI）
 ├── vite.config.ts             # Vite 配置：/level 无后缀重写（等效线上）+ /api 代理到线上生产
 ├── tsconfig.json              # TS 配置（strict + ESNext + bundler）
+├── vitest.config.ts           # vitest 配置：node 环境 + tests/setup.ts DOM 桩（canvas/Image/固定种子随机）
 ├── wrangler.toml               # Cloudflare Pages 配置 + KV 绑定（LEVELS_KV，binding 名固定）
 ├── package.json
 ├── README.md
@@ -65,7 +66,8 @@ horror-maze-adventure/
 │   └── api/
 │       └── levels.ts               # GET 公开读关卡 ／ POST 口令预校验 ／ PUT 口令写入 KV
 │                                     （服务端复用 src/levels.ts 的校验）
-├── tests/                        # vitest 单测：levels / progress / level_service / stamina
+├── tests/                        # vitest 单测：levels / progress / level_service / stamina / ghost
+│                                   （setup.ts = DOM 桩；fixtures.ts = 固定 10 房布局）
 └── src/
     ├── game.ts                # 主循环 / 场景组装 / UI 事件绑定 / 关卡生命周期与选关面板
     ├── player.ts              # 玩家控制、相机、碰撞、交互、手电筒、道具状态（钥匙/雷达/鞋子）
@@ -133,6 +135,12 @@ Game (game.ts)
 - **发现玩家四条件**（全部满足才进入 chase）：未躲藏 + 距离 < 20 米 + 前方视野锥内
   （朝向点积 > 0.3 ≈ 145° 锥角）+ Bresenham 栅格视线无墙体/高家具遮挡
 - **寻路**：A\* + 二叉小堆，500 ms 重规划一次；最多 2000 次迭代后返回最近节点
+- **沿路径移动（丝滑化）**：位移预算循环（单帧位移跨路径点连续消费，路径点交接无零位移
+  冻结帧、高速不过冲）+ 朝向指数平滑（`TURN_RATE=12`，最短弧插值替代 lookAt 瞬跳）+
+  LOS 前瞻跳点（`PATH_LOOKAHEAD=6`，行走版直线检查 `hasWalkableLine`：家具算阻挡、
+  禁斜穿墙角对角缝，与只挡高家具的视线版不同）
+- **抓捕判定**：水平臂展 `CATCH_RADIUS=1.15` 且玩家脚位高出幽灵中心 < `CATCH_MAX_RISE=1.0`
+  （单层箱顶摸得着、双层柜顶绝对安全），取本帧移动后位置；躲藏（isHidden）免疫
 - **放弃追击**：玩家进入隐藏（`isHidden`）；追击目标到达时玩家已不在视野；
   追击路径无法推进累计超时 `CHASE_STUCK_TIMEOUT_MS = 30 s`（例如玩家站箱顶）
 
@@ -144,7 +152,8 @@ Game (game.ts)
   疾跑消耗的前提是 **Shift + 方向键同时按住**，持续疾跑 10 秒耗尽，耗尽强制回落步行；
   松开 Shift 才恢复（1 分钟回满），**按住 Shift 期间（含静止）永不恢复**——消耗/冻结/恢复
   三态互斥，无同帧进出水；躲藏中不消耗，暂停/结算时主循环停转自然冻结
-- **幽灵**：巡逻 2.0~6.0 可配（默认 3），追击 ×1.5 → 3~9；配置 < 2.7 追不上步行玩家（教学关），
+- **幽灵**：巡逻 2.0~6.0 可配（**步进 0.5**，默认 3），追击 ×1.5 → 3~9；解析时对历史数据
+  钳 [2,6] + 吸附 0.5 倍数（显著非法 ≤0/>6 仍整包拒收）；配置 < 2.7 追不上步行玩家（教学关），
   4.0 以上无鞋必被追上（鞋子成为生存必需）
 - **雾（视距）**：开灯 `near/far = 120/200`（120 米内完全清澈，任何房间一眼到底）；
   关灯 `near = 2`、far = 关卡配置 `darkFogFar`（8~30）。相机远裁剪面 220 > 雾 far，
@@ -186,7 +195,10 @@ Game (game.ts)
   离线可进本地草稿模式）；左右栏与全部弹框为游戏页同款像素风（`gameAlert`/`gameConfirm`
   替代原生弹框）；画布 560~1050 随视口自适应（1280×800~1920×1080 无滚动条，布局
   min-width 由 `syncCanvasSize` 显式同步——勿改回 min-content，列表 nowrap 文本会传导成页面宽）；
-  重叠房间的边框段画暗虚线；关卡可冻结/解冻（冻结关列表行只剩「解冻」按钮、不可删除，
+  重叠房间的边框段画暗虚线、重叠区同层同状态合一路径单次填充不叠色加深、房号按层级
+  亮暗分层且选中置顶（只改绘制顺序不动数组）；主题弹框仅由「关闭」「使用」（及 Esc 分层）
+  收起，点遮罩空白不关闭；调色为自绘拾色浮层（SV 面板+色相条+EyeDropper 吸管+HEX 手输，
+  HSV 为唯一事实源，点「确定」才写入草稿）；关卡可冻结/解冻（冻结关列表行只剩「解冻」按钮、不可删除，
   参数/主题/画布全面只读，仅可平移缩放查看）；本地草稿自动保存、与云端冲突时弹框二选一
 - **本地 /api**：`pnpm dev` 下由 vite 代理到线上生产（demon.dengjiabei.cn）——
   本地编辑器「保存到云端」写的就是生产数据
@@ -206,6 +218,8 @@ Game (game.ts)
 
 4. **存量关卡难度已随速度体系变化**：玩家步行 6 → 4 之后，按旧速度调的关卡
    （ghostSpeed 2.6~2.8）体感变难（追击 3.9~4.2 > 步行 4），必要时在编辑器下调或依赖鞋子平衡。
+   速度规格化（步进 0.5）后旧值在解析时自动就近归位（如 2.6→2.5）；内置 6 关已改存
+   合规值（第 1 关 2、其余 2.5），云端存量数据加载时同样被吸附。
 
 ### 🧹 代码质量建议
 

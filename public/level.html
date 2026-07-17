@@ -235,6 +235,105 @@
         background: #101418;
         cursor: pointer;
       }
+      /* 自定义调色浮层（布局对齐 draw-guess 拾色器）：fixed 锚在被点色块旁 */
+      #colorPop {
+        display: none;
+        position: fixed;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.95);
+        border: 3px solid #555;
+        padding: 10px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+      }
+      #colorPop.open {
+        display: block;
+      }
+      .cp-top {
+        display: flex;
+        gap: 7px;
+      }
+      /* SV 面板：底色 = 当前色相纯色（JS 设置），叠「白→透明」「透明→黑」两层渐变 */
+      #cpSv {
+        position: relative;
+        width: 232px;
+        height: 138px;
+        cursor: crosshair;
+        border: 1px solid #000;
+        touch-action: none;
+      }
+      #cpSvCur {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+      }
+      /* 竖直色相条：红→黄→绿→青→蓝→品红→红 */
+      #cpHue {
+        position: relative;
+        width: 14px;
+        height: 138px;
+        cursor: pointer;
+        border: 1px solid #000;
+        touch-action: none;
+        background: linear-gradient(
+          to bottom,
+          #f00 0%,
+          #ff0 17%,
+          #0f0 33%,
+          #0ff 50%,
+          #00f 67%,
+          #f0f 83%,
+          #f00 100%
+        );
+      }
+      #cpHueCur {
+        position: absolute;
+        left: 50%;
+        width: 14px;
+        height: 14px;
+        margin: -7px 0 0 -7px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+      }
+      .cp-acts {
+        display: flex;
+        gap: 7px;
+        margin-top: 10px;
+        align-items: center;
+      }
+      #cpEye {
+        flex: none;
+        width: 30px;
+        height: 28px;
+        padding: 0;
+        line-height: 0;
+      }
+      #cpHex {
+        flex: 1;
+        min-width: 0;
+        height: 28px;
+        box-sizing: border-box;
+        padding: 0 8px;
+        font: inherit;
+        font-size: 13px;
+        color: #ddd;
+        background: #101418;
+        border: 1px solid #456;
+        outline: none;
+      }
+      #cpHex:focus {
+        border-color: #ffaa00;
+      }
+      #cpCancel,
+      #cpOk {
+        flex: none;
+      }
       .tc-mini:hover {
         color: #fff;
         border-color: #7ec8ff;
@@ -1118,7 +1217,7 @@
             >
             <div class="ctl">
               <label>幽灵移动速度(m/s)</label>
-              <input type="range" id="ghost" min="2.0" max="6.0" step="0.05" />
+              <input type="range" id="ghost" min="2.0" max="6.0" step="0.5" />
               <b id="vGhost"></b>
             </div>
           </div>
@@ -1225,7 +1324,34 @@
           accept="image/*"
           style="display: none"
         />
-        <input type="color" id="themeColorPick" style="display: none" />
+      </div>
+      <!-- 自定义调色浮层（交互对齐 draw-guess 拾色器）：SV 面板 + 竖直色相条 +
+           吸管/HEX/关闭/确定底栏；选色只改浮层内预览，点「确定」才写入草稿。
+           原方案用隐藏的 input[type=color] 调原生面板，display:none 没有布局盒，
+           面板会漂到屏幕左上角；改为自绘浮层后定位完全自控 -->
+      <div id="colorPop">
+        <div class="cp-top">
+          <div id="cpSv"><div id="cpSvCur"></div></div>
+          <div id="cpHue"><div id="cpHueCur"></div></div>
+        </div>
+        <div class="cp-acts">
+          <button id="cpEye" class="gray" title="吸取屏幕颜色">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path
+                d="M19.07 4.93a3 3 0 0 0-4.24 0l-1.7 1.7-.71-.71a1 1 0 0 0-1.41 1.41l.7.71-7.42 7.42a2 2 0 0 0-.59 1.41V19a1 1 0 0 0 1 1h2.12a2 2 0 0 0 1.42-.59l7.42-7.42.7.7a1 1 0 0 0 1.41-1.41l-.7-.7 1.7-1.71a3 3 0 0 0 0-4.24zM7.83 17.59a.99.99 0 0 1-.71.29H6v-1.12a1 1 0 0 1 .29-.71l7.42-7.42 1.42 1.42-7.3 7.54z"
+              />
+            </svg>
+          </button>
+          <input
+            type="text"
+            id="cpHex"
+            maxlength="7"
+            spellcheck="false"
+            placeholder="#rrggbb"
+          />
+          <button id="cpCancel" class="gray">关 闭</button>
+          <button id="cpOk">确 定</button>
+        </div>
       </div>
     </div>
 
@@ -1664,12 +1790,25 @@
         ctx.stroke();
 
         // 走廊（画在房间下层；孤立走廊橙红提示）
+        // 同层同状态合一条路径单次填充：重叠部分半透明只落一层，不再叠色加深；
+        // 警示组后画浮于正常组之上
+        ctx.beginPath();
         lv.corrRects.forEach((r, i) => {
-          const orphan = sim.orphanCorrs.includes(i);
-          ctx.fillStyle = orphan
-            ? "rgba(215,70,55,0.6)"
-            : "rgba(150,125,80,0.55)";
-          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          if (!sim.orphanCorrs.includes(i)) {
+            ctx.rect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          }
+        });
+        ctx.fillStyle = "rgba(150,125,80,0.55)";
+        ctx.fill();
+        ctx.beginPath();
+        lv.corrRects.forEach((r, i) => {
+          if (sim.orphanCorrs.includes(i)) {
+            ctx.rect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          }
+        });
+        ctx.fillStyle = "rgba(215,70,55,0.6)";
+        ctx.fill();
+        lv.corrRects.forEach((r, i) => {
           if (i === selCorr && mode === "corr") {
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = "#ffd257";
@@ -1692,13 +1831,50 @@
         });
 
         // 房间
+        // 填充与走廊同策略：正常绿一组、警示红一组各单次填充，重叠区不叠色变深；
+        // 层级关系仍由 strokeRoomEdges 的重叠段暗虚线表达
+        const roomWarn = lv.rooms.map(
+          (r, i) =>
+            r.w < MIN_ROOM || r.d < MIN_ROOM || sim.unreachableRooms.includes(i),
+        );
+        ctx.beginPath();
         lv.rooms.forEach((r, i) => {
+          if (!roomWarn[i]) {
+            ctx.rect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          }
+        });
+        ctx.fillStyle = "rgba(70,110,80,0.5)";
+        ctx.fill();
+        ctx.beginPath();
+        lv.rooms.forEach((r, i) => {
+          if (roomWarn[i]) {
+            ctx.rect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
+          }
+        });
+        // 孤岛房间与非法尺寸同级：红色示警（无法导出）
+        ctx.fillStyle = "rgba(160,50,50,0.45)";
+        ctx.fill();
+        // 层级：默认按数组序（索引大者在上），选中房置顶——点击地图或右侧列表
+        // 选中即提层；只改绘制顺序不动数组，房号/列表/导出顺序全部保持稳定
+        const topIdx = mode === "room" ? sel : -1;
+        const order = lv.rooms.map((_, i) => i);
+        if (topIdx >= 0 && topIdx < order.length) {
+          order.splice(topIdx, 1);
+          order.push(topIdx);
+        }
+        const layerOf = (i) => (i === topIdx ? lv.rooms.length : i);
+        const overlaps = (a, b) =>
+          a.x < b.x + b.w && b.x < a.x + a.w && a.z < b.z + b.d && b.z < a.z + a.d;
+        // 被更上层房间压住的房间：房号/尺寸标签调浅，一眼可辨层级关系
+        const buried = lv.rooms.map((r, i) =>
+          lv.rooms.some(
+            (o, j) => j !== i && layerOf(j) > layerOf(i) && overlaps(r, o),
+          ),
+        );
+        for (const i of order) {
+          const r = lv.rooms[i];
           const bad = r.w < MIN_ROOM || r.d < MIN_ROOM;
           const unreachable = sim.unreachableRooms.includes(i);
-          // 孤岛房间与非法尺寸同级：红色示警（无法导出）
-          ctx.fillStyle =
-            bad || unreachable ? "rgba(160,50,50,0.45)" : "rgba(70,110,80,0.5)";
-          ctx.fillRect(r.x * CELL, r.z * CELL, r.w * CELL, r.d * CELL);
           const selRoom = i === sel && mode === "room";
           ctx.lineWidth = selRoom ? 2.5 : unreachable ? 2 : 1;
           // 实线色按状态；重叠段的暗虚线用同色相低透明度
@@ -1715,7 +1891,9 @@
                 ? "rgba(122,208,255,0.4)"
                 : "rgba(255,255,255,0.14)";
           strokeRoomEdges(r, lv.rooms, i, solid, dim);
-          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.fillStyle = buried[i]
+            ? "rgba(255,255,255,0.38)"
+            : "rgba(255,255,255,0.85)";
           ctx.font = "bold 11px sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -1724,7 +1902,9 @@
             (r.x + r.w / 2) * CELL,
             (r.z + r.d / 2) * CELL - 6,
           );
-          ctx.fillStyle = "rgba(255,255,255,0.45)";
+          ctx.fillStyle = buried[i]
+            ? "rgba(255,255,255,0.22)"
+            : "rgba(255,255,255,0.45)";
           ctx.font = "9px sans-serif";
           ctx.fillText(
             `${r.w}×${r.d}`,
@@ -1736,7 +1916,7 @@
             ctx.fillStyle = "#7ad0ff";
             ctx.fillRect((r.x + r.w) * CELL - 7, (r.z + r.d) * CELL - 7, 7, 7);
           }
-        });
+        }
 
         // 可视距离示意（地图中心，低透明度不抢主体）：虚线圆 + 半径虚线，文字标在半径中点；
         // 开局开灯=基本无雾，不画
@@ -1841,7 +2021,7 @@
         $("fog").value = lv.darkFogFar;
         $("vFog").textContent = lv.darkFogFar;
         $("ghost").value = lv.ghostSpeed;
-        $("vGhost").textContent = lv.ghostSpeed.toFixed(2);
+        $("vGhost").textContent = lv.ghostSpeed.toFixed(1);
         $("ambient").disabled = fz;
         $("fog").disabled = fz;
         $("ghost").disabled = fz || lv.ghostEnabled === false;
@@ -2094,6 +2274,11 @@
         }
         if (e.key === "Escape") {
           if ($("themeMask").classList.contains("open")) {
+            // 分层收起：先收调色浮层，再按一次 Esc 才关主题弹框
+            if ($("colorPop").classList.contains("open")) {
+              closeColorPop();
+              return;
+            }
             $("themeMask").classList.remove("open");
             return;
           }
@@ -2676,7 +2861,7 @@
         ["corridorFloor", "走廊地板", "#8f563b"],
         ["roomWall", "房间墙壁", "#9a948a"],
         ["corridorWall", "走廊墙壁", "#7a6a5a"],
-        ["ceiling", "天花板", "#4a4a4a"],
+        ["ceiling", "房间屋顶", "#4a4a4a"],
       ];
       /** 内置方案模板：经典默认 = 清空主题回到原版材质，其余全为配色方案 */
       const BUILTIN_THEMES = [
@@ -2807,7 +2992,7 @@
             corrRects,
             darkAmbient: numIn(lv.darkAmbient, 0.05, 0.3, 0.2),
             darkFogFar: numIn(lv.darkFogFar, 8, 30, 20),
-            ghostSpeed: numIn(lv.ghostSpeed, 2, 6, 3),
+            ghostSpeed: Math.round(numIn(lv.ghostSpeed, 2, 6, 3) * 2) / 2,
             lightsOn: lv.lightsOn === true,
             ghostEnabled: lv.ghostEnabled !== false,
             minimapEnabled: lv.minimapEnabled !== false,
@@ -2826,7 +3011,7 @@
       let themeSel = 0;
       /** 自定义卡片编辑态（每关各自回显；点「使用」才写入关卡） */
       let customDraft = {};
-      /** 正在调色 / 传图的表面键（隐藏 input 的 change 回填目标） */
+      /** 正在传图的表面键（隐藏文件 input 的 change 回填目标）；调色浮层另用 popKey */
       let themePickKey = null;
       /** 面取值 → 色块 style：纯色 / 图片缩略 / 老数据 preset 用代表色示意；空面返回 null */
       function surfaceChipStyle(s, defC) {
@@ -2859,6 +3044,7 @@
           customDraft = JSON.parse(JSON.stringify(t));
         }
         themePickKey = null;
+        closeColorPop();
         renderThemeUI();
         $("themeMask").classList.add("open");
       }
@@ -2893,24 +3079,187 @@
         $("themeCards").innerHTML = cards.join("");
       }
       $("btnTheme").onclick = openThemeModal;
-      $("themeClose").onclick = () => $("themeMask").classList.remove("open");
-      $("themeMask").onclick = (e) => {
-        if (e.target === $("themeMask"))
-          $("themeMask").classList.remove("open");
+      $("themeClose").onclick = () => {
+        closeColorPop();
+        $("themeMask").classList.remove("open");
       };
+      // 点遮罩空白不再关闭弹框（防误触丢掉配置到一半的自定义主题）：
+      // 只收起次级调色浮层；弹框仅由「关闭」「使用」（及 Esc）收起
+      $("themeMask").onclick = (e) => {
+        if (e.target === $("themeMask")) closeColorPop();
+      };
+
+      // ---- 自定义调色浮层（交互对齐 draw-guess 拾色器）：SV 面板 + 色相条 +
+      //      吸管 + HEX；拖动只改浮层内预览，点「确定」才写入草稿 ----
+      let popKey = null;
+      // HSV 独立状态：拖到饱和度 0 时 hex 会丢失色相信息，从 hex 反推会让
+      // 色相条跳回红色——因此 h/s/v 是唯一事实源，hex 只是输入/输出格式
+      let cpH = 0;
+      let cpS = 0;
+      let cpV = 0.5;
+      function hexToHsv(hex) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const d = max - min;
+        let h = 0;
+        if (d !== 0) {
+          if (max === r) h = 60 * (((g - b) / d + 6) % 6);
+          else if (max === g) h = 60 * ((b - r) / d + 2);
+          else h = 60 * ((r - g) / d + 4);
+        }
+        return { h, s: max === 0 ? 0 : d / max, v: max };
+      }
+      function hsvToHex(h, s, v) {
+        const c = v * s;
+        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+        const m = v - c;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        if (h < 60) [r, g, b] = [c, x, 0];
+        else if (h < 120) [r, g, b] = [x, c, 0];
+        else if (h < 180) [r, g, b] = [0, c, x];
+        else if (h < 240) [r, g, b] = [0, x, c];
+        else if (h < 300) [r, g, b] = [x, 0, c];
+        else [r, g, b] = [c, 0, x];
+        const to2 = (n) =>
+          Math.round((n + m) * 255)
+            .toString(16)
+            .padStart(2, "0");
+        return "#" + to2(r) + to2(g) + to2(b);
+      }
+      /** 按当前 h/s/v 刷新 SV 面板底色、两个游标位置与 HEX 框 */
+      function updateCpUI() {
+        const sv = $("cpSv");
+        sv.style.background =
+          "linear-gradient(to top, #000, rgba(0,0,0,0)), " +
+          "linear-gradient(to right, #fff, hsl(" + cpH + ",100%,50%))";
+        $("cpSvCur").style.left = cpS * 100 + "%";
+        $("cpSvCur").style.top = (1 - cpV) * 100 + "%";
+        $("cpHueCur").style.top = (cpH / 360) * 100 + "%";
+        $("cpHex").value = hsvToHex(cpH, cpS, cpV);
+      }
+      function openColorPop(key, anchor) {
+        popKey = key;
+        const s = customDraft[key];
+        const hex = s && s.type === "color" ? s.value : "#888888";
+        const hsv = hexToHsv(hex);
+        cpH = hsv.h;
+        cpS = hsv.s;
+        cpV = hsv.v;
+        updateCpUI();
+        const pop = $("colorPop");
+        pop.classList.add("open");
+        // 先显示才有尺寸；锚在色块下方，右/下越界时贴边或翻到上方
+        const pw = pop.offsetWidth;
+        const ph = pop.offsetHeight;
+        let left = Math.min(
+          Math.max(8, anchor.left),
+          window.innerWidth - pw - 8,
+        );
+        let top = anchor.bottom + 6;
+        if (top + ph > window.innerHeight - 8) {
+          top = Math.max(8, anchor.top - ph - 6);
+        }
+        pop.style.left = left + "px";
+        pop.style.top = top + "px";
+      }
+      function closeColorPop() {
+        popKey = null;
+        $("colorPop").classList.remove("open");
+      }
+      /** 指针拖动绑定：down 捕获指针后 move 持续回调归一化坐标（0..1，越界钳住） */
+      function bindDrag(el, onPos) {
+        const report = (e) => {
+          const r = el.getBoundingClientRect();
+          const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+          const y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+          onPos(x, y);
+        };
+        el.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          el.setPointerCapture(e.pointerId);
+          report(e);
+        });
+        el.addEventListener("pointermove", (e) => {
+          if (el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) {
+            report(e);
+          }
+        });
+      }
+      bindDrag($("cpSv"), (x, y) => {
+        cpS = x;
+        cpV = 1 - y;
+        updateCpUI();
+      });
+      bindDrag($("cpHue"), (_x, y) => {
+        cpH = Math.min(359.99, y * 360);
+        updateCpUI();
+      });
+      // HEX 手输：Enter/失焦提交，非法回滚为当前色（与 draw-guess 一致）
+      function commitHexInput() {
+        let v = $("cpHex").value.trim().toLowerCase();
+        if (/^[0-9a-f]{6}$/.test(v)) {
+          v = "#" + v;
+        }
+        if (/^#[0-9a-f]{6}$/.test(v)) {
+          const hsv = hexToHsv(v);
+          cpH = hsv.h;
+          cpS = hsv.s;
+          cpV = hsv.v;
+        }
+        updateCpUI();
+      }
+      $("cpHex").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitHexInput();
+        }
+      });
+      $("cpHex").addEventListener("blur", commitHexInput);
+      // 吸管：浏览器原生 EyeDropper API（Chromium 95+；不支持则隐藏按钮）
+      if (typeof window.EyeDropper === "function") {
+        $("cpEye").onclick = async () => {
+          try {
+            const res = await new window.EyeDropper().open();
+            const hsv = hexToHsv(res.sRGBHex.toLowerCase());
+            cpH = hsv.h;
+            cpS = hsv.s;
+            cpV = hsv.v;
+            updateCpUI();
+          } catch (_) {
+            /* 用户 Esc 取消吸色 */
+          }
+        };
+      } else {
+        $("cpEye").style.display = "none";
+      }
+      $("cpOk").onclick = () => {
+        if (!popKey) {
+          return closeColorPop();
+        }
+        commitHexInput(); // 直接点确定时把未失焦的手输 HEX 也算数
+        customDraft[popKey] = { type: "color", value: hsvToHex(cpH, cpS, cpV) };
+        closeColorPop();
+        renderThemeUI();
+      };
+      $("cpCancel").onclick = closeColorPop;
+
       $("themeCards").addEventListener("click", (e) => {
         // 自定义卡行内控件优先：调色 / 传图 / 清除（都会把选中态拉到自定义卡）
         const pick = e.target.closest("[data-pick]");
         if (pick) {
           themeSel = "custom";
-          themePickKey = pick.dataset.pick;
-          const s = customDraft[themePickKey];
-          $("themeColorPick").value =
-            s && s.type === "color" ? s.value : "#888888";
+          // 在重建 DOM 前快照色块位置，调色浮层锚到该矩形旁
+          const r = pick.getBoundingClientRect();
           renderThemeUI();
-          $("themeColorPick").click(); // 用户手势内同步调起原生取色器
+          openColorPop(pick.dataset.pick, r);
           return;
         }
+        closeColorPop();
         const img = e.target.closest("[data-img]");
         if (img) {
           themeSel = "custom";
@@ -2932,16 +3281,6 @@
             card.dataset.card === "custom" ? "custom" : +card.dataset.card;
           renderThemeUI();
         }
-      });
-      // 用 change 而非 input：拖拽取色不重建 DOM，避免原生取色器被打断
-      $("themeColorPick").addEventListener("change", (e) => {
-        if (!themePickKey) return;
-        customDraft[themePickKey] = {
-          type: "color",
-          value: e.target.value.toLowerCase(),
-        };
-        themePickKey = null;
-        renderThemeUI();
       });
       // 图片上传：类型 + 500KB 大小校验，FileReader 转 data URL 存入草稿
       $("themeImgFile").addEventListener("change", (e) => {
@@ -2969,6 +3308,7 @@
       // 自定义必须五面配全（颜色或图片）才能使用——空面若静默回退默认，
       // 应用结果会等同「经典默认」，重开弹框回显不到自定义卡，看起来像没生效
       $("themeUse").onclick = () => {
+        closeColorPop();
         const lv = levels[cur];
         if (!lv) return;
         if (themeSel === "custom") {
