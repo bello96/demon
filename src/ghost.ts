@@ -65,9 +65,15 @@ class MinHeap {
 // ---------- Neighbor offsets ----------
 const DIRS: ReadonlyArray<readonly [number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 
-// 追击卡死（路径无法推进，典型场景：玩家站在箱子顶、跳过幽灵后留下的不可达目标）
-// 的待机阈值。期间幽灵原地静止，超时后由 abandonChase + chaseBlockedUntil 接力处理。
+// 追击卡死（路径无法推进）的待机阈值——看得见玩家时的长档（典型场景：玩家站在
+// 箱子顶、幽灵在旁边够不着，属于有意的"守箱对峙"）。期间幽灵原地静止，
+// 超时后由 abandonChase + chaseBlockedUntil 接力处理。
 const CHASE_STUCK_TIMEOUT_MS = 10000
+
+// 待机中已看不见玩家的短档（典型场景：玩家正面从幽灵头顶跳过、落在背后离开——
+// 最后目击点带着跳跃高度，3D 距离 <1 的"到达放弃"永远不触发）：
+// 对着空气罚站没有意义，5 秒即放弃恢复巡逻；此档放弃不进巡逻冷却
+const CHASE_STUCK_LOST_TIMEOUT_MS = 5000
 
 // 待机超时后强制进入"巡逻冷却"：即便 canSee 仍为 true 也拒绝重新进入 chase，
 // 让幽灵真正离开原地；玩家跳下箱子（grid 变化）或进入隐藏会立刻解除。
@@ -452,19 +458,27 @@ export class Ghost {
       }
     }
 
-    // 3.5 追击待机：追击中路径无法推进（玩家在箱顶等不可达点，或被跳过后目标点是 A*
-    //     返回的最近替代点）即进入原地静止，累计 10 秒后放弃追击 + 开启巡逻冷却，
-    //     让幽灵真正离开而非被 canSee=true 立刻拉回 chase 形成永久静止。
+    // 3.5 追击待机：追击中路径无法推进（目标格不可达，A* 只给出最近替代点）即原地
+    //     静止。超时分两档：
+    //     - 看得见玩家（玩家站箱顶的守箱对峙）→ 10 秒后放弃 + 开启巡逻冷却，
+    //       让幽灵真正离开而非被 canSee=true 立刻拉回 chase 形成永久静止；
+    //     - 已看不见玩家（玩家从头顶跳过落到背后离开，残留高位目标）→ 5 秒即放弃
+    //       恢复巡逻；不进冷却——本就看不见，之后再进视野就正常重新追击。
     if (this.state === 'chase') {
       const pathDone = this.path.length === 0 || this.pathIndex >= this.path.length
       if (pathDone) {
         if (this.chaseStuckSince === 0) {
           this.chaseStuckSince = now
-        } else if (now - this.chaseStuckSince >= CHASE_STUCK_TIMEOUT_MS) {
+        } else if (
+          now - this.chaseStuckSince >=
+          (canSee ? CHASE_STUCK_TIMEOUT_MS : CHASE_STUCK_LOST_TIMEOUT_MS)
+        ) {
           this.abandonChase()
-          this.chaseBlockedUntil = now + POST_STUCK_CHASE_BLOCK_MS
-          this.chaseBlockedGridX = playerGridX
-          this.chaseBlockedGridZ = playerGridZ
+          if (canSee) {
+            this.chaseBlockedUntil = now + POST_STUCK_CHASE_BLOCK_MS
+            this.chaseBlockedGridX = playerGridX
+            this.chaseBlockedGridZ = playerGridZ
+          }
         }
       } else {
         this.chaseStuckSince = 0

@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll } from 'vitest'
+import { describe, expect, it, beforeAll, vi } from 'vitest'
 import * as THREE from 'three'
 import { World } from '../src/world'
 import { Ghost } from '../src/ghost'
@@ -189,6 +189,73 @@ describe('Ghost 移动丝滑性（位移预算 + 平滑转向 + 前瞻拉直）'
     expect(ghost.update(1e-9)).toBe(false)
     fakePlayer.isHidden = false
     fakePlayer.pos.copy(world.walkableNodes[0])
+  })
+
+  it('追击待机分两档：丢失视线 5 秒放弃恢复巡逻（无冷却），看得见维持 10 秒对峙', () => {
+    const g = ghost as any
+    const p0 = v(world, GX, GZ)
+    const boxCell = v(world, GX, GZ + 1)
+    const boxKey = `${Math.round(boxCell.x)},1,${Math.round(boxCell.z)}`
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      // —— 丢失视线档：玩家从头顶跳过后的残留场景——target 带跳跃高度（3D 距离
+      //    1.5 > 1，"到达放弃"永不触发），玩家本人已跑远（>20 米 → canSee=false）
+      vi.setSystemTime(1_000_000)
+      ghost.mesh.position.set(p0.x, 1, p0.z)
+      fakePlayer.pos.copy(world.walkableNodes[0])
+      fakePlayer.isHidden = false
+      g.state = 'chase'
+      g.target.set(p0.x, 2.5, p0.z)
+      g.path = []
+      g.pathIndex = 0
+      g.chaseStuckSince = 0
+      g.chaseBlockedUntil = 0
+      g.lastPathTime = 1_000_000
+
+      ghost.update(1 / 60) // 启动待机计时
+      expect(g.state).toBe('chase')
+
+      vi.setSystemTime(1_000_000 + 4900)
+      ghost.update(1 / 60) // 4.9 秒：仍定在原地（旧行为要罚站满 10 秒）
+      expect(g.state).toBe('chase')
+      expect(ghost.mesh.position.distanceTo(p0)).toBeLessThan(1e-6)
+
+      vi.setSystemTime(1_000_000 + 5100)
+      ghost.update(1 / 60) // 过 5 秒：放弃追击恢复巡逻，且不进巡逻冷却
+      expect(g.state).toBe('patrol')
+      expect(g.chaseBlockedUntil).toBe(0)
+
+      // —— 看得见档：箱顶对峙——玩家站在幽灵正前方相邻格的"箱顶"上，
+      //    目标格被家具阻塞（A* 只能给出幽灵自身格 → 空路径待机）
+      vi.setSystemTime(2_000_000)
+      ghost.mesh.position.set(p0.x, 1, p0.z)
+      ghost.mesh.rotation.set(0, 0, 0) // 面朝 +Z，正对玩家 → 视锥内
+      fakePlayer.pos.set(boxCell.x, 2.5, boxCell.z)
+      world.furnitureBlocks.add(boxKey)
+      g.state = 'patrol'
+      g.path = []
+      g.pathIndex = 0
+      g.chaseStuckSince = 0
+      g.chaseBlockedUntil = 0
+      g.lastPathTime = 0
+
+      ghost.update(1 / 60) // canSee → 进入 chase，目标格阻塞 → 空路径 → 计时开始
+      expect(g.state).toBe('chase')
+
+      vi.setSystemTime(2_000_000 + 5500)
+      ghost.update(1 / 60) // 5.5 秒：看得见 → 仍守着（若误用 5 秒档此处已放弃）
+      expect(g.state).toBe('chase')
+
+      vi.setSystemTime(2_000_000 + 10100)
+      ghost.update(1 / 60) // 过 10 秒：放弃 + 开启巡逻冷却（防 canSee 立刻拉回）
+      expect(g.state).toBe('patrol')
+      expect(g.chaseBlockedUntil).toBeGreaterThan(0)
+    } finally {
+      world.furnitureBlocks.delete(boxKey)
+      vi.useRealTimers()
+      fakePlayer.pos.copy(world.walkableNodes[0])
+      fakePlayer.isHidden = false
+    }
   })
 
   it('前瞻直线检查：拒斜穿墙角对角缝、家具算阻挡、正常直线放行', () => {

@@ -371,14 +371,15 @@
         text-shadow: 2px 2px 0 #000;
         display: none;
       }
-      /* 体力条：屏幕正下方居中；Shift 疾跑 10 秒耗尽、松开 1 分钟回满（player.updateStaminaBar 驱动） */
+      /* 体力条：屏幕正下方居中；Shift 疾跑 10 秒耗尽、松开 1 分钟回满（player.updateStaminaBar 驱动）；
+         尺寸 = 原 320×14 缩窄：长度 -20% → 256、高度 -10% → 12.6 */
       #stamina-bar {
         position: absolute;
         bottom: 40px;
         left: 50%;
         transform: translateX(-50%);
-        width: 320px;
-        height: 14px;
+        width: 256px;
+        height: 12.6px;
         /* 空白处（底槽）40% 不透明，轻透出身后 3D 场景 */
         background: rgba(0, 0, 0, 0.4);
         border: 2px solid #555;
