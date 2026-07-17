@@ -1302,7 +1302,8 @@
 
     <!-- 关卡主题弹框：五张方案卡片（4 张内置只读 + 1 张自定义可编辑），
          选中卡片后点「使用」应用到当前关并关闭；自定义每面可调纯色或上传
-         图片纹理（原文件 ≤500KB，base64 随关卡数据上云），每关自定义互相独立 -->
+         图片纹理（上传即前端压缩：等比 ≤512px、WebP 优先 JPEG 兜底，base64
+         随关卡数据上云），每关自定义互相独立 -->
     <div class="modal-mask" id="themeMask">
       <div class="modal theme-modal">
         <div class="modal-head">
@@ -3069,7 +3070,7 @@
           const chip = `<span class="tc-chip editable${st ? "" : " empty"}"${st ? ` style="${st}"` : ""} data-pick="${k}" title="${s && s.type === "image" ? "已设图片纹理，点击可改为纯色" : "选择颜色"}"></span>`;
           return (
             `<div class="tc-row"><span class="tc-label">${label}</span>${chip}` +
-            `<span class="tc-mini" data-img="${k}" title="上传图片纹理（≤500KB）">图</span>` +
+            `<span class="tc-mini" data-img="${k}" title="上传图片纹理（自动压缩至最长边 512px）">图</span>` +
             `<span class="tc-mini del" data-clear="${k}" title="清除本面，恢复默认材质">✕</span></div>`
           );
         }).join("");
@@ -3282,7 +3283,57 @@
           renderThemeUI();
         }
       });
-      // 图片上传：类型 + 500KB 大小校验，FileReader 转 data URL 存入草稿
+      // ---- 图片主题前端压缩：贴墙/地大面 512px 足够清晰（游戏内还有像素风滤镜），
+      //      重编码后单图约 20~100KB——比旧的"500KB 原图直存"缩 5~15 倍，
+      //      是整包（KV 单值、游戏启动整包拉取）体积的第一道减负 ----
+      const THEME_IMG_MAX_EDGE = 512; // 压缩目标：最长边像素（不放大小图）
+      const THEME_IMG_QUALITY = 0.8;
+      const THEME_IMG_INPUT_MAX = 10 * 1024 * 1024; // 原文件解码上限，防超大图撑爆内存
+      /** 字节数 → 人类可读（<1MB 取整 KB，否则一位小数 MB） */
+      function fmtSize(bytes) {
+        return bytes >= 1024 * 1024
+          ? (bytes / 1024 / 1024).toFixed(1) + "MB"
+          : Math.max(1, Math.round(bytes / 1024)) + "KB";
+      }
+      /** data URL 的近似字节数（base64 段长度 × 3/4） */
+      function dataUrlBytes(u) {
+        return Math.round(((u.length - u.indexOf(",") - 1) * 3) / 4);
+      }
+      /** 等比缩到最长边 ≤512px 并重编码：优先 WebP；编码器不支持时（如旧 Safari
+          toDataURL 静默退回 PNG）按前缀检测改走 JPEG。resolve 压缩后 data URL */
+      function compressThemeImage(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            const w = img.naturalWidth;
+            const h = img.naturalHeight;
+            if (!w || !h) {
+              reject(new Error("图片解码失败"));
+              return;
+            }
+            const k = Math.min(1, THEME_IMG_MAX_EDGE / Math.max(w, h));
+            const off = document.createElement("canvas");
+            off.width = Math.max(1, Math.round(w * k));
+            off.height = Math.max(1, Math.round(h * k));
+            const octx = off.getContext("2d");
+            octx.imageSmoothingQuality = "high";
+            octx.drawImage(img, 0, 0, off.width, off.height);
+            let out = off.toDataURL("image/webp", THEME_IMG_QUALITY);
+            if (!out.startsWith("data:image/webp")) {
+              out = off.toDataURL("image/jpeg", THEME_IMG_QUALITY);
+            }
+            resolve(out);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("图片解码失败"));
+          };
+          img.src = url;
+        });
+      }
+      // 图片上传：类型/大小校验 → 前端自动压缩 → data URL 存入草稿
       $("themeImgFile").addEventListener("change", (e) => {
         const f = e.target.files && e.target.files[0];
         e.target.value = ""; // 清掉选择，同一文件可重复选
@@ -3291,18 +3342,27 @@
           toast("请选择图片文件");
           return;
         }
-        if (f.size > 500 * 1024) {
-          toast("图片超过 500KB 限制，请压缩后再上传");
+        if (f.size > THEME_IMG_INPUT_MAX) {
+          toast("图片超过 10MB，请换小一点的原图");
           return;
         }
         const key = themePickKey;
         themePickKey = null;
-        const fr = new FileReader();
-        fr.onload = () => {
-          customDraft[key] = { type: "image", value: String(fr.result) };
-          renderThemeUI();
-        };
-        fr.readAsDataURL(f);
+        compressThemeImage(f)
+          .then((dataUrl) => {
+            // 与 src/levels.ts 的 THEME_IMAGE_MAX_LEN 对齐的兜底（512px 压缩产物
+            // 正常远小于此值，触发即说明图异常）
+            if (dataUrl.length > 720000) {
+              toast("压缩后仍超限，请换一张图");
+              return;
+            }
+            customDraft[key] = { type: "image", value: dataUrl };
+            renderThemeUI();
+            toast("已压缩 " + fmtSize(f.size) + " → " + fmtSize(dataUrlBytes(dataUrl)));
+          })
+          .catch((err) => {
+            toast((err && err.message) || "图片处理失败");
+          });
       });
       // 「使用」：把选中卡片写入当前关并关闭弹框。
       // 自定义必须五面配全（颜色或图片）才能使用——空面若静默回退默认，
@@ -3593,9 +3653,32 @@
        * 保存到云端。返回 true = 保存成功（供「保存并退出」判断能否跳转）。
        * opts.silent = true 时成功不弹提示框（退出前保存：跳转本身即反馈），失败仍弹框。
        */
+      // 整包体积闸：KV 单值上限 25MiB，超限保存必败（留 1MiB 余量提前拦）；
+      // 偏大档先确认——游戏端启动整包拉取有 3 秒超时，包越大慢网回退内置关卡概率越高
+      const CLOUD_HARD_LIMIT = 24 * 1024 * 1024;
+      const CLOUD_WARN_LIMIT = 8 * 1024 * 1024;
       async function cloudSave(opts = {}) {
         const json = guardedJSON();
         if (json === null) return false;
+        const bytes = new Blob([json]).size;
+        if (bytes > CLOUD_HARD_LIMIT) {
+          gameAlert(
+            "关卡整包体积 " +
+              fmtSize(bytes) +
+              "，已超云端单值存储上限（25MB），无法保存。\n请清理部分关卡的主题图片（改用纯色或删图）后再试。",
+            { title: "体积超限", tone: "danger" },
+          );
+          return false;
+        }
+        if (bytes > CLOUD_WARN_LIMIT) {
+          const go = await gameConfirm(
+            "关卡整包体积 " +
+              fmtSize(bytes) +
+              "。\n包越大游戏启动加载越慢，慢网络下可能超时回退内置关卡。\n建议清理部分主题图片后再保存。",
+            { title: "体积偏大", okText: "仍要保存", cancelText: "取 消" },
+          );
+          if (go !== true) return false;
+        }
         let token = localStorage.getItem(TOKEN_KEY);
         if (!token) {
           token = await requestToken({ allowCancel: true });

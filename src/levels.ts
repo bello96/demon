@@ -16,7 +16,9 @@ const THEME_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 const LEVEL_ID_RE = /^[A-Za-z0-9_-]{1,32}$/
 /** 图片主题：data URL 格式白名单（常见位图类型 + base64 字符集） */
 const THEME_IMAGE_RE = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/
-/** 图片主题 data URL 长度上限：500KB 文件 base64 后约 683K 字符，留少量余量 */
+/** 图片主题 data URL 长度上限：500KB 文件 base64 后约 683K 字符，留少量余量。
+    编辑器上传已做前端压缩（等比 ≤512px、WebP/JPEG，产物通常只有几万~十几万字符），
+    此上限仅作服务端兜底，同时保证压缩功能上线前的存量云端图片继续通过校验 */
 const THEME_IMAGE_MAX_LEN = 720_000
 
 /** 主题单面校验：preset 限白名单、color 限 #rrggbb、image 限 data:image base64 且长度受限；
