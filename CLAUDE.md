@@ -84,6 +84,8 @@ horror-maze-adventure/
     ├── stamina.ts                # 体力纯函数：tickStamina（疾跑 10s 耗尽 / 松开 60s 回满）/ canSprint
     ├── level_service.ts          # 云端关卡拉取：3 秒超时 + 校验失败 / 网络错误一律回退内置关卡
     ├── constants.ts               # 共享数值常量：LIT_AMBIENT / LIT_FOG_NEAR / LIT_FOG_FAR / DARK_FOG_NEAR
+    ├── anim.ts                    # UI/演出动画层：CDN 按需加载 anime.js v4（esm.sh ?exports= 摇树），
+    │                                加载失败全量降级瞬切；被抓/胜利演出、面板过渡、选关卡片交错入场
     └── static/                # 墙 / 地面贴图
 ```
 
@@ -193,7 +195,15 @@ Game (game.ts)
 
 - **游戏页流程**：主菜单「开始游戏」→ 选关卡片面板（地图缩略图卡片，单击选中、
   「进入游戏」确认、双击直进、锁定关灰显）→ 游玩；小地图仅游玩中显示，M 键放大
-  （`minimapEnabled=false` 的关卡整体禁用）
+  （`minimapEnabled=false` 的关卡整体禁用，放大/缩小有 0.18s CSS 过渡）
+- **UI/演出动画层（src/anim.ts）**：CDN 按需加载 anime.js v4
+  （esm.sh `?exports=animate,createTimeline,stagger` 端上摇树，gzip 十几 KB），
+  加载失败/未就绪一律降级为原瞬切行为，游戏流程绝不被动画层阻塞；只做入场动画不做
+  离场（无回调时序、连点不撞车）。被抓演出 = 红屏冲击（#damage-flash）+ 相机最短弧
+  转向幽灵并侧倾下沉 + 半秒后结算面板砸入（相机补间安全前提：结算后主循环只渲染不更新，
+  重生必经 buildLevel→reset/spawn 整体复位相机；enterPlay/showMenu 调 cancelCinematics
+  终止残留补间）；胜利 = timeline 面板淡入→标题回弹→按钮交错；选关卡片只做位移交错
+  （不动 opacity，避免 inline 覆盖 .locked 灰显）；被抓同帧停心跳音（修掉循环残留）并藏小地图
 - **编辑器 /level**：进门口令门禁（POST /api/levels 预校验，localStorage 记住口令，
   离线可进本地草稿模式）；左右栏与全部弹框为游戏页同款像素风（`gameAlert`/`gameConfirm`
   替代原生弹框）；画布 560~1050 随视口自适应（1280×800~1920×1080 无滚动条，布局

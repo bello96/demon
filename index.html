@@ -361,6 +361,17 @@
         z-index: 5;
       }
 
+      /* 被抓红屏：边缘浓中心淡的血色雾，透明度由被抓演出（anim.ts）驱动——
+         瞬间冲高后回落常驻，重开/返回时归零；z 需低于结算面板(20) */
+      #damage-flash {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle, rgba(160, 0, 0, 0.35) 30%, rgba(110, 0, 0, 0.85) 100%);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 15;
+      }
+
       #interaction-msg {
         position: absolute;
         bottom: 100px;
@@ -408,6 +419,15 @@
         opacity: 0.8;
         /* 默认隐藏：只在游玩中显示（enterPlay 显示 / showMenu 隐藏） */
         display: none;
+        /* M 键放大/缩小的平滑过渡；transform 显式给初值，none → translate 无法插值 */
+        transform: translate(0, 0);
+        transition:
+          width 0.18s ease,
+          height 0.18s ease,
+          top 0.18s ease,
+          right 0.18s ease,
+          transform 0.18s ease,
+          background 0.18s ease;
       }
       #minimap.large {
         width: 600px;
@@ -445,6 +465,7 @@
   </head>
   <body>
     <div id="vignette"></div>
+    <div id="damage-flash"></div>
     <!-- 柜内视角已改为 3D 箱内壁盒（player.ts 的 hideBox）：破洞固定开在箱壁上，
          360° 环视看到不同壁面的孔，不再使用 2D 全屏遮罩 -->
 

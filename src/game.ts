@@ -10,6 +10,14 @@ import { BUILTIN_LEVELS, getLevelConfig, type LevelConfig } from './levels'
 import { loadLevels } from './level_service'
 import { isLevelUnlocked, migrateProgress } from './progress'
 import { DARK_FOG_NEAR, LIT_AMBIENT, LIT_FOG_FAR, LIT_FOG_NEAR } from './constants'
+import {
+  animateLevelCards,
+  cancelCinematics,
+  initAnime,
+  playCaughtCinematic,
+  playWinEntrance,
+  showPanel,
+} from './anim'
 
 class Game {
   private isPlaying = false
@@ -44,6 +52,7 @@ class Game {
 
   constructor() {
     initLocalization()
+    initAnime()
     this.setupLoader()
 
     this.scene = new THREE.Scene()
@@ -232,13 +241,15 @@ class Game {
     this.selectedLevel = this.level
     this.renderLevelGrid()
     document.getElementById('menu')!.classList.add('hidden')
-    document.getElementById('level-panel')!.classList.remove('hidden')
+    showPanel(document.getElementById('level-panel')!)
+    // 卡片交错入场只在面板打开时播一次；单击选卡的重绘（selectLevel）不重播
+    animateLevelCards(document.getElementById('level-grid'))
   }
 
   /** 选关面板「返回主菜单」：回到首屏（标题 / 说明 / 鼠标速度设置） */
   private backToMainMenu(): void {
     document.getElementById('level-panel')!.classList.add('hidden')
-    document.getElementById('menu')!.classList.remove('hidden')
+    showPanel(document.getElementById('menu')!)
   }
 
   /** 从选关面板进入第 n 关 */
@@ -259,6 +270,8 @@ class Game {
 
   /** 通用"进入游玩态"：隐藏结算层、锁指针、复位时钟 */
   private enterPlay(): void {
+    // 终止被抓演出的残留补间（相机/红雾/延迟弹窗），否则会覆盖新一局 spawn 后的相机姿态
+    cancelCinematics()
     document.getElementById('game-over')!.classList.add('hidden')
     document.getElementById('game-win')!.classList.add('hidden')
     document.getElementById('pause-menu')!.classList.add('hidden')
@@ -316,6 +329,7 @@ class Game {
     this.shouldLockPointer = false
     document.exitPointerLock()
     this.stopHeartbeatUI()
+    cancelCinematics()
     document.getElementById('game-over')!.classList.add('hidden')
     document.getElementById('game-win')!.classList.add('hidden')
     document.getElementById('pause-menu')!.classList.add('hidden')
@@ -457,7 +471,7 @@ class Game {
     const pauseMenu = document.getElementById('pause-menu')!
 
     if (this.isPaused) {
-      pauseMenu.classList.remove('hidden')
+      showPanel(pauseMenu)
       document.exitPointerLock()
       this.shouldLockPointer = false
       this.syncMouseSensitivityToSliders()
@@ -532,7 +546,7 @@ class Game {
       if (nextBtn) {
         nextBtn.style.display = wonAll ? 'none' : 'inline-block'
       }
-      document.getElementById('game-win')!.classList.remove('hidden')
+      playWinEntrance()
     }
 
     const killed = this.ghost.update(dt)
@@ -566,8 +580,16 @@ class Game {
       this.isGameOver = true
       this.shouldLockPointer = false
       document.exitPointerLock()
+      // 死亡静场：主循环即将停转，本帧上方的心跳管理段已按旧状态跑过，
+      // 不在此处停会让心跳声循环残留到玩家点按钮
+      this.stopHeartbeatUI()
+      // 演出全屏化：小地图先藏（重生 enterPlay 会按 minimapAllowed 恢复）
+      const minimapEl = document.getElementById('minimap')
+      if (minimapEl) {
+        minimapEl.style.display = 'none'
+      }
       this.playOneShot(this.soundGen.getCaughtBuffer(), 0.8)
-      document.getElementById('game-over')!.classList.remove('hidden')
+      playCaughtCinematic(this.camera, this.ghost.mesh.position)
     }
 
     if (this.minimapAllowed) {
