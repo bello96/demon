@@ -42,6 +42,8 @@ class Game {
   private levels: LevelConfig[] = BUILTIN_LEVELS
   private level = 1
   private levelCleared = 0
+  /** 逐关解锁全局开关（整包顶层字段）：true=通过当前关才解锁下一关；false=全部关卡直接开放 */
+  private unlockProgression = true
   /** 选关面板中当前选中（高亮）的关卡：单击卡片选中，「进入游戏」按钮确认进入 */
   private selectedLevel = 1
   /** 本关是否允许显示小地图（关卡配置 minimapEnabled）：false 时 M 键也失效 */
@@ -97,6 +99,7 @@ class Game {
     try {
       const [, loaded] = await Promise.all([texturesLoaded, loadLevels()])
       this.levels = loaded.levels
+      this.unlockProgression = loaded.unlockProgression
       if (loaded.source === 'builtin') {
         console.warn('[game] 使用内置关卡（云端不可用或暂无数据）')
       }
@@ -206,7 +209,7 @@ class Game {
       no.textContent = String(n)
       btn.appendChild(no)
 
-      const unlocked = isLevelUnlocked(n, this.levelCleared)
+      const unlocked = isLevelUnlocked(n, this.levelCleared, this.unlockProgression)
       if (!unlocked) {
         btn.classList.add('locked')
         btn.disabled = true
@@ -228,7 +231,7 @@ class Game {
 
   /** 选关面板单击卡片：仅切换选中高亮，不进入游戏 */
   private selectLevel(n: number): void {
-    if (!isLevelUnlocked(n, this.levelCleared)) {
+    if (!isLevelUnlocked(n, this.levelCleared, this.unlockProgression)) {
       return
     }
     this.selectedLevel = n
@@ -254,7 +257,7 @@ class Game {
 
   /** 从选关面板进入第 n 关 */
   private startGame(n: number): void {
-    if (!isLevelUnlocked(n, this.levelCleared)) {
+    if (!isLevelUnlocked(n, this.levelCleared, this.unlockProgression)) {
       return
     }
     if (this.listener.context.state === 'suspended') {
@@ -279,6 +282,8 @@ class Game {
     const minimap = document.getElementById('minimap')
     if (minimap) {
       minimap.style.display = this.minimapAllowed ? 'block' : 'none'
+      // 进入游玩复位为小图态：防上一局残留的 M 放大态带进新一局
+      minimap.classList.remove('large')
     }
     const staminaBar = document.getElementById('stamina-bar')
     if (staminaBar) {
@@ -365,6 +370,12 @@ class Game {
     }
   }
 
+  /** 收起小地图放大态（移除 M 键的 .large）：任何弹框打开前调用，
+      避免 z-index 100 的放大地图盖住结算 / 暂停面板；进入游玩也复位为小图态 */
+  private collapseMinimap(): void {
+    document.getElementById('minimap')?.classList.remove('large')
+  }
+
   /**
    * 绑定资源加载进度 UI：进度条根据 loadingManager 事件更新，
    * texturesLoaded resolve 后隐藏进度条（「开始游戏」按钮的启用由 bootstrap 统一负责）。
@@ -416,7 +427,10 @@ class Game {
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       this.player.handleInput(e, true)
-      if (e.code === 'KeyM' && this.minimapAllowed) {
+      // 仅正常游玩中才允许放大：任何弹框（暂停 / 胜利 / 死亡 / ESC）打开时
+      // isPlaying=false 或 isPaused=true，此时 M 键无反应——避免放大态地图
+      // （z-index 100）盖住结算 / 暂停面板（z 20 / 25），须关掉弹框才能再放大
+      if (e.code === 'KeyM' && this.minimapAllowed && this.isPlaying && !this.isPaused) {
         document.getElementById('minimap')?.classList.toggle('large')
       }
     })
@@ -471,6 +485,7 @@ class Game {
     const pauseMenu = document.getElementById('pause-menu')!
 
     if (this.isPaused) {
+      this.collapseMinimap()
       showPanel(pauseMenu)
       document.exitPointerLock()
       this.shouldLockPointer = false
@@ -527,6 +542,8 @@ class Game {
       this.isPlaying = false
       this.shouldLockPointer = false
       document.exitPointerLock()
+      // 收起 M 键放大态：放大地图（z 100）会盖住胜利结算面板（z 20）
+      this.collapseMinimap()
       this.playOneShot(this.soundGen.getWinBuffer(), 0.7)
 
       this.levelCleared = Math.max(this.levelCleared, this.level)
@@ -583,10 +600,12 @@ class Game {
       // 死亡静场：主循环即将停转，本帧上方的心跳管理段已按旧状态跑过，
       // 不在此处停会让心跳声循环残留到玩家点按钮
       this.stopHeartbeatUI()
-      // 演出全屏化：小地图先藏（重生 enterPlay 会按 minimapAllowed 恢复）
+      // 演出全屏化：小地图先藏（重生 enterPlay 会按 minimapAllowed 恢复）；
+      // 同时收起 M 键放大态，避免重生恢复 display 时残留放大盖住画面
       const minimapEl = document.getElementById('minimap')
       if (minimapEl) {
         minimapEl.style.display = 'none'
+        minimapEl.classList.remove('large')
       }
       this.playOneShot(this.soundGen.getCaughtBuffer(), 0.8)
       playCaughtCinematic(this.camera, this.ghost.mesh.position)

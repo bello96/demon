@@ -3,6 +3,7 @@ import {
   BUILTIN_LEVELS,
   getLevelConfig,
   parseLevelsData,
+  parseUnlockProgression,
   sanitizeTheme,
 } from '../src/levels'
 
@@ -238,5 +239,31 @@ describe('BUILTIN_LEVELS / getLevelConfig', () => {
     expect(getLevelConfig(BUILTIN_LEVELS, 0)).toBe(BUILTIN_LEVELS[0])
     expect(getLevelConfig(BUILTIN_LEVELS, 999)).toBe(BUILTIN_LEVELS[5])
     expect(getLevelConfig(BUILTIN_LEVELS, 3)).toBe(BUILTIN_LEVELS[2])
+  })
+})
+
+describe('parseUnlockProgression', () => {
+  it('缺省字段 → true（默认逐关解锁）', () => {
+    expect(parseUnlockProgression({ levels: [validLevel] })).toBe(true)
+  })
+
+  it('显式 false → false（全部关卡开放）', () => {
+    expect(parseUnlockProgression({ levels: [validLevel], unlockProgression: false })).toBe(false)
+  })
+
+  it('显式 true → true', () => {
+    expect(parseUnlockProgression({ unlockProgression: true })).toBe(true)
+  })
+
+  it('非布尔脏值 → true（宽松回退，绝不因它改变默认行为）', () => {
+    expect(parseUnlockProgression({ unlockProgression: 'no' })).toBe(true)
+    expect(parseUnlockProgression({ unlockProgression: 0 })).toBe(true)
+    expect(parseUnlockProgression({ unlockProgression: null })).toBe(true)
+  })
+
+  it('非对象入参 → true（null / 原始值兜底不抛错）', () => {
+    expect(parseUnlockProgression(null)).toBe(true)
+    expect(parseUnlockProgression(undefined)).toBe(true)
+    expect(parseUnlockProgression(42)).toBe(true)
   })
 })

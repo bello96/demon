@@ -138,8 +138,32 @@
         border-color: #ffaa00;
         color: #ffaa00;
       }
+      /* 全局「解锁关卡」开关：与主题按钮同风格，放其左侧；
+         开（逐关解锁）= 橙色激活态，关（全部开放）= 灰色。全局唯一、不随关卡切换 */
+      .unlock-btn {
+        background: #1d1d1d;
+        border: 2px solid #666;
+        border-radius: 0;
+        color: #aaa;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+      .unlock-btn:hover {
+        border-color: #ffaa00;
+        color: #ffaa00;
+      }
+      .unlock-btn.on {
+        border-color: #ffaa00;
+        color: #ffaa00;
+      }
+      .unlock-btn.off {
+        border-color: #666;
+        color: #888;
+      }
       .theme-modal {
-        width: 800px;
+        width: 880px;
         max-width: 94vw;
       }
       .theme-sec {
@@ -148,9 +172,11 @@
         letter-spacing: 1px;
         margin: 12px 0 8px;
       }
-      /* 五张方案大卡片横排：4 张内置只读 + 1 张自定义可编辑 */
+      /* 十张方案卡片两排网格：9 张内置只读 + 1 张自定义可编辑 */
       .theme-cards {
-        display: flex;
+        /* 9 张内置 + 1 张自定义 = 10 张卡，5 列两排 */
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         gap: 10px;
         align-items: stretch;
       }
@@ -357,7 +383,8 @@
         top: calc(100% + 6px);
         left: 0;
         display: none;
-        flex-direction: column;
+        /* 4 个按钮 2×2 网格排列；下拉框宽度保持 min-width 190px 不变 */
+        grid-template-columns: 1fr 1fr;
         gap: 6px;
         padding: 8px;
         min-width: 190px;
@@ -366,7 +393,7 @@
         border: 3px solid #555;
       }
       .menu.open {
-        display: flex;
+        display: grid;
       }
       .menu button {
         width: 100%;
@@ -868,6 +895,10 @@
         content: "■ ";
         color: #a00;
       }
+      /* 主题弹框标题不显示红方块（其余弹框标题保留） */
+      #themeTitle::before {
+        content: none;
+      }
       .modal-acts {
         display: flex;
         gap: 8px;
@@ -1175,7 +1206,20 @@
             <span id="frozenTag" class="frozen-tag" style="display: none"
               >❄ 已冻结（只读）</span
             >
-            <button id="btnTheme" class="theme-btn" title="配置本关表面材质主题">
+            <button
+              id="btnUnlockMode"
+              class="unlock-btn"
+              title="全局开关（所有关卡通用）：开=通过当前关才解锁下一关；关=全部关卡直接开放"
+              style="margin-left: auto"
+            >
+              🔓 解锁关卡
+            </button>
+            <button
+              id="btnTheme"
+              class="theme-btn"
+              title="配置本关表面材质主题"
+              style="margin-left: 8px"
+            >
               🎨 主题
             </button>
           </h2>
@@ -1300,7 +1344,7 @@
       </div>
     </div>
 
-    <!-- 关卡主题弹框：五张方案卡片（4 张内置只读 + 1 张自定义可编辑），
+    <!-- 关卡主题弹框：十张方案卡片（9 张内置只读 + 1 张自定义可编辑，5 列两排），
          选中卡片后点「使用」应用到当前关并关闭；自定义每面可调纯色或上传
          图片纹理（上传即前端压缩：等比 ≤512px、WebP 优先 JPEG 兜底，base64
          随关卡数据上云），每关自定义互相独立 -->
@@ -1417,6 +1461,9 @@
       });
       // 打开即空白从头配；要接着改现有关卡，把 levels_data.json 内容粘贴到底部文本框「导入」
       let levels = [blankLevel()];
+      // 全局「逐关解锁」开关（所有关卡通用，随整包顶层字段上云）：
+      // true=通过当前关才解锁下一关；false=全部关卡直接开放。缺省 true 保持原有行为
+      let unlockProgression = true;
       let cur = 0; // 当前关卡下标
       let mode = "room"; // 'room' | 'corr'
       let sel = -1; // 选中的房间下标（room 模式）
@@ -2027,6 +2074,8 @@
         $("fog").disabled = fz;
         $("ghost").disabled = fz || lv.ghostEnabled === false;
         $("btnTheme").disabled = fz;
+        // 全局解锁开关不随关卡/冻结变化，但每次重绘同步一次按钮态（保证初始与加载后正确）
+        syncUnlockBtn();
         $("modeRoom").disabled = fz;
         $("modeCorr").disabled = fz;
         // 房间列表（冻结关不出删除 ✕，行点选仅用于查看高亮）
@@ -2640,6 +2689,52 @@
         render();
       };
 
+      // 全局「解锁关卡」开关（不随关卡切换，冻结关也可改——它是整包级设置）：
+      // 更新按钮文案与开/关样式；true=逐关解锁，false=全部开放
+      function syncUnlockBtn() {
+        const btn = $("btnUnlockMode");
+        if (!btn) return;
+        btn.classList.toggle("on", unlockProgression);
+        btn.classList.toggle("off", !unlockProgression);
+        btn.textContent = unlockProgression ? "🔓 逐关解锁" : "🔓 全部开放";
+        btn.title = unlockProgression
+          ? "全局开关（所有关卡通用）：当前为「逐关解锁」——必须通过当前关才能解锁下一关。点击切换为全部开放"
+          : "全局开关（所有关卡通用）：当前为「全部开放」——所有关卡随便玩。点击切换为逐关解锁";
+      }
+      // 切换后自动保存到云端（无需手动点「保存到云端」）：乐观切换 → 静默上云 → 失败回滚。
+      // 云端未成功加载时禁止自动 PUT，避免空白/残缺画布覆盖线上正式关卡。
+      // 注意：cloudSave 保存整包，若画布另有未保存的关卡改动会一并上云（KV 整包存储的必然结果）。
+      $("btnUnlockMode").onclick = async () => {
+        const next = !unlockProgression;
+        if (!cloudLoaded) {
+          unlockProgression = next;
+          syncUnlockBtn();
+          gameAlert(
+            "云端数据未成功加载，开关改动无法自动保存。\n请勿在此状态下保存，以免覆盖线上正式关卡。",
+            { title: "无法自动保存", tone: "danger" },
+          );
+          return;
+        }
+        const btn = $("btnUnlockMode");
+        btn.disabled = true;
+        unlockProgression = next; // 乐观切换：exportJSON 随即读到新值一并上云
+        syncUnlockBtn();
+        const ok = await cloudSave({ silent: true });
+        btn.disabled = false;
+        if (ok) {
+          toast(
+            next
+              ? "已设为「逐关解锁」，已自动保存 · 全网生效"
+              : "已设为「全部开放」：所有关卡直接可玩，已自动保存 · 全网生效",
+          );
+        } else {
+          // 保存失败（体积超限 / 校验错误 / 口令取消 / 网络错误，cloudSave 内部已弹框说明）：
+          // 回滚开关，保持编辑器显示与云端一致
+          unlockProgression = !next;
+          syncUnlockBtn();
+        }
+      };
+
       // ================= 导入导出 =================
       /** 有任何 err 的关卡下标列表（独木不成林等错误存在时导出/下载都被拦截） */
       function levelsWithErrors() {
@@ -2678,6 +2773,8 @@
             return o;
           }),
         };
+        // 全局解锁开关：默认逐关解锁，仅显式关闭时写顶层字段（保持旧格式兼容）
+        if (!unlockProgression) out.unlockProgression = false;
         return JSON.stringify(out, null, 2);
       }
       /** 复制/查看/下载共用一道闸：有错误时弹框列出各关问题，配置不出门 */
@@ -2796,6 +2893,8 @@
           if (!Array.isArray(arr) || arr.length === 0)
             throw new Error("缺少 levels 数组");
           loadLevelsData(arr);
+          // 全局解锁开关随导入回显（数组形态无此字段，保持逐关解锁默认）
+          unlockProgression = !(data && !Array.isArray(data) && data.unlockProgression === false);
           closeModal();
           toast(`已导入 ${levels.length} 个关卡`);
           render();
@@ -2895,6 +2994,61 @@
             roomWall: { type: "color", value: "#7d5a3a" },
             corridorWall: { type: "color", value: "#6b4d31" },
             ceiling: { type: "color", value: "#4a3520" },
+          },
+        },
+        {
+          // 维多利亚鬼宅：暗红地毯 + 深橡木护墙板 + 亮米色老石膏顶（亮顶与暗地强反差）
+          name: "血色地毯厅",
+          surfaces: {
+            roomFloor: { type: "color", value: "#6e1f24" },
+            corridorFloor: { type: "color", value: "#551a1f" },
+            roomWall: { type: "color", value: "#4a352a" },
+            corridorWall: { type: "color", value: "#6b4a3a" },
+            ceiling: { type: "color", value: "#d8c9a8" },
+          },
+        },
+        {
+          // 阴湿地窖：湿苔石地 + 霉斑水泥墙（更亮）+ 极暗潮顶（顶最暗，压抑）
+          name: "苔痕地窖",
+          surfaces: {
+            roomFloor: { type: "color", value: "#4a5340" },
+            corridorFloor: { type: "color", value: "#3a4232" },
+            roomWall: { type: "color", value: "#6a6b5c" },
+            corridorWall: { type: "color", value: "#565746" },
+            ceiling: { type: "color", value: "#2a2e26" },
+          },
+        },
+        {
+          // 废弃工厂：锈铁地板（暖）+ 冷调钢板墙 + 烟熏黑顶（暖锈与冷钢强色相反差）
+          name: "锈蚀工厂",
+          surfaces: {
+            roomFloor: { type: "color", value: "#6b4a35" },
+            corridorFloor: { type: "color", value: "#3e3a34" },
+            roomWall: { type: "color", value: "#5a5f63" },
+            corridorWall: { type: "color", value: "#6e5847" },
+            ceiling: { type: "color", value: "#26282a" },
+          },
+        },
+        {
+          // 邪典祭坛：紫黑曜岩地 + 紫晶石墙（更亮）+ 干血暗红顶（冷紫与暖红对撞）
+          name: "暗紫祭坛",
+          surfaces: {
+            roomFloor: { type: "color", value: "#2b1f33" },
+            corridorFloor: { type: "color", value: "#201725" },
+            roomWall: { type: "color", value: "#4a3a5c" },
+            corridorWall: { type: "color", value: "#3d3049" },
+            ceiling: { type: "color", value: "#3a1f22" },
+          },
+        },
+        {
+          // 废弃民居：暗硬木地 + 尼古丁黄墙纸（亮）+ 水渍棕顶（亮黄墙跳色，衰败感）
+          name: "枯黄旧宅",
+          surfaces: {
+            roomFloor: { type: "color", value: "#5c4326" },
+            corridorFloor: { type: "color", value: "#4a3620" },
+            roomWall: { type: "color", value: "#9a8a5a" },
+            corridorWall: { type: "color", value: "#7d6f48" },
+            ceiling: { type: "color", value: "#6b5a3f" },
           },
         },
       ];
@@ -3007,8 +3161,8 @@
       }
       $("btnImport").onclick = () => openModal("import");
 
-      // ================= 关卡主题弹框（五张方案卡：4 内置只读 + 1 自定义可编辑） =================
-      /** 弹框内选中的卡片：0..3 = 内置方案下标；"custom" = 自定义卡 */
+      // ================= 关卡主题弹框（十张方案卡：9 内置只读 + 1 自定义可编辑） =================
+      /** 弹框内选中的卡片：0..8 = 内置方案下标；"custom" = 自定义卡 */
       let themeSel = 0;
       /** 自定义卡片编辑态（每关各自回显；点「使用」才写入关卡） */
       let customDraft = {};
@@ -3054,7 +3208,7 @@
         $("themeTitle").textContent = curFrozen()
           ? "🎨 关卡主题（已冻结关卡）"
           : "🎨 关卡主题（第 " + liveNoOf(cur) + " 关）";
-        // 4 张内置卡：五行表面色块只读展示（经典默认 = 各面默认材质代表色）
+        // 9 张内置卡：五行表面色块只读展示（经典默认 = 各面默认材质代表色）
         const cards = BUILTIN_THEMES.map((p, i) => {
           const rows = SURFACE_INFO.map(([k, label, defC]) => {
             const st =
@@ -3736,14 +3890,18 @@
       $("btnCloudSave").onclick = () => cloudSave();
 
       // ================= 未保存检测（云端快照比对，替代旧本地草稿机制） =================
-      /** 云端一致性快照：编辑后与之不一致 = 有未上云的改动 */
+      /** 云端一致性快照：编辑后与之不一致 = 有未上云的改动
+          （含全局解锁开关：单独改它也应触发退出前的未保存提醒） */
       function snapshot() {
-        return JSON.stringify(levels);
+        return JSON.stringify({ levels, unlockProgression });
       }
       /** 与云端一致时的内容快照；编辑后与当前内容不一致 = 有未上云的改动 */
       let cloudSnapshot = snapshot();
       /** 「不保存直接退出 / 保存成功后退出」置 true，跳过 beforeunload 原生拦截 */
       let bypassUnload = false;
+      /** 云端数据是否成功加载：init 成功置 true。
+          false 时禁止自动上云（避免空白/残缺画布覆盖线上正式关卡） */
+      let cloudLoaded = false;
       function isDirty() {
         return snapshot() !== cloudSnapshot;
       }
@@ -3752,18 +3910,20 @@
         // 旧版草稿机制已移除：清掉历史残留，避免 localStorage 脏数据常驻
         localStorage.removeItem("nc-editor-draft");
         // 进入页面直接加载云端正式数据；是否保存改动的决定推迟到退出时
-        let cloudOk = false;
+        cloudLoaded = false;
         try {
           const res = await fetch("/api/levels", { cache: "no-store" });
           if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.levels) && data.levels.length) {
               loadLevelsData(data.levels);
+              // 全局解锁开关回显：仅显式 false 才关闭，缺省/非法保持逐关解锁
+              unlockProgression = data.unlockProgression !== false;
             }
-            cloudOk = true; // 请求成功但云端为空也算正常：空白画布从头配
+            cloudLoaded = true; // 请求成功但云端为空也算正常：空白画布从头配
           }
         } catch {}
-        if (!cloudOk) {
+        if (!cloudLoaded) {
           gameAlert(
             "云端关卡数据加载失败，当前是一张空白画布。\n请勿直接「保存到云端」，以免覆盖线上正式关卡。",
             { title: "加载失败", tone: "danger" },

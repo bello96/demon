@@ -19,7 +19,17 @@ export function migrateProgress(
   return { level, cleared }
 }
 
-/** 关卡 n 是否可进：已通关的关可重玩，最多只放行到"已通最高关的下一关" */
-export function isLevelUnlocked(n: number, cleared: number): boolean {
-  return n >= 1 && n <= cleared + 1
+/**
+ * 关卡 n 是否可进。
+ *  - progression=true（默认，逐关解锁）：已通关的关可重玩，最多放行到"已通最高关的下一关"
+ *  - progression=false（全局开关关闭）：所有存在的关卡直接开放，随便玩
+ */
+export function isLevelUnlocked(n: number, cleared: number, progression: boolean = true): boolean {
+  if (n < 1) {
+    return false
+  }
+  if (!progression) {
+    return true
+  }
+  return n <= cleared + 1
 }

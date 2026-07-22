@@ -1,4 +1,4 @@
-import { parseLevelsData } from '../../src/levels'
+import { parseLevelsData, parseUnlockProgression } from '../../src/levels'
 
 interface Env {
   LEVELS_KV: KVNamespace
@@ -53,7 +53,9 @@ async function handlePut(ctx: EventContext<Env, string, unknown>): Promise<Respo
     return json({ error: 'invalid', detail: '关卡数据校验失败（结构 / 坐标范围 / 数值区间 / 至少一个未冻结关卡）' }, 400)
   }
   // 方案库（themePresets）已废弃：不再解析存储，旧 KV 数据里的该字段随下次保存自然清除
-  await ctx.env.LEVELS_KV.put('levels', JSON.stringify({ levels: parsed }))
+  // 逐关解锁全局开关（顶层字段，所有关卡通用）：宽松解析，缺省 true=逐关解锁
+  const unlockProgression = parseUnlockProgression(body)
+  await ctx.env.LEVELS_KV.put('levels', JSON.stringify({ levels: parsed, unlockProgression }))
   return json({ ok: true, count: parsed.length }, 200)
 }
 

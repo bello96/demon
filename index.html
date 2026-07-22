@@ -237,7 +237,7 @@
       }
       /* 进入游戏 = 主操作：橙色强调，与选中卡片同色呼应 */
       #level-enter-btn {
-        margin-right: 18px;
+        margin-left: 18px;
         border-color: #ffaa00;
         color: #ffaa00;
       }
@@ -524,14 +524,14 @@
       <div id="level-panel" class="hidden">
         <div id="level-select-title">选择关卡</div>
         <div id="level-grid"></div>
-        <button id="level-enter-btn">进入游戏</button>
         <button id="level-back-btn">返回主菜单</button>
+        <button id="level-enter-btn">进入游戏</button>
       </div>
 
       <div id="game-over" class="hidden">
         <h1 id="died-text">你死了</h1>
-        <button id="respawn-btn">重生</button>
         <button id="dead-menu-btn">返回选关</button>
+        <button id="respawn-btn">重生</button>
       </div>
 
       <div
@@ -547,8 +547,8 @@
         "
       >
         <h1 id="escaped-text" style="color: #0a0">逃脱成功</h1>
-        <button id="next-level-btn" style="margin-right: 30px">下一关</button>
         <button id="win-menu-btn">返回选关</button>
+        <button id="next-level-btn" style="margin-left: 30px">下一关</button>
       </div>
 
       <div id="pause-menu" class="hidden">
@@ -569,9 +569,9 @@
           </div>
         </div>
         <div class="pause-button-group">
-          <button id="btn-resume">继续</button>
-          <button id="btn-restart">重来</button>
           <button id="btn-menu">返回</button>
+          <button id="btn-restart">重来</button>
+          <button id="btn-resume">继续</button>
         </div>
         <div class="pause-hint">点击“继续游戏”按钮返回</div>
       </div>

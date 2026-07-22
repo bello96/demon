@@ -245,3 +245,18 @@ export function getLevelConfig(levels: LevelConfig[], level: number): LevelConfi
   const idx = Math.min(Math.max(Math.round(level), 1), levels.length) - 1
   return levels[idx]
 }
+
+/**
+ * 解析整包顶层的「逐关解锁」全局开关（所有关卡通用，不随单关配置）：
+ *  - true（默认）：必须通过当前关才解锁下一关（原有行为）
+ *  - false：全部关卡直接开放，随便玩
+ * 宽松处理：缺省 / 非布尔一律回退 true（保持逐关解锁），绝不因它拒包。
+ */
+export function parseUnlockProgression(data: unknown): boolean {
+  if (typeof data !== 'object' || data === null) {
+    return true
+  }
+  const v = (data as { unlockProgression?: unknown }).unlockProgression
+  // 只有显式写 false 才关闭；缺省或任何非法值都保持逐关解锁
+  return v !== false
+}

@@ -36,4 +36,20 @@ describe('isLevelUnlocked', () => {
     expect(isLevelUnlocked(4, 2)).toBe(false)
     expect(isLevelUnlocked(0, 2)).toBe(false)
   })
+
+  it('默认 progression 省略即逐关解锁（向后兼容两参调用）', () => {
+    expect(isLevelUnlocked(3, 2, true)).toBe(true)
+    expect(isLevelUnlocked(4, 2, true)).toBe(false)
+  })
+
+  it('全局开关关闭（progression=false）：任意正数关卡都开放，与已通关数无关', () => {
+    expect(isLevelUnlocked(1, 0, false)).toBe(true)
+    expect(isLevelUnlocked(6, 0, false)).toBe(true)
+    expect(isLevelUnlocked(99, 0, false)).toBe(true)
+  })
+
+  it('全局开关关闭也不放行非法关号（n<1）', () => {
+    expect(isLevelUnlocked(0, 5, false)).toBe(false)
+    expect(isLevelUnlocked(-1, 5, false)).toBe(false)
+  })
 })

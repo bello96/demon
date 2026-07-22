@@ -114,8 +114,14 @@ Game (game.ts)
   （默认 true；false 时隐藏小地图、M 键失效、雷达不投放）/ `frozen`（冻结停用，后续关顺位前移，
   至少须保留一个未冻结关卡）/ `id`（可选唯一标识，编辑器发放形如 `lv_xxx`；
   非法/重复宽松丢弃不拒包，编辑器加载时补发）
+- **整包顶层全局字段** `unlockProgression`（`parseUnlockProgression`，与 levels 平级，所有关卡通用）：
+  `true`（默认）= 逐关解锁（通过当前关才解锁下一关）；`false` = 全部关卡直接开放随便玩。
+  宽松解析——缺省/非布尔一律回退 true，绝不因它拒包；仅编辑器显式关闭时才写 `unlockProgression:false`
+  顶层字段（旧格式兼容）。游戏端 `isLevelUnlocked(n, cleared, progression)` 第三参接入：
+  progression=false 时任意正数关号全放行（n<1 仍拒）
 - **数据流**：编辑器（/level，口令 PUT）→ KV → 游戏启动 `loadLevels`（3 秒超时，失败回退内置 6 关）；
-  游戏端与内置数据都会过滤 `frozen` 关
+  游戏端与内置数据都会过滤 `frozen` 关。`loadLevels` 返回的 `LoadedLevels` 含 `unlockProgression`
+  （远程从整包顶层解析，内置回退默认 true）
 - **进度**：`localStorage`（levelCleared / levelReached），`migrateProgress` 在关卡数变化时钳制
 
 ### 5.3 地图生成管线（`World.generateMansion`）
@@ -195,7 +201,10 @@ Game (game.ts)
 
 - **游戏页流程**：主菜单「开始游戏」→ 选关卡片面板（地图缩略图卡片，单击选中、
   「进入游戏」确认、双击直进、锁定关灰显）→ 游玩；小地图仅游玩中显示，M 键放大
-  （`minimapEnabled=false` 的关卡整体禁用，放大/缩小有 0.18s CSS 过渡）
+  （`minimapEnabled=false` 的关卡整体禁用，放大/缩小有 0.18s CSS 过渡）。
+  M 键放大有弹框守卫：仅 `isPlaying && !isPaused`（正常游玩）才响应——暂停/胜利/死亡/ESC
+  等任何弹框打开时 M 键无反应（放大地图 z-index 100 > 弹框 z 20/25，否则会盖住弹框）；
+  且各弹框打开处（暂停/胜利/死亡）与 enterPlay 都调 `collapseMinimap()` 收起已放大的 `.large`
 - **UI/演出动画层（src/anim.ts）**：CDN 按需加载 anime.js v4
   （esm.sh `?exports=animate,createTimeline,stagger` 端上摇树，gzip 十几 KB），
   加载失败/未就绪一律降级为原瞬切行为，游戏流程绝不被动画层阻塞；只做入场动画不做
@@ -217,6 +226,14 @@ Game (game.ts)
   `theme` 字段随整包覆盖存储：改主题/删关卡即自然清掉旧图，无独立文件无残留；
   关卡可冻结/解冻（冻结关列表行只剩「解冻」按钮、不可删除，
   参数/主题/画布全面只读，仅可平移缩放查看）；本地草稿自动保存、与云端冲突时弹框二选一
+- **编辑器全局「解锁关卡」开关**（`btnUnlockMode`，参数面板主题按钮左侧，全局唯一不随关卡切换、
+  冻结关也可改）：切换 `unlockProgression` 全局变量——「🔓 逐关解锁」(on 橙) / 「🔓 全部开放」(off 灰)；
+  **切换即自动保存到云端**（乐观切换 UI→静默 `cloudSave({silent})`→失败回滚开关并保持与云端一致），
+  无需手动点「保存到云端」；安全前提：`cloudLoaded=false`（云端数据未成功加载）时禁止自动 PUT，
+  仅切换 UI 并弹 danger 提示，避免空白/残缺画布覆盖线上正式关卡（注意：自动保存走整包 PUT，
+  画布另有未保存关卡改动会一并上云）；随整包顶层字段上云（`exportJSON` 仅关闭时写
+  `unlockProgression:false`）；`loadLevelsData` 两条加载路径（云端 init / 导入 JSON）都回显；
+  `snapshot()` 纳入比对（单改开关也触发退出前未保存提醒）
 - **本地 /api**：`pnpm dev` 下由 vite 代理到线上生产（demon.dengjiabei.cn）——
   本地编辑器「保存到云端」写的就是生产数据
 
