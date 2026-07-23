@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <title>方块噩梦 · 关卡编辑器</title>
     <!-- 与游戏页同款 emoji 图标（内联 SVG，顺带消掉 /favicon.ico 404） -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👿</text></svg>" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👿</text></svg>"
+    />
     <style>
       /* 与游戏页同款像素字体（仅拉丁字符生效，中文回退系统字体，观感与游戏一致） */
       @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
@@ -239,8 +242,7 @@
         outline-color: #ffaa00;
       }
       .tc-chip.empty {
-        background:
-          linear-gradient(
+        background: linear-gradient(
             45deg,
             transparent 46%,
             #555 46%,
@@ -871,7 +873,7 @@
         display: flex;
       }
       .modal {
-        width: 760px;
+        width: 800px;
         max-width: 92vw;
         background: rgba(0, 0, 0, 0.92);
         border: 4px solid #555;
@@ -1222,6 +1224,14 @@
             >
               🎨 主题
             </button>
+            <button
+              id="btnImportLevel"
+              class="theme-btn"
+              title="粘贴仅含 rooms / corridorRects 的 JSON，只覆盖本关地图，其余参数不变"
+              style="margin-left: 8px"
+            >
+              ⬇ 导入地图
+            </button>
           </h2>
           <div class="ctl-row">
             <label class="ck"
@@ -1443,7 +1453,9 @@
 
       /** 关卡唯一 id：不随排序/冻结变化的稳定标识，随数据上云（时间戳36 + 随机段） */
       const genId = () =>
-        "lv_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        "lv_" +
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 8);
       /** id 合法格式（与 src/levels.ts 同规则）：非法/重复的在加载时丢弃补发 */
       const LEVEL_ID_RE = /^[A-Za-z0-9_-]{1,32}$/;
       /** 空白关卡（默认参数取第 1 关难度档：开局关灯、有幽灵） */
@@ -1883,7 +1895,9 @@
         // 层级关系仍由 strokeRoomEdges 的重叠段暗虚线表达
         const roomWarn = lv.rooms.map(
           (r, i) =>
-            r.w < MIN_ROOM || r.d < MIN_ROOM || sim.unreachableRooms.includes(i),
+            r.w < MIN_ROOM ||
+            r.d < MIN_ROOM ||
+            sim.unreachableRooms.includes(i),
         );
         ctx.beginPath();
         lv.rooms.forEach((r, i) => {
@@ -1912,7 +1926,10 @@
         }
         const layerOf = (i) => (i === topIdx ? lv.rooms.length : i);
         const overlaps = (a, b) =>
-          a.x < b.x + b.w && b.x < a.x + a.w && a.z < b.z + b.d && b.z < a.z + a.d;
+          a.x < b.x + b.w &&
+          b.x < a.x + a.w &&
+          a.z < b.z + b.d &&
+          b.z < a.z + a.d;
         // 被更上层房间压住的房间：房号/尺寸标签调浅，一眼可辨层级关系
         const buried = lv.rooms.map((r, i) =>
           lv.rooms.some(
@@ -2074,6 +2091,7 @@
         $("fog").disabled = fz;
         $("ghost").disabled = fz || lv.ghostEnabled === false;
         $("btnTheme").disabled = fz;
+        $("btnImportLevel").disabled = fz;
         // 全局解锁开关不随关卡/冻结变化，但每次重绘同步一次按钮态（保证初始与加载后正确）
         syncUnlockBtn();
         $("modeRoom").disabled = fz;
@@ -2834,23 +2852,33 @@
         return Promise.resolve(fallback());
       }
 
-      // ================= 弹框（查看 / 导入共用一个结构） =================
+      // ================= 弹框（查看 / 整包导入 / 本关地图导入 共用一个结构） =================
+      /** 当前弹框模式："view" | "import"（整包）| "levelMap"（仅覆盖本关 rooms/corridorRects）；
+          modalOk 据此分流：整包走 loadLevelsData，本关走 importLevelMap */
+      let modalMode = "view";
       function openModal(mode, text) {
+        modalMode = mode;
         $("modalTitle").textContent =
           mode === "view"
             ? "当前配置 JSON（粘贴覆盖 src/levels_data.json）"
-            : "导入已有 JSON";
+            : mode === "levelMap"
+              ? `导入本关地图（仅覆盖第 ${cur + 1} 关的房间与走廊）`
+              : "导入已有 JSON";
         $("modalCopy").style.display = mode === "view" ? "" : "none";
         $("modalOk").style.display = mode === "view" ? "none" : "";
+        $("modalOk").textContent =
+          mode === "levelMap" ? "确定覆盖本关" : "确定导入";
         const t = $("ioText");
         t.readOnly = mode === "view";
         t.placeholder =
           mode === "view"
             ? ""
-            : "把 levels_data.json 的全部内容粘贴到这里，点「确定导入」";
+            : mode === "levelMap"
+              ? '只需 rooms / corridorRects，例如：\n{"rooms":[{"x":10,"z":10,"w":30,"d":30}],"corridorRects":[]}\n其余参数（灯光/幽灵/主题等）保持页面当前配置不变'
+              : "把 levels_data.json 的全部内容粘贴到这里，点「确定导入」";
         t.value = text || "";
         $("modalMask").classList.add("open");
-        if (mode === "import") t.focus();
+        if (mode !== "view") t.focus();
       }
       function closeModal() {
         $("modalMask").classList.remove("open");
@@ -2887,6 +2915,10 @@
           toast(ok ? "已复制到剪贴板" : "复制失败，请手动全选复制"),
         );
       $("modalOk").onclick = () => {
+        if (modalMode === "levelMap") {
+          importLevelMap();
+          return;
+        }
         try {
           const data = JSON.parse($("ioText").value);
           const arr = Array.isArray(data) ? data : data.levels;
@@ -2894,7 +2926,11 @@
             throw new Error("缺少 levels 数组");
           loadLevelsData(arr);
           // 全局解锁开关随导入回显（数组形态无此字段，保持逐关解锁默认）
-          unlockProgression = !(data && !Array.isArray(data) && data.unlockProgression === false);
+          unlockProgression = !(
+            data &&
+            !Array.isArray(data) &&
+            data.unlockProgression === false
+          );
           closeModal();
           toast(`已导入 ${levels.length} 个关卡`);
           render();
@@ -2902,6 +2938,89 @@
           toast("导入失败：" + err.message);
         }
       };
+
+      // ================= 导入本关地图（仅覆盖 rooms / corridorRects） =================
+      /** 从粘贴的 JSON 里取地图数据覆盖当前关，其余参数（灯光/幽灵/主题/id）一律保留。
+          校验失败弹 danger 框说明具体原因，成功则重绘画布。 */
+      function importLevelMap() {
+        const raw = $("ioText").value.trim();
+        if (!raw) {
+          gameAlert("请先粘贴关卡地图 JSON。", {
+            title: "导入失败",
+            tone: "danger",
+          });
+          return;
+        }
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (err) {
+          gameAlert("JSON 解析失败：" + err.message, {
+            title: "导入失败",
+            tone: "danger",
+          });
+          return;
+        }
+        // 兼容三种形态：单关对象 / {levels:[...]} 整包 / 关卡数组——地图只取第一关
+        let src = data;
+        if (Array.isArray(data)) {
+          src = data[0];
+        } else if (data && Array.isArray(data.levels)) {
+          src = data.levels[0];
+        }
+        if (!src || typeof src !== "object" || Array.isArray(src)) {
+          gameAlert("数据格式不对：应是含 rooms 的关卡对象。", {
+            title: "导入失败",
+            tone: "danger",
+          });
+          return;
+        }
+        if (!Array.isArray(src.rooms)) {
+          gameAlert("缺少 rooms 数组（房间数据）。", {
+            title: "导入失败",
+            tone: "danger",
+          });
+          return;
+        }
+        // 复用 loadLevelsData 同款清洗：非法矩形丢弃、合法矩形钳进网格
+        const saneRect = (r) =>
+          r &&
+          Number.isFinite(+r.x) &&
+          Number.isFinite(+r.z) &&
+          Number.isFinite(+r.w) &&
+          Number.isFinite(+r.d);
+        const clampRect = (r) => ({
+          x: Math.max(0, Math.min(GRID - 1, Math.round(+r.x))),
+          z: Math.max(0, Math.min(GRID - 1, Math.round(+r.z))),
+          w: Math.max(1, Math.min(GRID, Math.round(+r.w))),
+          d: Math.max(1, Math.min(GRID, Math.round(+r.d))),
+        });
+        const rooms = src.rooms.filter(saneRect).map(clampRect);
+        if (rooms.length === 0) {
+          gameAlert("rooms 里没有任何合法房间（每个房间需含数值 x/z/w/d）。", {
+            title: "导入失败",
+            tone: "danger",
+          });
+          return;
+        }
+        const corrRects = (
+          Array.isArray(src.corridorRects) ? src.corridorRects : []
+        )
+          .filter(saneRect)
+          .map(clampRect)
+          .flatMap(normalizeCorr)
+          .flatMap((c) => clipCorridor(c, rooms));
+        // 只覆盖地图两字段，其余参数（含 id/主题/幽灵/灯光）保持本关原值
+        levels[cur].rooms = rooms;
+        levels[cur].corrRects = corrRects;
+        sel = -1;
+        selCorr = -1;
+        closeModal();
+        toast(
+          `已覆盖第 ${cur + 1} 关地图：${rooms.length} 个房间、${corrRects.length} 段走廊`,
+        );
+        render();
+      }
 
       $("btnCopy").onclick = () => {
         const json = guardedJSON();
@@ -3160,6 +3279,8 @@
         selCorr = -1;
       }
       $("btnImport").onclick = () => openModal("import");
+      // 导入本关地图：冻结关只读时按钮已禁用（render 同步），点开只覆盖当前关房间/走廊
+      $("btnImportLevel").onclick = () => openModal("levelMap");
 
       // ================= 关卡主题弹框（十张方案卡：9 内置只读 + 1 自定义可编辑） =================
       /** 弹框内选中的卡片：0..8 = 内置方案下标；"custom" = 自定义卡 */
@@ -3172,11 +3293,8 @@
       function surfaceChipStyle(s, defC) {
         if (!s) return null;
         if (s.type === "color") return "background:" + s.value;
-        if (s.type === "image")
-          return "background-image:url(" + s.value + ")";
-        return (
-          "background:" + ((PRESET_INFO[s.value] || {}).color || defC)
-        );
+        if (s.type === "image") return "background-image:url(" + s.value + ")";
+        return "background:" + ((PRESET_INFO[s.value] || {}).color || defC);
       }
       function themeEquals(a, b) {
         return JSON.stringify(a || null) === JSON.stringify(b || null);
@@ -3291,7 +3409,9 @@
         const sv = $("cpSv");
         sv.style.background =
           "linear-gradient(to top, #000, rgba(0,0,0,0)), " +
-          "linear-gradient(to right, #fff, hsl(" + cpH + ",100%,50%))";
+          "linear-gradient(to right, #fff, hsl(" +
+          cpH +
+          ",100%,50%))";
         $("cpSvCur").style.left = cpS * 100 + "%";
         $("cpSvCur").style.top = (1 - cpV) * 100 + "%";
         $("cpHueCur").style.top = (cpH / 360) * 100 + "%";
@@ -3512,7 +3632,12 @@
             }
             customDraft[key] = { type: "image", value: dataUrl };
             renderThemeUI();
-            toast("已压缩 " + fmtSize(f.size) + " → " + fmtSize(dataUrlBytes(dataUrl)));
+            toast(
+              "已压缩 " +
+                fmtSize(f.size) +
+                " → " +
+                fmtSize(dataUrlBytes(dataUrl)),
+            );
           })
           .catch((err) => {
             toast((err && err.message) || "图片处理失败");
@@ -3884,7 +4009,8 @@
           return false;
         } finally {
           btn.disabled = false;
-          btn.textContent = "☁ 保存到云端";
+          // 恢复文案与初始 HTML 一致（「☁ 保存」），不再变长为「☁ 保存到云端」
+          btn.textContent = "☁ 保存";
         }
       }
       $("btnCloudSave").onclick = () => cloudSave();
